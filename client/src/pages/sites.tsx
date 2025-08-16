@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List } from "lucide-react";
+import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List, Trash2 } from "lucide-react";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,7 +137,7 @@ function UptimeBar({ siteId }: { siteId: string }) {
   );
 }
 
-function SiteListItem({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManagement }) {
+function SiteListItem({ site, ipcDevice, onDelete, isDeleting }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -184,9 +184,21 @@ function SiteListItem({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManageme
           </div>
         </div>
         
-        <div className="ml-4 flex-shrink-0">
-          <div className="text-xs text-muted-foreground mb-1">24h Status</div>
-          <UptimeBar siteId={site.id} />
+        <div className="ml-4 flex-shrink-0 flex items-center space-x-3">
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">24h Status</div>
+            <UptimeBar siteId={site.id} />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(site.id, site.name)}
+            disabled={isDeleting}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            data-testid={`delete-list-site-${site.id}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
@@ -208,7 +220,7 @@ function SiteListItem({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManageme
   );
 }
 
-function SiteCard({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManagement }) {
+function SiteCard({ site, ipcDevice, onDelete, isDeleting }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -234,7 +246,19 @@ function SiteCard({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManagement }
               )}
             </div>
           </div>
-          <SiteStatusBadge status={site.status} />
+          <div className="flex items-center space-x-2">
+            <SiteStatusBadge status={site.status} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(site.id, site.name)}
+              disabled={isDeleting}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              data-testid={`delete-card-site-${site.id}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -309,6 +333,7 @@ function SiteCard({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManagement }
 
 export default function Sites() {
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+  const { toast } = useToast();
   
   const { data: sites = [], isLoading: sitesLoading } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
@@ -319,6 +344,31 @@ export default function Sites() {
     queryKey: ["/api/ipc-management"],
     refetchInterval: 60000, // Refresh every minute
   });
+
+  const deleteSiteMutation = useMutation({
+    mutationFn: (siteId: string) => apiRequest("/api/sites/" + siteId, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      toast({
+        title: "Site deleted",
+        description: "The monitoring site has been successfully removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete site",
+        description: error.message || "An error occurred while deleting the site.",
+      });
+    },
+  });
+
+  const handleDeleteSite = (siteId: string, siteName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${siteName}"? This action cannot be undone.`)) {
+      deleteSiteMutation.mutate(siteId);
+    }
+  };
 
   const onlineSites = sites.filter(site => site.status === "online").length;
   const totalSites = sites.length;
@@ -426,12 +476,16 @@ export default function Sites() {
                   key={site.id} 
                   site={site} 
                   ipcDevice={ipcByIP[site.ipAddress]}
+                  onDelete={handleDeleteSite}
+                  isDeleting={deleteSiteMutation.isPending}
                 />
               ) : (
                 <SiteListItem
                   key={site.id}
                   site={site}
                   ipcDevice={ipcByIP[site.ipAddress]}
+                  onDelete={handleDeleteSite}
+                  isDeleting={deleteSiteMutation.isPending}
                 />
               )
             ))}

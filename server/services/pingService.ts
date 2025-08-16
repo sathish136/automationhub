@@ -172,13 +172,13 @@ class PingService {
     console.log("Starting ping monitoring service...");
     this.isRunning = true;
 
-    // Check all sites every 5 minutes
-    cron.schedule("*/5 * * * *", async () => {
+    // Check all sites every 10 seconds using setInterval
+    setInterval(async () => {
       if (this.isRunning) {
         console.log("Running scheduled ping checks...");
         await this.checkAllSites();
       }
-    });
+    }, 10000); // 10 seconds = 10000 milliseconds
 
     // Initial check
     this.checkAllSites();
