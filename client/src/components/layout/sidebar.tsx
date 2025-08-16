@@ -10,6 +10,8 @@ import {
   BarChart3,
   Settings,
   Cable,
+  Wrench,
+  FolderOpen,
 } from "lucide-react";
 
 const navigation = [
@@ -20,6 +22,8 @@ const navigation = [
   { name: "Communication", href: "/communication", icon: Cable },
   { name: "IPC Credentials", href: "/credentials", icon: Key },
   { name: "VFD Parameters", href: "/vfd", icon: Sliders },
+  { name: "Instruments", href: "/instruments", icon: Wrench },
+  { name: "Project Details", href: "/project-details", icon: FolderOpen },
   { name: "Reports", href: "/reports", icon: BarChart3 },
 ];
 
@@ -27,15 +31,15 @@ export default function Sidebar() {
   const [location] = useLocation();
 
   return (
-    <aside className="w-64 bg-gray-900 text-white flex flex-col">
+    <aside className="w-64 bg-gray-900 text-white flex flex-col fixed left-0 top-0 h-screen z-50">
       <div className="p-6 border-b border-gray-700">
         <div className="flex items-center space-x-3">
           <Settings className="text-2xl text-primary" />
-          <h1 className="text-xl font-bold" data-testid="app-title">AutomationHub</h1>
+          <h1 className="text-lg font-bold" data-testid="app-title">AutomationHub</h1>
         </div>
       </div>
       
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {navigation.map((item) => {
             const isActive = location === item.href;
@@ -53,8 +57,8 @@ export default function Sidebar() {
                     )}
                     data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                   >
-                    <Icon size={18} />
-                    <span>{item.name}</span>
+                    <Icon size={16} />
+                    <span className="text-sm">{item.name}</span>
                   </span>
                 </Link>
               </li>
@@ -69,7 +73,7 @@ export default function Sidebar() {
             <span className="text-sm font-medium">A</span>
           </div>
           <div>
-            <p className="text-sm font-medium" data-testid="user-name">Admin User</p>
+            <p className="text-xs font-medium" data-testid="user-name">Admin User</p>
             <p className="text-xs text-gray-400">Automation Engineer</p>
           </div>
         </div>

@@ -19,11 +19,11 @@ export default function Header({ title, subtitle }: HeaderProps) {
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900" data-testid="page-title">
+          <h2 className="text-lg font-semibold text-gray-900" data-testid="page-title">
             {title}
           </h2>
           {subtitle && (
-            <p className="text-sm text-gray-600 mt-1" data-testid="page-subtitle">
+            <p className="text-xs text-gray-600 mt-1" data-testid="page-subtitle">
               {subtitle}
             </p>
           )}
