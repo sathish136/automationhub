@@ -23,7 +23,7 @@ const navigation = [
   { name: "Program Backups", href: "/backups", icon: Save },
   { name: "Network Equipment", href: "/network", icon: Network },
   { name: "Communication", href: "/communication", icon: Cable },
-  { name: "IPC Management", href: "/ipc-details", icon: Monitor },
+  { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "VFD Parameters", href: "/vfd", icon: Sliders },
   { name: "Instruments", href: "/instruments", icon: Wrench },
   { name: "Reports", href: "/reports", icon: BarChart3 },

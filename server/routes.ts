@@ -255,7 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remove actual passwords from response for security
       const safeDevices = devices.map(device => ({
         ...device,
-        password: "****",
+        ipcPassword: device.ipcPassword ? "****" : undefined,
+        anydeskPassword: device.anydeskPassword ? "****" : undefined,
       }));
       res.json(safeDevices);
     } catch (error) {
@@ -268,8 +269,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const deviceData = insertIpcManagementSchema.parse(req.body);
       const device = await storage.createIpcManagement(deviceData);
-      // Remove password from response
-      const safeDevice = { ...device, password: "****" };
+      // Remove passwords from response
+      const safeDevice = { 
+        ...device, 
+        ipcPassword: device.ipcPassword ? "****" : undefined,
+        anydeskPassword: device.anydeskPassword ? "****" : undefined,
+      };
       res.status(201).json(safeDevice);
     } catch (error) {
       console.error("Error creating IPC device:", error);
@@ -284,8 +289,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!device) {
         return res.status(404).json({ message: "Device not found" });
       }
-      // Remove password from response
-      const safeDevice = { ...device, password: "****" };
+      // Remove passwords from response
+      const safeDevice = { 
+        ...device, 
+        ipcPassword: device.ipcPassword ? "****" : undefined,
+        anydeskPassword: device.anydeskPassword ? "****" : undefined,
+      };
       res.json(safeDevice);
     } catch (error) {
       console.error("Error updating IPC device:", error);

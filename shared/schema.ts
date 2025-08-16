@@ -92,21 +92,58 @@ export const networkEquipment = pgTable("network_equipment", {
 // IPC management
 export const ipcManagement = pgTable("ipc_management", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }).notNull(), // Device Name
-  description: text("description"),
-  amsNetId: varchar("ams_net_id", { length: 50 }).notNull(), // AMS Net ID
-  status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, maintenance
-  model: varchar("model", { length: 100 }), // Device Model
-  vpnIp: varchar("vpn_ip", { length: 45 }), // VPN IP Address
-  lanIp: varchar("lan_ip", { length: 45 }), // LAN IP Address
-  ipAddress: varchar("ip_address", { length: 45 }), // Primary IP Address (legacy)
-  username: varchar("username", { length: 100 }),
-  password: text("password").notNull(), // encrypted
-  operatingSystem: varchar("operating_system", { length: 50 }),
-  remoteAccess: jsonb("remote_access"), // VNC, RDP, SSH details
-  softwareInstalled: jsonb("software_installed"), // list of installed software
-  notes: text("notes"),
+  siteId: varchar("site_id").references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Basic Details
+  deviceName: varchar("device_name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("Active"), // Active, Inactive, Maintenance, Offline
+  amsNetId: varchar("ams_net_id", { length: 50 }).notNull(),
+  vpnIp: varchar("vpn_ip", { length: 45 }),
+  lanIp: varchar("lan_ip", { length: 45 }),
+  anydesk: varchar("anydesk", { length: 100 }),
+  teamviewer: varchar("teamviewer", { length: 100 }),
+  anydeskPassword: varchar("anydesk_password", { length: 255 }),
+  namingSeries: varchar("naming_series", { length: 100 }),
+  ipcUsername: varchar("ipc_username", { length: 100 }),
+  ipcPassword: varchar("ipc_password", { length: 255 }), // encrypted
+  comments: text("comments"),
+
+  // Hardware Specs - IPC CPU
+  manufacture: varchar("manufacture", { length: 100 }),
+  model: varchar("model", { length: 100 }),
+  serialNo: varchar("serial_no", { length: 100 }),
+  mainboard: varchar("mainboard", { length: 100 }),
+  cpu: varchar("cpu", { length: 100 }),
+  flash: varchar("flash", { length: 100 }),
+  powerSupply: varchar("power_supply", { length: 100 }),
+  memory: varchar("memory", { length: 100 }),
+  mac1: varchar("mac1", { length: 17 }),
+  mac2: varchar("mac2", { length: 17 }),
+  operatingSystem: varchar("operating_system", { length: 100 }),
+  imageVersion: varchar("image_version", { length: 100 }),
+  serialNumberOfIpc: varchar("serial_number_of_ipc", { length: 100 }),
+  deviceManagerVersion: varchar("device_manager_version", { length: 100 }),
+
+  // Network 1
+  network1Name: varchar("network1_name", { length: 100 }),
+  network1VirtualDevice: varchar("network1_virtual_device", { length: 100 }),
+  network1Gateway: varchar("network1_gateway", { length: 45 }),
+  network1Address: varchar("network1_address", { length: 45 }),
+  network1Dhcp: varchar("network1_dhcp", { length: 20 }),
+  network1SubnetMask: varchar("network1_subnet_mask", { length: 45 }),
+  network1DnsServers: varchar("network1_dns_servers", { length: 255 }),
+  network1MacAddress: varchar("network1_mac_address", { length: 17 }),
+
+  // Network 2
+  network2Name: varchar("network2_name", { length: 100 }),
+  network2VirtualDevice: varchar("network2_virtual_device", { length: 100 }),
+  network2Gateway: varchar("network2_gateway", { length: 45 }),
+  network2Address: varchar("network2_address", { length: 45 }),
+  network2Dhcp: varchar("network2_dhcp", { length: 20 }),
+  network2SubnetMask: varchar("network2_subnet_mask", { length: 45 }),
+  network2DnsServers: varchar("network2_dns_servers", { length: 255 }),
+  network2MacAddress: varchar("network2_mac_address", { length: 17 }),
+
   lastAccess: timestamp("last_access"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -114,7 +151,7 @@ export const ipcManagement = pgTable("ipc_management", {
   index("idx_ipc_site").on(table.siteId),
   index("idx_ipc_ams_net_id").on(table.amsNetId),
   index("idx_ipc_status").on(table.status),
-  index("idx_ipc_ip").on(table.ipAddress),
+  index("idx_ipc_device_name").on(table.deviceName),
 ]);
 
 // VFD parameters
@@ -343,7 +380,7 @@ export const insertIpcManagementSchema = createInsertSchema(ipcManagement).omit(
   updatedAt: true,
 }).extend({
   amsNetId: z.string().min(1, "AMS Net ID is required"),
-  name: z.string().min(1, "Device name is required"),
+  deviceName: z.string().min(1, "Device name is required"),
 });
 
 export const insertVfdParameterSchema = createInsertSchema(vfdParameters).omit({

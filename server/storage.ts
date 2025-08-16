@@ -250,16 +250,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createIpcManagement(device: InsertIpcManagement): Promise<IpcManagement> {
-    // Encrypt password before storing
-    const hashedPassword = await bcrypt.hash(device.password, 10);
-    const deviceWithEncryptedPassword = {
-      ...device,
-      password: hashedPassword,
-    };
+    // Encrypt password before storing if provided
+    let processedDevice = { ...device };
+    if (device.ipcPassword) {
+      const hashedPassword = await bcrypt.hash(device.ipcPassword, 10);
+      processedDevice = {
+        ...device,
+        ipcPassword: hashedPassword,
+      };
+    }
     
     const [newDevice] = await db
       .insert(ipcManagement)
-      .values(deviceWithEncryptedPassword)
+      .values(processedDevice)
       .returning();
     return newDevice;
   }
@@ -268,8 +271,8 @@ export class DatabaseStorage implements IStorage {
     const updateData = { ...device, updatedAt: new Date() };
     
     // Encrypt password if provided
-    if (device.password) {
-      updateData.password = await bcrypt.hash(device.password, 10);
+    if (device.ipcPassword) {
+      updateData.ipcPassword = await bcrypt.hash(device.ipcPassword, 10);
     }
 
     const [updatedDevice] = await db

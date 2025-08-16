@@ -33,7 +33,7 @@ function Router() {
           <Route path="/instruments" component={Instruments} />
           <Route path="/project-details" component={ProjectDetails} />
           <Route path="/settings" component={Settings} />
-          <Route path="/ipc-details" component={IPCDetails} />
+          <Route path="/ipc-management" component={IPCDetails} />
           <Route component={NotFound} />
         </Switch>
       </main>

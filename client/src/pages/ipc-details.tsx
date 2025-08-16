@@ -84,7 +84,7 @@ export default function IPCDetails() {
   const [showNewIPCForm, setShowNewIPCForm] = useState(false);
   const [newIPCData, setNewIPCData] = useState<Partial<IPCDevice>>({});
   const [showPasswords, setShowPasswords] = useState<{
-    [key: number]: boolean;
+    [key: string]: boolean;
   }>({});
 
   const statusOptions = ["Active", "Inactive", "Maintenance", "Offline"];
@@ -195,7 +195,7 @@ export default function IPCDetails() {
     setNewIPCData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const togglePasswordVisibility = (ipcId: number) => {
+  const togglePasswordVisibility = (ipcId: string | number) => {
     setShowPasswords((prev) => ({
       ...prev,
       [ipcId]: !prev[ipcId],
@@ -246,84 +246,239 @@ export default function IPCDetails() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="space-y-6">
+                  {/* Basic Details Section */}
                   <div>
-                    <Label className="text-xs font-medium">Device Name</Label>
-                    <Input
-                      value={newIPCData.deviceName || ""}
-                      onChange={(e) =>
-                        handleNewIPCChange("deviceName", e.target.value)
-                      }
-                      className="text-sm h-8 mt-1"
-                      placeholder="CP-922BF2"
-                      data-testid="new-device-name"
-                    />
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Basic Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      <div>
+                        <Label className="text-xs font-medium">Device Name</Label>
+                        <Input
+                          value={newIPCData.deviceName || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("deviceName", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="CP-922BF2"
+                          data-testid="new-device-name"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">AMS Net ID</Label>
+                        <Input
+                          value={newIPCData.amsNetId || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("amsNetId", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="172.18.233.236.1.1"
+                          data-testid="new-ams-id"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">Status</Label>
+                        <Select
+                          value={newIPCData.status || "Active"}
+                          onValueChange={(value) => handleNewIPCChange("status", value)}
+                        >
+                          <SelectTrigger className="text-sm h-8 mt-1" data-testid="new-status">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">VPN IP</Label>
+                        <Input
+                          value={newIPCData.vpnIp || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("vpnIp", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="10.0.0.1"
+                          data-testid="new-vpn-ip"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">LAN IP</Label>
+                        <Input
+                          value={newIPCData.lanIp || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("lanIp", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="192.168.1.100"
+                          data-testid="new-lan-ip"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">Model</Label>
+                        <Input
+                          value={newIPCData.model || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("model", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="C6015-0010"
+                          data-testid="new-model"
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Remote Access Section */}
                   <div>
-                    <Label className="text-xs font-medium">AMS Net ID</Label>
-                    <Input
-                      value={newIPCData.amsNetId || ""}
-                      onChange={(e) =>
-                        handleNewIPCChange("amsNetId", e.target.value)
-                      }
-                      className="text-sm h-8 mt-1"
-                      placeholder="172.18.233.236.1.1"
-                      data-testid="new-ams-id"
-                    />
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Remote Access</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-xs font-medium">AnyDesk ID</Label>
+                        <Input
+                          value={newIPCData.anydesk || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("anydesk", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="123 456 789"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">AnyDesk Password</Label>
+                        <Input
+                          type="password"
+                          value={newIPCData.anydeskPassword || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("anydeskPassword", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="Password"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">TeamViewer ID</Label>
+                        <Input
+                          value={newIPCData.teamviewer || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("teamviewer", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="987 654 321"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">Naming Series</Label>
+                        <Input
+                          value={newIPCData.namingSeries || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("namingSeries", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="IPC-001"
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* IPC Credentials Section */}
                   <div>
-                    <Label className="text-xs font-medium">Status</Label>
-                    <Select
-                      value={newIPCData.status || "Active"}
-                      onValueChange={(value) => handleNewIPCChange("status", value)}
-                    >
-                      <SelectTrigger className="text-sm h-8 mt-1" data-testid="new-status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">IPC Credentials</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs font-medium">IPC Username</Label>
+                        <Input
+                          value={newIPCData.ipcUsername || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("ipcUsername", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="Administrator"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">IPC Password</Label>
+                        <Input
+                          type="password"
+                          value={newIPCData.ipcPassword || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("ipcPassword", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="Password"
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Hardware Specs Section */}
                   <div>
-                    <Label className="text-xs font-medium">VPN IP</Label>
-                    <Input
-                      value={newIPCData.vpnIp || ""}
-                      onChange={(e) =>
-                        handleNewIPCChange("vpnIp", e.target.value)
-                      }
-                      className="text-sm h-8 mt-1"
-                      placeholder="10.0.0.1"
-                      data-testid="new-vpn-ip"
-                    />
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Hardware Specifications</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-xs font-medium">Manufacturer</Label>
+                        <Input
+                          value={newIPCData.manufacture || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("manufacture", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="Beckhoff"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">Serial Number</Label>
+                        <Input
+                          value={newIPCData.serialNo || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("serialNo", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="SN123456"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">CPU</Label>
+                        <Input
+                          value={newIPCData.cpu || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("cpu", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="Intel Atom"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">Memory</Label>
+                        <Input
+                          value={newIPCData.memory || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("memory", e.target.value)
+                          }
+                          className="text-sm h-8 mt-1"
+                          placeholder="4GB"
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Comments Section */}
                   <div>
-                    <Label className="text-xs font-medium">LAN IP</Label>
-                    <Input
-                      value={newIPCData.lanIp || ""}
-                      onChange={(e) =>
-                        handleNewIPCChange("lanIp", e.target.value)
-                      }
-                      className="text-sm h-8 mt-1"
-                      placeholder="192.168.1.100"
-                      data-testid="new-lan-ip"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs font-medium">Model</Label>
-                    <Input
-                      value={newIPCData.model || ""}
-                      onChange={(e) =>
-                        handleNewIPCChange("model", e.target.value)
-                      }
-                      className="text-sm h-8 mt-1"
-                      placeholder="C6015-0010"
-                      data-testid="new-model"
-                    />
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Additional Information</h4>
+                    <div>
+                      <Label className="text-xs font-medium">Comments</Label>
+                      <Input
+                        value={newIPCData.comments || ""}
+                        onChange={(e) =>
+                          handleNewIPCChange("comments", e.target.value)
+                        }
+                        className="text-sm h-8 mt-1"
+                        placeholder="Additional notes about this device..."
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-6">
