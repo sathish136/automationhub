@@ -66,12 +66,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/projects", async (req, res) => {
     try {
-      const projectData = insertProjectSchema.parse(req.body);
+      // Handle date string conversion before schema validation
+      const bodyData = { ...req.body };
+      if (bodyData.createdDate && typeof bodyData.createdDate === 'string') {
+        bodyData.createdDate = new Date(bodyData.createdDate);
+      }
+      if (bodyData.planStartDate && typeof bodyData.planStartDate === 'string') {
+        bodyData.planStartDate = new Date(bodyData.planStartDate);
+      }
+      
+      const projectData = insertProjectSchema.parse(bodyData);
       const project = await storage.createProject(projectData);
       res.status(201).json(project);
     } catch (error) {
       console.error("Error creating project:", error);
-      res.status(400).json({ message: "Invalid project data" });
+      res.status(400).json({ message: "Invalid project data", error: error.message });
     }
   });
 

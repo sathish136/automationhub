@@ -11,7 +11,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Building2, Cpu, Droplets, Zap, Settings, CheckCircle, ArrowLeft, Calendar, MapPin, Plus, Eye, Edit, Save, X, Check, Trash2 } from "lucide-react";
 import type { Project, InsertProject, IpcManagement } from "@shared/schema";
 
-interface ProjectFormData {
+interface Project {
+  id: number;
   projectNumber: string;
   projectName: string;
   location: string;
@@ -24,29 +25,16 @@ interface ProjectFormData {
 }
 
 export default function ProjectDetails() {
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Project>>({});
+  const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
-  const [newProjectData, setNewProjectData] = useState<ProjectFormData>({
-    projectNumber: '',
-    projectName: '',
-    location: '',
-    status: 'planning',
-    selectedIpcId: '',
-    selectedSystems: [],
-    createdDate: new Date().toISOString().split('T')[0],
-    planStartDate: '',
-    capacity: ''
-  });
+  const [newProjectData, setNewProjectData] = useState<Partial<Project>>({});
+  
   const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
 
   const queryClient = useQueryClient();
-
-  // Fetch projects
-  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
-    queryKey: ['/api/projects']
-  });
 
   // Fetch IPC management items for dropdown
   const { data: ipcItems = [], isLoading: ipcLoading } = useQuery<IpcManagement[]>({
@@ -64,94 +52,57 @@ export default function ProjectDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       setShowNewProjectForm(false);
-      setNewProjectData({
-        projectNumber: '',
-        projectName: '',
-        location: '',
-        status: 'planning',
-        selectedIpcId: '',
-        selectedSystems: [],
-        createdDate: new Date().toISOString().split('T')[0],
-        planStartDate: '',
-        capacity: ''
-      });
+      setNewProjectData({});
+      setSelectedSystems([]);
     }
   });
 
-  // Update project mutation
-  const updateProjectMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<InsertProject> }) => 
-      fetch(`/api/projects/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      }).then(res => res.json()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-      setEditingProjectId(null);
-      setEditFormData({});
+  const handleViewProject = (projectId: number) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setSelectedProjectId(projectId);
     }
-  });
-
-  // Delete project mutation
-  const deleteProjectMutation = useMutation({
-    mutationFn: (id: string) => 
-      fetch(`/api/projects/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-    }
-  });
-
-  const handleViewProject = (projectId: string) => {
-    setSelectedProjectId(projectId);
   };
 
   const handleEditProject = (project: Project) => {
     setEditingProjectId(project.id);
-    setEditFormData({
-      projectNumber: project.projectNumber,
-      projectName: project.projectName,
-      location: project.location || '',
-      status: project.status,
-      capacity: project.capacity || '',
-      selectedIpcId: project.selectedIpcId || '',
-      selectedSystems: project.selectedSystems || [],
-      planStartDate: project.planStartDate ? new Date(project.planStartDate).toISOString().split('T')[0] : ''
-    });
+    setEditFormData(project);
     setSelectedSystems(project.selectedSystems || []);
   };
 
-  const handleDeleteProject = (projectId: string) => {
+  const handleDeleteProject = (projectId: number) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
-      deleteProjectMutation.mutate(projectId);
+      setProjects(prev => prev.filter(p => p.id !== projectId));
     }
   };
 
   const handleUpdateProject = () => {
     if (editingProjectId) {
-      const updateData: Partial<InsertProject> = {
-        ...editFormData,
-        selectedSystems,
-        planStartDate: editFormData.planStartDate ? new Date(editFormData.planStartDate) : null,
-        createdDate: editFormData.createdDate ? new Date(editFormData.createdDate) : null
-      };
-      updateProjectMutation.mutate({ id: editingProjectId, data: updateData });
+      const updatedProject = { ...editFormData, selectedSystems, id: editingProjectId } as Project;
+      setProjects(prev => prev.map(p => p.id === editingProjectId ? updatedProject : p));
+      setEditingProjectId(null);
+      setEditFormData({});
     }
   };
 
   const handleCreateProject = () => {
+    if (!newProjectData.projectNumber || !newProjectData.projectName) {
+      alert('Please fill in project number and name');
+      return;
+    }
+
     const selectedIpc = ipcItems.find(item => item.id === newProjectData.selectedIpcId);
     
     const projectData: InsertProject = {
-      projectNumber: newProjectData.projectNumber,
-      projectName: newProjectData.projectName,
+      projectNumber: newProjectData.projectNumber || '',
+      projectName: newProjectData.projectName || '',
       location: newProjectData.location || null,
-      status: newProjectData.status,
+      status: newProjectData.status || 'planning',
       capacity: newProjectData.capacity || null,
       selectedIpcId: newProjectData.selectedIpcId || null,
       ipcName: selectedIpc?.ipcName || null,
       selectedSystems: selectedSystems.length > 0 ? selectedSystems : null,
-      createdDate: new Date(newProjectData.createdDate),
+      createdDate: newProjectData.createdDate ? new Date(newProjectData.createdDate) : new Date(),
       planStartDate: newProjectData.planStartDate ? new Date(newProjectData.planStartDate) : null
     };
 
@@ -159,14 +110,11 @@ export default function ProjectDetails() {
   };
 
   const systemOptions = [
-    "SCADA System",
-    "HMI Interface", 
-    "PLC Programming",
-    "VFD Configuration",
-    "Sensor Integration",
-    "Data Logging",
-    "Alarm System",
-    "Remote Monitoring"
+    "ETP",
+    "MBR", 
+    "RO",
+    "VTS",
+    "REJECT_RO"
   ];
 
   const handleSystemChange = (system: string, checked: boolean) => {
@@ -181,25 +129,14 @@ export default function ProjectDetails() {
     return ipcItems.find(item => item.id === ipcId);
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'planning': { color: 'bg-blue-100 text-blue-800', label: 'Planning' },
-      'in-progress': { color: 'bg-yellow-100 text-yellow-800', label: 'In Progress' },
-      'completed': { color: 'bg-green-100 text-green-800', label: 'Completed' },
-      'on-hold': { color: 'bg-gray-100 text-gray-800', label: 'On Hold' }
-    };
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['planning'];
-    return <Badge className={config.color}>{config.label}</Badge>;
-  };
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  const selectedProject = Array.isArray(projects) ? projects.find((p: Project) => p.id === selectedProjectId) : undefined;
-
-  if (projectsLoading || ipcLoading) {
+  if (ipcLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="p-6">
-          <div className="text-center">Loading projects...</div>
+          <div className="text-center">Loading...</div>
         </div>
       </div>
     );
@@ -224,7 +161,6 @@ export default function ProjectDetails() {
               <h1 className="text-2xl font-bold" data-testid="text-project-title">
                 {selectedProject.projectName}
               </h1>
-              {getStatusBadge(selectedProject.status)}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -242,10 +178,7 @@ export default function ProjectDetails() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Location</Label>
-                    <p className="flex items-center gap-2" data-testid="text-project-location">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      {selectedProject.location || 'Not specified'}
-                    </p>
+                    <p data-testid="text-project-location">{selectedProject.location || 'Not specified'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Capacity</Label>
@@ -253,17 +186,11 @@ export default function ProjectDetails() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Created Date</Label>
-                    <p className="flex items-center gap-2" data-testid="text-project-created">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      {selectedProject.createdDate ? new Date(selectedProject.createdDate).toLocaleDateString() : 'Not specified'}
-                    </p>
+                    <p data-testid="text-project-created">{selectedProject.createdDate || 'Not specified'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Plan Start Date</Label>
-                    <p className="flex items-center gap-2" data-testid="text-project-start">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      {selectedProject.planStartDate ? new Date(selectedProject.planStartDate).toLocaleDateString() : 'Not specified'}
-                    </p>
+                    <p data-testid="text-project-start">{selectedProject.planStartDate || 'Not specified'}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -316,35 +243,19 @@ export default function ProjectDetails() {
                 </Card>
               )}
             </div>
-
-            {selectedProject.selectedSystems && selectedProject.selectedSystems.length > 0 && (
-              <Card className="mt-6" data-testid="card-project-systems">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    Selected Systems
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {selectedProject.selectedSystems.map((system, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm" data-testid={`text-system-${index}`}>{system}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         ) : (
           <div className="max-w-6xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="text-page-title">Project Details</h1>
+              <p className="text-gray-600">Manage all automation projects and configurations</p>
+            </div>
+
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold" data-testid="text-page-title">Project Management</h1>
+              <h2 className="text-xl font-semibold">All Projects ({projects.length})</h2>
               <Button
                 onClick={() => setShowNewProjectForm(true)}
-                className="flex items-center gap-2"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
                 data-testid="button-new-project"
               >
                 <Plus className="h-4 w-4" />
@@ -353,160 +264,168 @@ export default function ProjectDetails() {
             </div>
 
             {showNewProjectForm && (
-              <Card className="mb-6" data-testid="card-new-project-form">
-                <CardHeader>
-                  <CardTitle>Create New Project</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="projectNumber">Project Number</Label>
-                      <Input
-                        id="projectNumber"
-                        value={newProjectData.projectNumber}
-                        onChange={(e) => setNewProjectData(prev => ({ ...prev, projectNumber: e.target.value }))}
-                        placeholder="e.g., PRJ-2024-001"
-                        data-testid="input-project-number"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="projectName">Project Name</Label>
-                      <Input
-                        id="projectName"
-                        value={newProjectData.projectName}
-                        onChange={(e) => setNewProjectData(prev => ({ ...prev, projectName: e.target.value }))}
-                        placeholder="Enter project name"
-                        data-testid="input-project-name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={newProjectData.location}
-                        onChange={(e) => setNewProjectData(prev => ({ ...prev, location: e.target.value }))}
-                        placeholder="Project location"
-                        data-testid="input-project-location"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="capacity">Capacity</Label>
-                      <Input
-                        id="capacity"
-                        value={newProjectData.capacity}
-                        onChange={(e) => setNewProjectData(prev => ({ ...prev, capacity: e.target.value }))}
-                        placeholder="e.g., 100 MW"
-                        data-testid="input-project-capacity"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="status">Status</Label>
-                      <Select
-                        value={newProjectData.status}
-                        onValueChange={(value) => setNewProjectData(prev => ({ ...prev, status: value }))}
-                      >
-                        <SelectTrigger data-testid="select-project-status">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="planning">Planning</SelectItem>
-                          <SelectItem value="in-progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="on-hold">On Hold</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="selectedIpcId">Select IPC Item</Label>
-                      <Select
-                        value={newProjectData.selectedIpcId}
-                        onValueChange={(value) => setNewProjectData(prev => ({ ...prev, selectedIpcId: value }))}
-                      >
-                        <SelectTrigger data-testid="select-ipc-item">
-                          <SelectValue placeholder="Choose IPC item" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ipcItems.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.ipcName} - {item.ipAddress}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="createdDate">Created Date</Label>
-                      <Input
-                        id="createdDate"
-                        type="date"
-                        value={newProjectData.createdDate}
-                        onChange={(e) => setNewProjectData(prev => ({ ...prev, createdDate: e.target.value }))}
-                        data-testid="input-created-date"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="planStartDate">Plan Start Date</Label>
-                      <Input
-                        id="planStartDate"
-                        type="date"
-                        value={newProjectData.planStartDate}
-                        onChange={(e) => setNewProjectData(prev => ({ ...prev, planStartDate: e.target.value }))}
-                        data-testid="input-plan-start-date"
-                      />
-                    </div>
-                  </div>
-
+              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6" data-testid="card-new-project-form">
+                <h3 className="text-lg font-semibold text-blue-600 mb-6">Create New Project</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                   <div>
-                    <Label>Systems to Include</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                      {systemOptions.map((system) => (
-                        <div key={system} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={system}
-                            checked={selectedSystems.includes(system)}
-                            onCheckedChange={(checked) => handleSystemChange(system, checked as boolean)}
-                            data-testid={`checkbox-system-${system.toLowerCase().replace(/\s+/g, '-')}`}
-                          />
-                          <Label htmlFor={system} className="text-sm">{system}</Label>
-                        </div>
-                      ))}
-                    </div>
+                    <Label htmlFor="projectNumber" className="text-sm font-medium text-gray-700 mb-2 block">Project Number</Label>
+                    <Input
+                      id="projectNumber"
+                      value={newProjectData.projectNumber || ''}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, projectNumber: e.target.value }))}
+                      placeholder="PRJ-2025-XXX"
+                      className="w-full"
+                      data-testid="input-project-number"
+                    />
                   </div>
+                  <div>
+                    <Label htmlFor="projectName" className="text-sm font-medium text-gray-700 mb-2 block">Project Name</Label>
+                    <Input
+                      id="projectName"
+                      value={newProjectData.projectName || ''}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, projectName: e.target.value }))}
+                      placeholder="Enter project name"
+                      className="w-full"
+                      data-testid="input-project-name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="location" className="text-sm font-medium text-gray-700 mb-2 block">Location</Label>
+                    <Input
+                      id="location"
+                      value={newProjectData.location || ''}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="Project location"
+                      className="w-full"
+                      data-testid="input-project-location"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="status" className="text-sm font-medium text-gray-700 mb-2 block">Status</Label>
+                    <Select
+                      value={newProjectData.status || 'Planning'}
+                      onValueChange={(value) => setNewProjectData(prev => ({ ...prev, status: value }))}
+                    >
+                      <SelectTrigger className="w-full" data-testid="select-project-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Planning">Planning</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="On Hold">On Hold</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleCreateProject}
-                      disabled={!newProjectData.projectNumber || !newProjectData.projectName || createProjectMutation.isPending}
-                      data-testid="button-save-project"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowNewProjectForm(false)}
-                      data-testid="button-cancel-project"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                  <div>
+                    <Label htmlFor="capacity" className="text-sm font-medium text-gray-700 mb-2 block">Capacity</Label>
+                    <Input
+                      id="capacity"
+                      value={newProjectData.capacity || ''}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, capacity: e.target.value }))}
+                      placeholder="500 KLD"
+                      className="w-full"
+                      data-testid="input-project-capacity"
+                    />
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <Label htmlFor="selectedIpcId" className="text-sm font-medium text-gray-700 mb-2 block">ITM Details</Label>
+                    <Select
+                      value={newProjectData.selectedIpcId || ''}
+                      onValueChange={(value) => setNewProjectData(prev => ({ ...prev, selectedIpcId: value }))}
+                    >
+                      <SelectTrigger className="w-full" data-testid="select-ipc-item">
+                        <SelectValue placeholder="IPC model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ipcItems.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.ipcName} - {item.ipAddress}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="createdDate" className="text-sm font-medium text-gray-700 mb-2 block">Created Date</Label>
+                    <Input
+                      id="createdDate"
+                      type="date"
+                      value={newProjectData.createdDate || new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, createdDate: e.target.value }))}
+                      className="w-full"
+                      data-testid="input-created-date"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="planStartDate" className="text-sm font-medium text-gray-700 mb-2 block">Plan Start Date</Label>
+                    <Input
+                      id="planStartDate"
+                      type="date"
+                      value={newProjectData.planStartDate || ''}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, planStartDate: e.target.value }))}
+                      className="w-full"
+                      data-testid="input-plan-start-date"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <Label className="text-sm font-medium text-gray-700 mb-3 block">Plant Systems</Label>
+                  <div className="flex gap-6">
+                    {systemOptions.map((system) => (
+                      <div key={system} className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id={system}
+                          name="plantSystem"
+                          checked={selectedSystems.includes(system)}
+                          onChange={(e) => handleSystemChange(system, e.target.checked)}
+                          className="w-4 h-4 text-blue-600"
+                          data-testid={`radio-system-${system.toLowerCase()}`}
+                        />
+                        <Label htmlFor={system} className="text-sm font-medium text-gray-700">{system}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleCreateProject}
+                    disabled={!newProjectData.projectNumber || !newProjectData.projectName || createProjectMutation.isPending}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+                    data-testid="button-create-project"
+                  >
+                    {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowNewProjectForm(false)}
+                    className="px-6 py-2 rounded-lg"
+                    data-testid="button-cancel-project"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             )}
 
-            <Card data-testid="card-projects-list">
-              <CardHeader>
-                <CardTitle>All Projects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!Array.isArray(projects) || projects.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500" data-testid="text-no-projects">
-                    No projects found. Create your first project to get started.
+            <div className="bg-white rounded-lg border border-gray-200" data-testid="card-projects-list">
+              <div className="p-6">
+                {projects.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500" data-testid="text-no-projects">
+                    <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+                    <p className="text-gray-500">Create your first project to get started.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {projects.map((project: Project) => (
+                    {projects.map((project) => (
                       <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50" data-testid={`card-project-${project.id}`}>
                         <div className="flex-1">
                           <div className="flex items-center gap-4">
@@ -514,19 +433,17 @@ export default function ProjectDetails() {
                               <h3 className="font-semibold" data-testid={`text-project-name-${project.id}`}>{project.projectName}</h3>
                               <p className="text-sm text-gray-600" data-testid={`text-project-number-${project.id}`}>{project.projectNumber}</p>
                             </div>
-                            {getStatusBadge(project.status)}
+                            <Badge className="bg-blue-100 text-blue-800">{project.status}</Badge>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {project.location || 'No location'}
                             </span>
-                            {project.createdDate && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(project.createdDate).toLocaleDateString()}
-                              </span>
-                            )}
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {project.createdDate || 'No date'}
+                            </span>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -560,8 +477,8 @@ export default function ProjectDetails() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         )}
       </div>
