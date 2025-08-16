@@ -101,6 +101,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync sites from IPC management
+  app.post("/api/sites/sync-from-ipc", async (req, res) => {
+    try {
+      const ipcDevices = await storage.getIpcManagement();
+      const existingSites = await storage.getAllSites();
+      const existingIPs = new Set(existingSites.map(site => site.ipAddress));
+      
+      let created = 0;
+      
+      for (const ipc of ipcDevices) {
+        // Create sites for VPN IPs
+        if (ipc.vpnIp && !existingIPs.has(ipc.vpnIp)) {
+          await storage.createSite({
+            name: `${ipc.deviceName} (VPN)`,
+            description: `Monitoring ${ipc.deviceName} via VPN connection`,
+            ipAddress: ipc.vpnIp,
+            siteType: "production",
+            location: null,
+            isActive: true,
+          });
+          created++;
+          existingIPs.add(ipc.vpnIp);
+        }
+        
+        // Create sites for LAN IPs
+        if (ipc.lanIp && !existingIPs.has(ipc.lanIp)) {
+          await storage.createSite({
+            name: `${ipc.deviceName} (LAN)`,
+            description: `Monitoring ${ipc.deviceName} via LAN connection`,
+            ipAddress: ipc.lanIp,
+            siteType: "production", 
+            location: null,
+            isActive: true,
+          });
+          created++;
+          existingIPs.add(ipc.lanIp);
+        }
+      }
+      
+      res.json({ created, total: ipcDevices.length });
+    } catch (error) {
+      console.error("Error syncing sites from IPC:", error);
+      res.status(500).json({ message: "Failed to sync sites from IPC management" });
+    }
+  });
+
   // Ping endpoints
   app.post("/api/sites/:id/ping", async (req, res) => {
     try {
