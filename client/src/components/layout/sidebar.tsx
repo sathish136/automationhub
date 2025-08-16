@@ -23,6 +23,7 @@ const navigation = [
   { name: "Site Events", href: "/site-events", icon: Bell },
   { name: "Site Database", href: "/site-database", icon: Database },
   { name: "PLC Tag Monitoring", href: "/plc-tags", icon: Activity },
+  { name: "PLC Tag Management", href: "/plc-tag-management", icon: Settings2 },
   { name: "Program Backups", href: "/backups", icon: Save },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "VFD Parameters", href: "/vfd", icon: Sliders },

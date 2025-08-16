@@ -73,6 +73,16 @@ export interface IStorage {
   createAlert(alert: InsertAlert): Promise<Alert>;
   markAlertAsRead(id: string): Promise<void>;
   markAlertAsResolved(id: string): Promise<void>;
+
+  // PLC Tags
+  getAllPlcTags(): Promise<PlcTag[]>;
+  getPlcTagsBySite(siteId: string): Promise<PlcTag[]>;
+  createPlcTag(tag: InsertPlcTag): Promise<PlcTag>;
+  bulkCreatePlcTags(siteId: string, tags: Omit<InsertPlcTag, 'siteId'>[]): Promise<PlcTag[]>;
+  updatePlcTag(id: string, tag: Partial<InsertPlcTag>): Promise<PlcTag | undefined>;
+  deletePlcTag(id: string): Promise<boolean>;
+  updatePlcTagValue(id: string, value: string): Promise<void>;
+  createPlcTagAlert(tagId: string, value: string): Promise<void>;
   getUnreadAlertsCount(): Promise<number>;
 
   // PLC Tags
@@ -414,6 +424,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // PLC Tags
+  async getAllPlcTags(): Promise<PlcTag[]> {
+    return await db.select().from(plcTags).orderBy(desc(plcTags.createdAt));
+  }
+
+  async getPlcTagsBySite(siteId: string): Promise<PlcTag[]> {
+    return await db.select().from(plcTags).where(eq(plcTags.siteId, siteId)).orderBy(desc(plcTags.createdAt));
+  }
+
   async getPlcTags(siteId?: string): Promise<PlcTag[]> {
     if (siteId) {
       return await db.select().from(plcTags).where(eq(plcTags.siteId, siteId)).orderBy(desc(plcTags.createdAt));
@@ -431,6 +449,12 @@ export class DatabaseStorage implements IStorage {
   async createPlcTag(tag: InsertPlcTag): Promise<PlcTag> {
     const [newTag] = await db.insert(plcTags).values(tag).returning();
     return newTag;
+  }
+
+  async bulkCreatePlcTags(siteId: string, tags: Omit<InsertPlcTag, 'siteId'>[]): Promise<PlcTag[]> {
+    const tagsWithSiteId = tags.map(tag => ({ ...tag, siteId }));
+    const newTags = await db.insert(plcTags).values(tagsWithSiteId).returning();
+    return newTags;
   }
 
   async updatePlcTag(id: string, tag: Partial<InsertPlcTag>): Promise<PlcTag | undefined> {
@@ -458,6 +482,13 @@ export class DatabaseStorage implements IStorage {
           oldValue: currentTag.lastValue,
           newValue: newValue,
         });
+
+        // Check if we need to create an alert for this tag change
+        if (currentTag.alarmOnTrue && newValue.toLowerCase() === 'true') {
+          await this.createPlcTagAlert(id, newValue);
+        } else if (currentTag.alarmOnFalse && newValue.toLowerCase() === 'false') {
+          await this.createPlcTagAlert(id, newValue);
+        }
       }
     }
     
@@ -470,6 +501,23 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date() 
       })
       .where(eq(plcTags.id, id));
+  }
+
+  async createPlcTagAlert(tagId: string, value: string): Promise<void> {
+    // Get the tag details first
+    const [tag] = await db.select().from(plcTags).where(eq(plcTags.id, tagId));
+    if (!tag) return;
+
+    // Create an alert for this PLC tag event
+    await db.insert(alerts).values({
+      siteId: tag.siteId,
+      type: 'plc_tag_alarm',
+      severity: tag.severityLevel as 'info' | 'warning' | 'critical',
+      title: `${tag.tagName} Triggered`,
+      description: `PLC tag ${tag.tagName} (${tag.plcAddress}) changed to ${value}`,
+      isRead: false,
+      isResolved: false,
+    });
   }
 
   // PLC Tag History

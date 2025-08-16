@@ -616,6 +616,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk upload PLC tags
+  app.post("/api/plc-tags/bulk", async (req, res) => {
+    try {
+      const { siteId, tags } = req.body;
+      
+      if (!siteId || !Array.isArray(tags)) {
+        return res.status(400).json({ message: "siteId and tags array are required" });
+      }
+
+      // Validate each tag before bulk insert
+      const validatedTags = [];
+      for (const tag of tags) {
+        const tagWithDefaults = {
+          ...tag,
+          isActive: tag.isActive !== undefined ? tag.isActive : true,
+          alarmOnTrue: tag.alarmOnTrue !== undefined ? tag.alarmOnTrue : true,
+          alarmOnFalse: tag.alarmOnFalse !== undefined ? tag.alarmOnFalse : false,
+          severityLevel: tag.severityLevel || 'warning',
+          dataType: tag.dataType || 'BOOL'
+        };
+
+        const result = insertPlcTagSchema.omit({ siteId: true }).safeParse(tagWithDefaults);
+        if (!result.success) {
+          return res.status(400).json({ 
+            message: "Validation failed for tag: " + tag.tagName, 
+            errors: result.error.errors 
+          });
+        }
+        validatedTags.push(result.data);
+      }
+
+      const createdTags = await storage.bulkCreatePlcTags(siteId, validatedTags);
+      res.status(201).json(createdTags);
+    } catch (error) {
+      console.error("Error bulk creating PLC tags:", error);
+      res.status(500).json({ message: "Failed to bulk create PLC tags" });
+    }
+  });
+
   // PLC Tag History
   app.get("/api/plc-tags/:id/history", async (req, res) => {
     try {
