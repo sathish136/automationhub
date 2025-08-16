@@ -3,7 +3,7 @@ import {
   uptimeHistory,
   programBackups,
   networkEquipment,
-  ipcCredentials,
+  ipcManagement,
   vfdParameters,
   communicationInterfaces,
   instrumentData,
@@ -17,8 +17,8 @@ import {
   type InsertProgramBackup,
   type NetworkEquipment,
   type InsertNetworkEquipment,
-  type IpcCredential,
-  type InsertIpcCredential,
+  type IpcManagement,
+  type InsertIpcManagement,
   type VfdParameter,
   type InsertVfdParameter,
   type CommunicationInterface,
@@ -60,10 +60,10 @@ export interface IStorage {
   deleteNetworkEquipment(id: string): Promise<boolean>;
 
   // IPC Credentials
-  getIpcCredentials(siteId?: string): Promise<IpcCredential[]>;
-  createIpcCredential(credential: InsertIpcCredential): Promise<IpcCredential>;
-  updateIpcCredential(id: string, credential: Partial<InsertIpcCredential>): Promise<IpcCredential | undefined>;
-  deleteIpcCredential(id: string): Promise<boolean>;
+  getIpcManagement(siteId?: string): Promise<IpcManagement[]>;
+  createIpcManagement(device: InsertIpcManagement): Promise<IpcManagement>;
+  updateIpcManagement(id: string, device: Partial<InsertIpcManagement>): Promise<IpcManagement | undefined>;
+  deleteIpcManagement(id: string): Promise<boolean>;
 
   // VFD Parameters
   getVfdParameters(siteId?: string): Promise<VfdParameter[]>;
@@ -240,48 +240,48 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  // IPC Credentials
-  async getIpcCredentials(siteId?: string): Promise<IpcCredential[]> {
-    const query = db.select().from(ipcCredentials);
+  // IPC Management
+  async getIpcManagement(siteId?: string): Promise<IpcManagement[]> {
+    const query = db.select().from(ipcManagement);
     if (siteId) {
-      return await query.where(eq(ipcCredentials.siteId, siteId));
+      return await query.where(eq(ipcManagement.siteId, siteId));
     }
     return await query;
   }
 
-  async createIpcCredential(credential: InsertIpcCredential): Promise<IpcCredential> {
+  async createIpcManagement(device: InsertIpcManagement): Promise<IpcManagement> {
     // Encrypt password before storing
-    const hashedPassword = await bcrypt.hash(credential.password, 10);
-    const credentialWithEncryptedPassword = {
-      ...credential,
+    const hashedPassword = await bcrypt.hash(device.password, 10);
+    const deviceWithEncryptedPassword = {
+      ...device,
       password: hashedPassword,
     };
     
-    const [newCredential] = await db
-      .insert(ipcCredentials)
-      .values(credentialWithEncryptedPassword)
+    const [newDevice] = await db
+      .insert(ipcManagement)
+      .values(deviceWithEncryptedPassword)
       .returning();
-    return newCredential;
+    return newDevice;
   }
 
-  async updateIpcCredential(id: string, credential: Partial<InsertIpcCredential>): Promise<IpcCredential | undefined> {
-    const updateData = { ...credential, updatedAt: new Date() };
+  async updateIpcManagement(id: string, device: Partial<InsertIpcManagement>): Promise<IpcManagement | undefined> {
+    const updateData = { ...device, updatedAt: new Date() };
     
     // Encrypt password if provided
-    if (credential.password) {
-      updateData.password = await bcrypt.hash(credential.password, 10);
+    if (device.password) {
+      updateData.password = await bcrypt.hash(device.password, 10);
     }
 
-    const [updatedCredential] = await db
-      .update(ipcCredentials)
+    const [updatedDevice] = await db
+      .update(ipcManagement)
       .set(updateData)
-      .where(eq(ipcCredentials.id, id))
+      .where(eq(ipcManagement.id, id))
       .returning();
-    return updatedCredential;
+    return updatedDevice;
   }
 
-  async deleteIpcCredential(id: string): Promise<boolean> {
-    const result = await db.delete(ipcCredentials).where(eq(ipcCredentials.id, id));
+  async deleteIpcManagement(id: string): Promise<boolean> {
+    const result = await db.delete(ipcManagement).where(eq(ipcManagement.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 

@@ -8,7 +8,7 @@ import fs from "fs/promises";
 import { 
   insertSiteSchema, 
   insertNetworkEquipmentSchema, 
-  insertIpcCredentialSchema, 
+  insertIpcManagementSchema, 
   insertVfdParameterSchema, 
   insertProgramBackupSchema,
   insertCommunicationInterfaceSchema,
@@ -247,62 +247,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // IPC credentials
-  app.get("/api/ipc-credentials", async (req, res) => {
+  // IPC management
+  app.get("/api/ipc-management", async (req, res) => {
     try {
       const siteId = req.query.siteId as string;
-      const credentials = await storage.getIpcCredentials(siteId);
+      const devices = await storage.getIpcManagement(siteId);
       // Remove actual passwords from response for security
-      const safeCredentials = credentials.map(cred => ({
-        ...cred,
+      const safeDevices = devices.map(device => ({
+        ...device,
         password: "****",
       }));
-      res.json(safeCredentials);
+      res.json(safeDevices);
     } catch (error) {
-      console.error("Error fetching IPC credentials:", error);
-      res.status(500).json({ message: "Failed to fetch IPC credentials" });
+      console.error("Error fetching IPC devices:", error);
+      res.status(500).json({ message: "Failed to fetch IPC devices" });
     }
   });
 
-  app.post("/api/ipc-credentials", async (req, res) => {
+  app.post("/api/ipc-management", async (req, res) => {
     try {
-      const credentialData = insertIpcCredentialSchema.parse(req.body);
-      const credential = await storage.createIpcCredential(credentialData);
+      const deviceData = insertIpcManagementSchema.parse(req.body);
+      const device = await storage.createIpcManagement(deviceData);
       // Remove password from response
-      const safeCredential = { ...credential, password: "****" };
-      res.status(201).json(safeCredential);
+      const safeDevice = { ...device, password: "****" };
+      res.status(201).json(safeDevice);
     } catch (error) {
-      console.error("Error creating IPC credential:", error);
-      res.status(400).json({ message: "Invalid credential data" });
+      console.error("Error creating IPC device:", error);
+      res.status(400).json({ message: "Invalid device data" });
     }
   });
 
-  app.put("/api/ipc-credentials/:id", async (req, res) => {
+  app.put("/api/ipc-management/:id", async (req, res) => {
     try {
-      const credentialData = insertIpcCredentialSchema.partial().parse(req.body);
-      const credential = await storage.updateIpcCredential(req.params.id, credentialData);
-      if (!credential) {
-        return res.status(404).json({ message: "Credential not found" });
+      const deviceData = insertIpcManagementSchema.partial().parse(req.body);
+      const device = await storage.updateIpcManagement(req.params.id, deviceData);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
       }
       // Remove password from response
-      const safeCredential = { ...credential, password: "****" };
-      res.json(safeCredential);
+      const safeDevice = { ...device, password: "****" };
+      res.json(safeDevice);
     } catch (error) {
-      console.error("Error updating IPC credential:", error);
-      res.status(400).json({ message: "Invalid credential data" });
+      console.error("Error updating IPC device:", error);
+      res.status(400).json({ message: "Invalid device data" });
     }
   });
 
-  app.delete("/api/ipc-credentials/:id", async (req, res) => {
+  app.delete("/api/ipc-management/:id", async (req, res) => {
     try {
-      const success = await storage.deleteIpcCredential(req.params.id);
+      const success = await storage.deleteIpcManagement(req.params.id);
       if (!success) {
-        return res.status(404).json({ message: "Credential not found" });
+        return res.status(404).json({ message: "Device not found" });
       }
       res.status(204).send();
     } catch (error) {
-      console.error("Error deleting IPC credential:", error);
-      res.status(500).json({ message: "Failed to delete IPC credential" });
+      console.error("Error deleting IPC device:", error);
+      res.status(500).json({ message: "Failed to delete IPC device" });
     }
   });
 

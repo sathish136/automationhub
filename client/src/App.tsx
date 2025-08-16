@@ -8,7 +8,6 @@ import Sites from "@/pages/sites";
 import Backups from "@/pages/backups";
 import Network from "@/pages/network";
 import Communication from "@/pages/communication";
-import Credentials from "@/pages/credentials";
 import VFD from "@/pages/vfd";
 import Reports from "@/pages/reports";
 import Instruments from "@/pages/instruments";
@@ -29,7 +28,6 @@ function Router() {
           <Route path="/backups" component={Backups} />
           <Route path="/network" component={Network} />
           <Route path="/communication" component={Communication} />
-          <Route path="/credentials" component={Credentials} />
           <Route path="/vfd" component={VFD} />
           <Route path="/reports" component={Reports} />
           <Route path="/instruments" component={Instruments} />

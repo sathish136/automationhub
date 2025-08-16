@@ -24,7 +24,6 @@ const navigation = [
   { name: "Network Equipment", href: "/network", icon: Network },
   { name: "Communication", href: "/communication", icon: Cable },
   { name: "IPC Management", href: "/ipc-details", icon: Monitor },
-  { name: "IPC Credentials", href: "/credentials", icon: Key },
   { name: "VFD Parameters", href: "/vfd", icon: Sliders },
   { name: "Instruments", href: "/instruments", icon: Wrench },
   { name: "Reports", href: "/reports", icon: BarChart3 },

@@ -89,14 +89,19 @@ export const networkEquipment = pgTable("network_equipment", {
   index("idx_network_ip").on(table.ipAddress),
 ]);
 
-// IPC credentials
-export const ipcCredentials = pgTable("ipc_credentials", {
+// IPC management
+export const ipcManagement = pgTable("ipc_management", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(), // Device Name
   description: text("description"),
-  ipAddress: varchar("ip_address", { length: 45 }).notNull(),
-  username: varchar("username", { length: 100 }).notNull(),
+  amsNetId: varchar("ams_net_id", { length: 50 }).notNull(), // AMS Net ID
+  status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, maintenance
+  model: varchar("model", { length: 100 }), // Device Model
+  vpnIp: varchar("vpn_ip", { length: 45 }), // VPN IP Address
+  lanIp: varchar("lan_ip", { length: 45 }), // LAN IP Address
+  ipAddress: varchar("ip_address", { length: 45 }), // Primary IP Address (legacy)
+  username: varchar("username", { length: 100 }),
   password: text("password").notNull(), // encrypted
   operatingSystem: varchar("operating_system", { length: 50 }),
   remoteAccess: jsonb("remote_access"), // VNC, RDP, SSH details
@@ -107,6 +112,8 @@ export const ipcCredentials = pgTable("ipc_credentials", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_ipc_site").on(table.siteId),
+  index("idx_ipc_ams_net_id").on(table.amsNetId),
+  index("idx_ipc_status").on(table.status),
   index("idx_ipc_ip").on(table.ipAddress),
 ]);
 
@@ -236,7 +243,7 @@ export const sitesRelations = relations(sites, ({ many }) => ({
   uptimeHistory: many(uptimeHistory),
   programBackups: many(programBackups),
   networkEquipment: many(networkEquipment),
-  ipcCredentials: many(ipcCredentials),
+  ipcManagement: many(ipcManagement),
   vfdParameters: many(vfdParameters),
   communicationInterfaces: many(communicationInterfaces),
   alerts: many(alerts),
@@ -263,9 +270,9 @@ export const networkEquipmentRelations = relations(networkEquipment, ({ one }) =
   }),
 }));
 
-export const ipcCredentialsRelations = relations(ipcCredentials, ({ one }) => ({
+export const ipcManagementRelations = relations(ipcManagement, ({ one }) => ({
   site: one(sites, {
-    fields: [ipcCredentials.siteId],
+    fields: [ipcManagement.siteId],
     references: [sites.id],
   }),
 }));
@@ -330,10 +337,13 @@ export const insertNetworkEquipmentSchema = createInsertSchema(networkEquipment)
   updatedAt: true,
 });
 
-export const insertIpcCredentialSchema = createInsertSchema(ipcCredentials).omit({
+export const insertIpcManagementSchema = createInsertSchema(ipcManagement).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  amsNetId: z.string().min(1, "AMS Net ID is required"),
+  name: z.string().min(1, "Device name is required"),
 });
 
 export const insertVfdParameterSchema = createInsertSchema(vfdParameters).omit({
@@ -373,8 +383,8 @@ export type ProgramBackup = typeof programBackups.$inferSelect;
 export type InsertProgramBackup = z.infer<typeof insertProgramBackupSchema>;
 export type NetworkEquipment = typeof networkEquipment.$inferSelect;
 export type InsertNetworkEquipment = z.infer<typeof insertNetworkEquipmentSchema>;
-export type IpcCredential = typeof ipcCredentials.$inferSelect;
-export type InsertIpcCredential = z.infer<typeof insertIpcCredentialSchema>;
+export type IpcManagement = typeof ipcManagement.$inferSelect;
+export type InsertIpcManagement = z.infer<typeof insertIpcManagementSchema>;
 export type VfdParameter = typeof vfdParameters.$inferSelect;
 export type InsertVfdParameter = z.infer<typeof insertVfdParameterSchema>;
 export type CommunicationInterface = typeof communicationInterfaces.$inferSelect;
