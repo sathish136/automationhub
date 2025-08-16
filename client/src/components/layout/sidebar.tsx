@@ -16,6 +16,7 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Project Details", href: "/project-details", icon: FolderOpen },
   { name: "Site Monitoring", href: "/sites", icon: Building },
   { name: "Program Backups", href: "/backups", icon: Save },
   { name: "Network Equipment", href: "/network", icon: Network },
@@ -23,7 +24,6 @@ const navigation = [
   { name: "IPC Credentials", href: "/credentials", icon: Key },
   { name: "VFD Parameters", href: "/vfd", icon: Sliders },
   { name: "Instruments", href: "/instruments", icon: Wrench },
-  { name: "Project Details", href: "/project-details", icon: FolderOpen },
   { name: "Reports", href: "/reports", icon: BarChart3 },
 ];
 
