@@ -12,6 +12,7 @@ import {
   Cable,
   Wrench,
   FolderOpen,
+  Settings2,
 } from "lucide-react";
 
 const navigation = [
@@ -25,6 +26,7 @@ const navigation = [
   { name: "VFD Parameters", href: "/vfd", icon: Sliders },
   { name: "Instruments", href: "/instruments", icon: Wrench },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Settings", href: "/settings", icon: Settings2 },
 ];
 
 export default function Sidebar() {
