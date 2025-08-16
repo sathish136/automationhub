@@ -1,0 +1,156 @@
+import pyodbc as odbccon
+import pyads
+import time
+from pytz import timezone
+from datetime import datetime
+
+def read_plc_data(plc):
+    """Read all required data from the PLC and round values to 2 decimal places."""
+
+    # Read booleans first
+    mbr1pump_rf = plc.read_by_name('GVL.M_CTS_MBR_PERMEATEBW_PUMP2_RUNFB', pyads.PLCTYPE_BOOL)
+    mbr2pump_rf = plc.read_by_name('GVL.M_CTS_MBR_PERMEATEBW_PUMP1_RUNFB', pyads.PLCTYPE_BOOL)
+    h2so4_rf = plc.read_by_name('GVL.M_H2SO4_DOSING_PUMP_RUNFB', pyads.PLCTYPE_BOOL)
+    mbr_rf = mbr1pump_rf or mbr2pump_rf  # Logical AND of bools
+
+    data = {
+        # MBR data
+        'mbr_tmp': round(plc.read_by_name('HMI.HMI_SHOW_MBR_TMP_FILTERATION', pyads.PLCTYPE_REAL), 2),
+        'mbr_flow': round(plc.read_by_name('CTS.CTS_MBR_FLOW_METER_OUT1111', pyads.PLCTYPE_REAL), 2),
+        'mbr_tank_level': round(plc.read_by_name('GVL_JB.CTS_MBR_TANK_LEVEL_TRANSMITTER_LT1202_OUT', pyads.PLCTYPE_REAL), 2),
+        'mbr_running_time_hrs': round(plc.read_by_name('TOTALIZER.HR_05', pyads.PLCTYPE_REAL), 2),
+        'mbr_running_time_min': round(plc.read_by_name('TOTALIZER.MIN_05', pyads.PLCTYPE_REAL), 2),
+        'mbr_running_time_sec': round(plc.read_by_name('TOTALIZER.SEC_05', pyads.PLCTYPE_REAL), 2),
+        'mbr_backwash_without_flow': round(plc.read_by_name('CTS.CTS_MBR_FLOW_METER_OUT1111', pyads.PLCTYPE_REAL), 2),
+        'turbidity': round(plc.read_by_name('GVL_JB.CTS_TURBIDITY_SENSOR_OUT', pyads.PLCTYPE_REAL), 2),
+        'mbr_ph': round(plc.read_by_name('GVL_JB.MBR_PER_PH_OUT', pyads.PLCTYPE_REAL), 2),
+        'cts_ph': round(plc.read_by_name('GVL_JB.CTS_PH_OUT', pyads.PLCTYPE_REAL), 2),
+        'mbr_pt': round(plc.read_by_name('INSTRUMENTS.L25', pyads.PLCTYPE_REAL), 2),
+        'backwash_without_count': round(plc.read_by_name('HMI.FILT_SHOW1', pyads.PLCTYPE_REAL), 2),
+        'backwash_with_drain_flow': round(plc.read_by_name('CTS.CTS_MBR_FLOW_METER_OUT1111', pyads.PLCTYPE_REAL), 2),
+        'mbr_permeate': round(plc.read_by_name('HMI.MBR_TOTAL_PERMEAT_OVERALL', pyads.PLCTYPE_REAL), 2),
+        'mbr_net_value_day': round(plc.read_by_name('HMI.MBR_TOTAL_PERMEAT_DAY1', pyads.PLCTYPE_REAL), 2),
+        'net_value': round(plc.read_by_name('HMI.MBR_TOTAL_PERMEAT_OVERALL1', pyads.PLCTYPE_REAL), 2),
+        'h2so4': round(plc.read_by_name('FILTERATION_BW.h2so4show', pyads.PLCTYPE_REAL), 2),
+        'Energy': round(plc.read_by_name('powermanagement.TOTAL_CONSUMP', pyads.PLCTYPE_REAL), 2),
+        'mbr_ph_temp': round(plc.read_by_name('FILTERATION_BW.phgraph', pyads.PLCTYPE_REAL), 2),
+        'h2so4_temp': round(plc.read_by_name('FILTERATION_BW.hzgraph', pyads.PLCTYPE_REAL), 2),
+        
+        # These now use the actual boolean variables
+        'h2so4_rf': h2so4_rf,
+        'mbr1pump_rf': mbr1pump_rf,
+        'mbr2pump_rf': mbr2pump_rf,
+        'mbr_rf': mbr_rf,
+
+        # # RO data
+        'feed_flow': round(plc.read_by_name('GVL_JB.RO_FEED_FLOW_METER_OUT', pyads.PLCTYPE_REAL), 2),
+        'ro_recovery': round(plc.read_by_name('RO.RO_TOTAL_RECOVERY', pyads.PLCTYPE_REAL), 2),
+        'ro_feed_ph': round(plc.read_by_name('GVL_JB.RO_FEED_PH_OUT', pyads.PLCTYPE_REAL), 2),
+        'ro_feed_lt': round(plc.read_by_name('HMI.RO_feed_LT301_OUT', pyads.PLCTYPE_REAL), 2),
+        
+        'stg1_per': round(plc.read_by_name('GVL_JB.RO_STG1_FLOW_METER_OUT', pyads.PLCTYPE_REAL), 2),
+        'stg2_per': round(plc.read_by_name('GVL_JB.RO_STG2_FLOW_METER_OUT', pyads.PLCTYPE_REAL), 2),
+        
+        'stg1_recovery': round(plc.read_by_name('RO.RO_RECOVERY_TOTAL_1ST_STAGE', pyads.PLCTYPE_REAL), 2),
+        'stg2_recovery': round(plc.read_by_name('RO.RO_RECOVERY_TOTAL_2ND_STAGE', pyads.PLCTYPE_REAL), 2),
+        
+        'stg1_in_pt': round(plc.read_by_name('GVL_JB.RO_1ST_STG_INLET_PT_OUT', pyads.PLCTYPE_REAL), 2),
+        'stg1_out_pt': round(plc.read_by_name('GVL_JB.RO_1ST_STG_OUTLET_PT_OUT', pyads.PLCTYPE_REAL), 2),
+        'stg1_dp': round(plc.read_by_name('HMI.HMI_SHOW_STG1_DP_OUT', pyads.PLCTYPE_REAL), 2),
+        
+        'stg2_in_pt': round(plc.read_by_name('GVL_JB.RO_2ND_STG_INLET_PT_OUT', pyads.PLCTYPE_REAL), 2),
+        'stg2_out_pt': round(plc.read_by_name('GVL_JB.RO_2ND_STG_OUTLET_PT_OUT', pyads.PLCTYPE_REAL), 2),
+        'stg2_dp': round(plc.read_by_name('HMI.HMI_SHOW_STG2_DP_OUT', pyads.PLCTYPE_REAL), 2),
+        
+        'ro_cat_in_pt': round(plc.read_by_name('GVL_JB.RO_CAT_FILTER_IN_OUT', pyads.PLCTYPE_REAL), 2),
+        'ro_cat_out_pt': round(plc.read_by_name('GVL_JB.RO_CAT_FILTER_OUT_OUT', pyads.PLCTYPE_REAL), 2),
+        'cat_dp': round(plc.read_by_name('HMI.HMI_SHOW_CAT_FILTER_DP_OUT', pyads.PLCTYPE_REAL), 2),
+        'ro_feed_overall': round(plc.read_by_name('HMI.RO_TOTAL_FEED_OVERALL1', pyads.PLCTYPE_REAL), 2),
+        'stg_1_overall': round(plc.read_by_name('HMI.RO_TOTAL_1stSTAGE_FLOW_OVERALL1', pyads.PLCTYPE_REAL), 2),
+        'stg2_overall': round(plc.read_by_name('HMI.RO_2ndSTGE_TOTAL_FLOW_OVERALL1', pyads.PLCTYPE_REAL), 2),
+        'ro_feed_day': round(plc.read_by_name('HMI.RO_TOTAL_FEED_DAY1', pyads.PLCTYPE_REAL), 2),
+        'stg_1_day': round(plc.read_by_name('HMI.RO_TOTAL_1stSTAGE_FLOW_DAY1', pyads.PLCTYPE_REAL), 2),
+        'stg_2_day': round(plc.read_by_name('HMI.RO_2ndSTGE_TOTAL_FLOW_DAY1', pyads.PLCTYPE_REAL), 2),
+
+        # # CIP Data
+        'ro_cip_flow': round(plc.read_by_name('GVL_JB.RO_CIP_STG2_FLOWETER_OUT', pyads.PLCTYPE_REAL), 2),
+        'ro_cip_pt': round(plc.read_by_name('GVL_JB.RO_CIP_INLET_PT_OUT', pyads.PLCTYPE_REAL), 2),
+        'ro_cip_stg1_dp': round(plc.read_by_name('HMI.HMI_SHOW_CIP_STG1_DP', pyads.PLCTYPE_REAL), 2),
+        'ro_cip_stg2_dp': round(plc.read_by_name('HMI.HMI_SHOW_CIP_STG2_DP', pyads.PLCTYPE_REAL), 2),
+        'ro_raw_water_flow': round(plc.read_by_name('GVL_JB.RO_CIP_STG1_FLOWETER_OUT', pyads.PLCTYPE_REAL), 2),
+
+        # # New RO frequency data
+        'hpp1_hz': round(plc.read_by_name('GVL_JB.RO_HPP_FREQ_IN_OUT', pyads.PLCTYPE_REAL), 2),
+        'hpp2_hz': round(plc.read_by_name('GVL_JB.RO_BP1_FREQ_IN_OUT', pyads.PLCTYPE_REAL), 2),
+
+        
+        }
+    return data
+
+
+
+def insert_data_into_db(cursor, data):
+    """Insert data into the SQL Server database (for MBR data)."""
+    query = """
+        INSERT INTO sona1_reject_mbr (
+            mbr_tmp, mbr_flow, mbr_tank_level, mbr_running_time_hrs, mbr_running_time_min, 
+            mbr_running_time_sec, mbr_backwash_without_flow, turbidity, mbr_ph, cts_ph, 
+            mbr_pt, backwash_without_count, backwash_with_drain_flow, mbr_permeate, 
+            mbr_net_value_day, net_value,h2so4,Energy,mbr_ph_temp,h2so4_temp , h2so4_rf , mbr1pump_rf , mbr2pump_rf ,mbr_rf
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,? ,?,? ,? , ? ,? ,? , ?)
+    """
+    cursor.execute(query, (
+        data['mbr_tmp'], data['mbr_flow'], data['mbr_tank_level'], data['mbr_running_time_hrs'], 
+        data['mbr_running_time_min'], data['mbr_running_time_sec'], data['mbr_backwash_without_flow'], 
+        data['turbidity'], data['mbr_ph'], data['cts_ph'], data['mbr_pt'], data['backwash_without_count'], 
+        data['backwash_with_drain_flow'], data['mbr_permeate'], 
+        data['mbr_net_value_day'], data['net_value'] , data['h2so4'] , data['Energy'] , data['mbr_ph_temp'] ,data['h2so4_temp'] , data['h2so4_rf'], data['mbr1pump_rf'] ,data['mbr2pump_rf'] , data['mbr_rf']
+    ))
+
+def insert_data_into_ro_db(cursor, data):
+    """Insert RO data into the SQL Server database (for RO data)."""
+    query = """
+        INSERT INTO sona1_reject_ro (
+            feed_flow, ro_recovery, ro_feed_ph, ro_feed_lt, stg1_per, stg2_per, stg1_recovery, 
+            stg2_recovery, stg1_in_pt, stg1_out_pt, stg1_dp, stg2_in_pt, stg2_out_pt, stg2_dp, 
+            ro_cat_in_pt, ro_cat_out_pt, cat_dp, ro_cip_flow, ro_cip_pt, ro_cip_stg1_dp, ro_cip_stg2_dp, 
+            ro_raw_water_flow, hpp1_hz, hpp2_hz, ro_feed_overall, stg_1_overall, stg2_overall ,ro_feed_day , stg_1_day, stg_2_day
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    cursor.execute(query, (
+        data['feed_flow'], data['ro_recovery'], data['ro_feed_ph'], data['ro_feed_lt'], 
+        data['stg1_per'], data['stg2_per'], data['stg1_recovery'], data['stg2_recovery'], 
+        data['stg1_in_pt'], data['stg1_out_pt'], data['stg1_dp'], data['stg2_in_pt'], 
+        data['stg2_out_pt'], data['stg2_dp'], data['ro_cat_in_pt'], data['ro_cat_out_pt'], 
+        data['cat_dp'], data['ro_cip_flow'], data['ro_cip_pt'], data['ro_cip_stg1_dp'], 
+        data['ro_cip_stg2_dp'], data['ro_raw_water_flow'], data['hpp1_hz'], data['hpp2_hz'], 
+        data['ro_feed_overall'], data['stg_1_overall'], data['stg2_overall'] ,  data['ro_feed_day'],  data['stg_1_day'],  data['stg_2_day']
+    ))
+
+def infinite_loop(sleep_time=60):
+    """Run the infinite loop to read PLC data and insert into database."""
+    print("Service Running...")
+    while True:
+        try:
+            ind_time = datetime.now(timezone("Asia/Kolkata")).strftime('%Y-%m-%d %H:%M:%S')
+            
+            with odbccon.connect("Driver={SQL Server Native Client 11.0};Server=WTTSQLDB001\SQLEXPRESS;Database=sona_reject_1;Trusted_Connection=yes;") as con:
+                with pyads.Connection('172.18.237.155.1.1', pyads.PORT_TC3PLC1) as plc:
+                    plc.open()
+
+                    data = read_plc_data(plc)
+
+
+                    with con.cursor() as cursor:
+                        # Insert data into sona_reject_mbr
+                        insert_data_into_db(cursor, data)
+                        # Insert data into sona_reject_ro
+                        insert_data_into_ro_db(cursor, data)
+                        con.commit()
+        
+            time.sleep(sleep_time)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    infinite_loop()
