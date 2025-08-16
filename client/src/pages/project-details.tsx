@@ -100,7 +100,7 @@ export default function ProjectDetails() {
       status: newProjectData.status || 'planning',
       capacity: newProjectData.capacity || null,
       selectedIpcId: newProjectData.selectedIpcId || null,
-      ipcName: selectedIpc?.ipcName || null,
+      ipcName: selectedIpc?.deviceName || null,
       selectedSystems: selectedSystems.length > 0 ? selectedSystems : null,
       createdDate: newProjectData.createdDate ? new Date(newProjectData.createdDate) : new Date(),
       planStartDate: newProjectData.planStartDate ? new Date(newProjectData.planStartDate) : null
@@ -212,29 +212,29 @@ export default function ProjectDetails() {
                         <>
                           <div>
                             <Label className="text-sm font-medium text-gray-600">IPC Name</Label>
-                            <p data-testid="text-ipc-name">{ipcDetails.ipcName}</p>
+                            <p data-testid="text-ipc-name">{ipcDetails.deviceName}</p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-600">IP Address</Label>
-                            <p data-testid="text-ipc-ip">{ipcDetails.ipAddress}</p>
+                            <Label className="text-sm font-medium text-gray-600">VPN IP Address</Label>
+                            <p data-testid="text-ipc-ip">{ipcDetails.vpnIp}</p>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-600">LAN IP Address</Label>
+                            <p data-testid="text-ipc-lan-ip">{ipcDetails.lanIp || 'Not specified'}</p>
                           </div>
                           <div>
                             <Label className="text-sm font-medium text-gray-600">Status</Label>
-                            <Badge className={ipcDetails.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            <Badge className={ipcDetails.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                               {ipcDetails.status}
                             </Badge>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-600">Location</Label>
-                            <p data-testid="text-ipc-location">{ipcDetails.location || 'Not specified'}</p>
+                            <Label className="text-sm font-medium text-gray-600">Manufacture</Label>
+                            <p data-testid="text-ipc-manufacture">{ipcDetails.manufacture || 'Not specified'}</p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-600">Operating System</Label>
-                            <p data-testid="text-ipc-os">{ipcDetails.operatingSystem || 'Not specified'}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium text-gray-600">Description</Label>
-                            <p data-testid="text-ipc-description">{ipcDetails.description || 'No description'}</p>
+                            <Label className="text-sm font-medium text-gray-600">Model</Label>
+                            <p data-testid="text-ipc-model">{ipcDetails.model || 'Not specified'}</p>
                           </div>
                         </>
                       );
@@ -333,7 +333,7 @@ export default function ProjectDetails() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="selectedIpcId" className="text-sm font-medium text-gray-700 mb-2 block">ITM Details</Label>
+                    <Label htmlFor="selectedIpcId" className="text-sm font-medium text-gray-700 mb-2 block">IPC Name</Label>
                     <Select
                       value={newProjectData.selectedIpcId || ''}
                       onValueChange={(value) => setNewProjectData(prev => ({ ...prev, selectedIpcId: value }))}
@@ -342,11 +342,17 @@ export default function ProjectDetails() {
                         <SelectValue placeholder="IPC model" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ipcItems.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.ipcName} - {item.ipAddress}
+                        {ipcItems && ipcItems.length > 0 ? (
+                          ipcItems.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.deviceName} - {item.vpnIp}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>
+                            No IPC items available
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
