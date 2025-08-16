@@ -214,7 +214,7 @@ export default function IPCDetails() {
                     <Input 
                       value={newIPCData.deviceName || ''}
                       onChange={(e) => handleNewIPCChange('deviceName', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                       placeholder="CP-922BF2"
                       data-testid="new-device-name"
                     />
@@ -224,7 +224,7 @@ export default function IPCDetails() {
                     <Input 
                       value={newIPCData.amsNetId || ''}
                       onChange={(e) => handleNewIPCChange('amsNetId', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                       placeholder="172.18.233.236.1.1"
                       data-testid="new-ams-id"
                     />
@@ -247,7 +247,7 @@ export default function IPCDetails() {
                     <Input 
                       value={newIPCData.model || ''}
                       onChange={(e) => handleNewIPCChange('model', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                       placeholder="C6015-0010"
                       data-testid="new-model"
                     />
@@ -457,7 +457,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.amsNetId}
                       onChange={(e) => handleFieldChange('amsNetId', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.amsNetId}</div>
@@ -469,7 +469,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.vpnIp}
                       onChange={(e) => handleFieldChange('vpnIp', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.vpnIp}</div>
@@ -481,7 +481,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.lanIp}
                       onChange={(e) => handleFieldChange('lanIp', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.lanIp}</div>
@@ -507,7 +507,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.anydesk}
                       onChange={(e) => handleFieldChange('anydesk', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.anydesk}</div>
@@ -519,7 +519,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.teamviewer}
                       onChange={(e) => handleFieldChange('teamviewer', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.teamviewer}</div>
@@ -545,7 +545,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.ipcUsername}
                       onChange={(e) => handleFieldChange('ipcUsername', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.ipcUsername}</div>
@@ -559,7 +559,7 @@ export default function IPCDetails() {
                         type={showPasswords[selectedIPC.id] ? "text" : "password"}
                         value={currentData.ipcPassword}
                         onChange={(e) => handleFieldChange('ipcPassword', e.target.value)}
-                        className="text-sm h-8"
+                        className="text-sm h-8 bg-white border-gray-300"
                       />
                     ) : (
                       <div className="text-sm text-gray-900 flex-1">
@@ -582,7 +582,7 @@ export default function IPCDetails() {
                   <Input 
                     value={currentData.namingSeries}
                     onChange={(e) => handleFieldChange('namingSeries', e.target.value)}
-                    className="text-sm h-8 mt-1"
+                    className="text-sm h-8 mt-1 bg-white border-gray-300"
                   />
                 ) : (
                   <div className="text-sm text-gray-900 mt-1">{currentData.namingSeries}</div>
@@ -607,7 +607,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.deviceName}
                       onChange={(e) => handleFieldChange('deviceName', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.deviceName}</div>
@@ -619,7 +619,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.manufacture}
                       onChange={(e) => handleFieldChange('manufacture', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.manufacture}</div>
@@ -631,7 +631,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.model}
                       onChange={(e) => handleFieldChange('model', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.model}</div>
@@ -643,7 +643,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.serialNo}
                       onChange={(e) => handleFieldChange('serialNo', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.serialNo}</div>
@@ -655,7 +655,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.serialNumberOfIpc}
                       onChange={(e) => handleFieldChange('serialNumberOfIpc', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.serialNumberOfIpc}</div>
@@ -667,7 +667,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.mainboard}
                       onChange={(e) => handleFieldChange('mainboard', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.mainboard}</div>
@@ -679,7 +679,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.cpu}
                       onChange={(e) => handleFieldChange('cpu', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.cpu}</div>
@@ -691,7 +691,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.memory}
                       onChange={(e) => handleFieldChange('memory', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.memory}</div>
@@ -703,7 +703,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.flash}
                       onChange={(e) => handleFieldChange('flash', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.flash}</div>
@@ -715,7 +715,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.powerSupply}
                       onChange={(e) => handleFieldChange('powerSupply', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.powerSupply}</div>
@@ -727,7 +727,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.operatingSystem}
                       onChange={(e) => handleFieldChange('operatingSystem', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.operatingSystem}</div>
@@ -739,7 +739,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.imageVersion}
                       onChange={(e) => handleFieldChange('imageVersion', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.imageVersion}</div>
@@ -751,7 +751,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.mac1}
                       onChange={(e) => handleFieldChange('mac1', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.mac1}</div>
@@ -763,7 +763,7 @@ export default function IPCDetails() {
                     <Input 
                       value={currentData.mac2}
                       onChange={(e) => handleFieldChange('mac2', e.target.value)}
-                      className="text-sm h-8 mt-1"
+                      className="text-sm h-8 mt-1 bg-white border-gray-300"
                     />
                   ) : (
                     <div className="text-sm text-gray-900 mt-1">{currentData.mac2}</div>
@@ -795,7 +795,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network1Name}
                           onChange={(e) => handleFieldChange('network1Name', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network1Name}</div>
@@ -807,7 +807,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network1VirtualDevice}
                           onChange={(e) => handleFieldChange('network1VirtualDevice', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network1VirtualDevice}</div>
@@ -819,7 +819,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network1Address}
                           onChange={(e) => handleFieldChange('network1Address', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network1Address}</div>
@@ -831,7 +831,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network1SubnetMask}
                           onChange={(e) => handleFieldChange('network1SubnetMask', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network1SubnetMask}</div>
@@ -843,7 +843,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network1Gateway}
                           onChange={(e) => handleFieldChange('network1Gateway', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network1Gateway}</div>
@@ -855,7 +855,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network1DnsServers}
                           onChange={(e) => handleFieldChange('network1DnsServers', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network1DnsServers}</div>
@@ -883,7 +883,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network1MacAddress}
                           onChange={(e) => handleFieldChange('network1MacAddress', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network1MacAddress}</div>
@@ -902,7 +902,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network2Name}
                           onChange={(e) => handleFieldChange('network2Name', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2Name}</div>
@@ -914,7 +914,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network2VirtualDevice}
                           onChange={(e) => handleFieldChange('network2VirtualDevice', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2VirtualDevice}</div>
@@ -926,7 +926,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network2Address}
                           onChange={(e) => handleFieldChange('network2Address', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2Address}</div>
@@ -938,7 +938,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network2SubnetMask}
                           onChange={(e) => handleFieldChange('network2SubnetMask', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2SubnetMask}</div>
@@ -950,7 +950,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network2Gateway}
                           onChange={(e) => handleFieldChange('network2Gateway', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2Gateway}</div>
@@ -962,7 +962,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network2DnsServers}
                           onChange={(e) => handleFieldChange('network2DnsServers', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2DnsServers}</div>
@@ -990,7 +990,7 @@ export default function IPCDetails() {
                         <Input 
                           value={currentData.network2MacAddress}
                           onChange={(e) => handleFieldChange('network2MacAddress', e.target.value)}
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-8 mt-1 bg-white border-gray-300"
                         />
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2MacAddress}</div>
@@ -1012,7 +1012,7 @@ export default function IPCDetails() {
                 <Textarea 
                   value={currentData.comments}
                   onChange={(e) => handleFieldChange('comments', e.target.value)}
-                  className="text-sm min-h-20"
+                  className="text-sm min-h-20 bg-white border-gray-300"
                   placeholder="Add any additional comments or notes..."
                 />
               ) : (
