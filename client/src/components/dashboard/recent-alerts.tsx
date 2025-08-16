@@ -105,8 +105,8 @@ export default function RecentAlerts() {
           asChild
           data-testid="view-all-alerts"
         >
-          <Link href="/alerts">
-            View All Alerts
+          <Link href="/site-events">
+            View All Events
           </Link>
         </Button>
       </CardContent>

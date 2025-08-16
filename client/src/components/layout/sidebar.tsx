@@ -14,12 +14,14 @@ import {
   FolderOpen,
   Settings2,
   Monitor,
+  Bell,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Project Details", href: "/project-details", icon: FolderOpen },
   { name: "Site Monitoring", href: "/sites", icon: Building },
+  { name: "Site Events", href: "/site-events", icon: Bell },
   { name: "Program Backups", href: "/backups", icon: Save },
   { name: "Network Equipment", href: "/network", icon: Network },
   { name: "Communication", href: "/communication", icon: Cable },

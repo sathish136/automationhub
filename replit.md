@@ -4,6 +4,10 @@
 
 AutomationHub is a comprehensive industrial automation monitoring and management system built specifically for Beckhoff TwinCAT environments. The application provides real-time monitoring of automation sites, network equipment management, program backup capabilities, VFD parameter tracking, and secure credential management for industrial PCs. It features a modern web interface with a Node.js/Express backend and PostgreSQL database, designed to handle critical industrial infrastructure monitoring with uptime tracking, alerting, and reporting capabilities.
 
+## Recent Changes
+
+- **Site Events Page Added (December 2024)**: Implemented comprehensive event management interface for viewing, filtering, and managing site alerts and system events with real-time updates and status management.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
