@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Light placeholder text colors */
+  input::placeholder,
+  textarea::placeholder {
+    color: rgb(156 163 175 / 0.5) !important; /* Very light gray-400 */
+    opacity: 1;
+  }
+  
+  /* Dark mode placeholder colors */
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: rgb(107 114 128 / 0.4) !important; /* Very light gray-500 for dark mode */
+    opacity: 1;
+  }
+}
+
 :root {
   --background: hsl(250, 20%, 98%);
   --foreground: hsl(210, 25%, 7%);

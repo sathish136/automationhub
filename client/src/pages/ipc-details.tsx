@@ -25,6 +25,8 @@ import {
   Check,
   Eye,
   EyeOff,
+  Lock,
+  FileText,
 } from "lucide-react";
 
 // Using types from shared schema
@@ -213,7 +215,11 @@ export default function IPCDetails() {
             <h3 className="text-lg font-semibold text-gray-900">
               IPC Devices ({ipcDevices.length})
             </h3>
-            <Button onClick={handleNewIPC} data-testid="button-new-ipc">
+            <Button 
+              onClick={handleNewIPC} 
+              data-testid="button-new-ipc"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg px-6 py-2"
+            >
               <Monitor size={16} className="mr-2" />
               Add IPC Device
             </Button>
@@ -221,49 +227,53 @@ export default function IPCDetails() {
 
           {/* New IPC Form */}
           {showNewIPCForm && (
-            <Card className="mb-6 border-2 border-primary">
-              <CardHeader>
-                <CardTitle className="text-base text-primary">
+            <Card className="mb-6 border-2 border-blue-200 shadow-lg bg-gradient-to-br from-blue-50/30 to-white">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Monitor size={20} />
                   Add New IPC Device
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
+              <CardContent className="p-6">
+                <div className="space-y-8">
                   {/* Basic Details Section */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Basic Details</h4>
+                  <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
+                      <Monitor size={16} className="text-blue-600" />
+                      Basic Details
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                       <div>
-                        <Label className="text-xs font-medium">Device Name</Label>
+                        <Label className="text-xs font-semibold text-gray-700">Device Name</Label>
                         <Input
                           value={newIPCData.deviceName || ""}
                           onChange={(e) =>
                             handleNewIPCChange("deviceName", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="Enter device name"
                           data-testid="new-device-name"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">AMS Net ID</Label>
+                        <Label className="text-xs font-semibold text-gray-700">AMS Net ID</Label>
                         <Input
                           value={newIPCData.amsNetId || ""}
                           onChange={(e) =>
                             handleNewIPCChange("amsNetId", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="Enter AMS Net ID"
                           data-testid="new-ams-id"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">Status</Label>
+                        <Label className="text-xs font-semibold text-gray-700">Status</Label>
                         <Select
                           value={newIPCData.status || "Active"}
                           onValueChange={(value) => handleNewIPCChange("status", value)}
                         >
-                          <SelectTrigger className="text-sm h-8 mt-1" data-testid="new-status">
+                          <SelectTrigger className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" data-testid="new-status">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -276,37 +286,37 @@ export default function IPCDetails() {
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">VPN IP</Label>
+                        <Label className="text-xs font-semibold text-gray-700">VPN IP</Label>
                         <Input
                           value={newIPCData.vpnIp || ""}
                           onChange={(e) =>
                             handleNewIPCChange("vpnIp", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="VPN IP address"
                           data-testid="new-vpn-ip"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">LAN IP</Label>
+                        <Label className="text-xs font-semibold text-gray-700">LAN IP</Label>
                         <Input
                           value={newIPCData.lanIp || ""}
                           onChange={(e) =>
                             handleNewIPCChange("lanIp", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="LAN IP address"
                           data-testid="new-lan-ip"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">Model</Label>
+                        <Label className="text-xs font-semibold text-gray-700">Model</Label>
                         <Input
                           value={newIPCData.model || ""}
                           onChange={(e) =>
                             handleNewIPCChange("model", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="Select or enter model"
                           data-testid="new-model"
                         />
@@ -315,8 +325,11 @@ export default function IPCDetails() {
                   </div>
 
                   {/* Remote Access Section */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Remote Access</h4>
+                  <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
+                      <Lock size={16} className="text-green-600" />
+                      Remote Access
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <div>
                         <Label className="text-xs font-medium">AnyDesk ID</Label>
@@ -367,8 +380,11 @@ export default function IPCDetails() {
                   </div>
 
                   {/* IPC Credentials Section */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">IPC Credentials</h4>
+                  <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
+                      <Key size={16} className="text-orange-600" />
+                      IPC Credentials
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs font-medium">IPC Username</Label>
@@ -397,8 +413,11 @@ export default function IPCDetails() {
                   </div>
 
                   {/* Hardware Specs Section */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Hardware Specifications</h4>
+                  <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
+                      <Cpu size={16} className="text-purple-600" />
+                      Hardware Specifications
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <div>
                         <Label className="text-xs font-medium">Manufacturer</Label>
@@ -448,8 +467,11 @@ export default function IPCDetails() {
                   </div>
 
                   {/* Comments Section */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Additional Information</h4>
+                  <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
+                      <FileText size={16} className="text-gray-600" />
+                      Additional Information
+                    </h4>
                     <div>
                       <Label className="text-xs font-medium">Comments</Label>
                       <Input
@@ -463,11 +485,12 @@ export default function IPCDetails() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-6">
+                <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
                   <Button
                     variant="outline"
                     onClick={handleNewIPCCancel}
                     data-testid="cancel-new-ipc"
+                    className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                   >
                     Cancel
                   </Button>
@@ -475,8 +498,19 @@ export default function IPCDetails() {
                     onClick={handleNewIPCSave} 
                     data-testid="save-new-ipc"
                     disabled={createIpcMutation.isPending}
+                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {createIpcMutation.isPending ? "Adding..." : "Add IPC Device"}
+                    {createIpcMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <Monitor size={16} className="mr-2" />
+                        Add IPC Device
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
