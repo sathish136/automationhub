@@ -12,7 +12,9 @@ import {
   insertProgramBackupSchema,
   insertProjectSchema,
   insertPlcTagSchema,
-  insertPlcTagHistorySchema
+  insertPlcTagHistorySchema,
+  insertSiteDatabaseTagSchema,
+  insertSiteDatabaseValueSchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -639,6 +641,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating PLC tag value:", error);
       res.status(500).json({ message: "Failed to update PLC tag value" });
+    }
+  });
+
+  // Site Database Tags
+  app.get("/api/site-database-tags", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const tags = await storage.getSiteDatabaseTags(siteId);
+      res.json(tags);
+    } catch (error) {
+      console.error("Error fetching site database tags:", error);
+      res.status(500).json({ message: "Failed to fetch site database tags" });
+    }
+  });
+
+  app.post("/api/site-database-tags", async (req, res) => {
+    try {
+      const tagData = insertSiteDatabaseTagSchema.parse(req.body);
+      const tag = await storage.createSiteDatabaseTag(tagData);
+      res.status(201).json(tag);
+    } catch (error) {
+      console.error("Error creating site database tag:", error);
+      res.status(400).json({ message: "Invalid tag data" });
+    }
+  });
+
+  app.put("/api/site-database-tags/:id", async (req, res) => {
+    try {
+      const tagData = insertSiteDatabaseTagSchema.partial().parse(req.body);
+      const tag = await storage.updateSiteDatabaseTag(req.params.id, tagData);
+      if (!tag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      res.json(tag);
+    } catch (error) {
+      console.error("Error updating site database tag:", error);
+      res.status(400).json({ message: "Invalid tag data" });
+    }
+  });
+
+  app.delete("/api/site-database-tags/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteSiteDatabaseTag(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting site database tag:", error);
+      res.status(500).json({ message: "Failed to delete tag" });
+    }
+  });
+
+  // Site Database Values
+  app.get("/api/site-database-values/:tagId", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const values = await storage.getSiteDatabaseValues(req.params.tagId, limit);
+      res.json(values);
+    } catch (error) {
+      console.error("Error fetching site database values:", error);
+      res.status(500).json({ message: "Failed to fetch values" });
+    }
+  });
+
+  app.post("/api/site-database-values", async (req, res) => {
+    try {
+      const valueData = insertSiteDatabaseValueSchema.parse(req.body);
+      const value = await storage.createSiteDatabaseValue(valueData);
+      res.status(201).json(value);
+    } catch (error) {
+      console.error("Error creating site database value:", error);
+      res.status(400).json({ message: "Invalid value data" });
+    }
+  });
+
+  // Get latest values for all tags in a site
+  app.get("/api/sites/:siteId/database-values/latest", async (req, res) => {
+    try {
+      const values = await storage.getLatestSiteDatabaseValues(req.params.siteId);
+      res.json(values);
+    } catch (error) {
+      console.error("Error fetching latest site database values:", error);
+      res.status(500).json({ message: "Failed to fetch latest values" });
     }
   });
 

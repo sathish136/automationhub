@@ -13,6 +13,7 @@ import {
   Monitor,
   Bell,
   Activity,
+  Database,
 } from "lucide-react";
 
 const navigation = [
@@ -20,6 +21,7 @@ const navigation = [
   { name: "Project Details", href: "/project-details", icon: FolderOpen },
   { name: "Site Monitoring", href: "/sites", icon: Building },
   { name: "Site Events", href: "/site-events", icon: Bell },
+  { name: "Site Database", href: "/site-database", icon: Database },
   { name: "PLC Tag Monitoring", href: "/plc-tags", icon: Activity },
   { name: "Program Backups", href: "/backups", icon: Save },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },

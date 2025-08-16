@@ -378,3 +378,43 @@ export type PlcTag = typeof plcTags.$inferSelect;
 export type InsertPlcTag = z.infer<typeof insertPlcTagSchema>;
 export type PlcTagHistory = typeof plcTagHistory.$inferSelect;
 export type InsertPlcTagHistory = z.infer<typeof insertPlcTagHistorySchema>;
+
+// Site Database Tags (Real-time ADS monitoring)
+export const siteDatabaseTags = pgTable("site_database_tags", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: text("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  tagName: text("tag_name").notNull(),
+  adsPath: text("ads_path").notNull(), // ADS symbol path
+  dataType: text("data_type").notNull(), // BOOL, INT, DINT, REAL, STRING, etc.
+  description: text("description"),
+  unit: text("unit"), // e.g., "°C", "bar", "rpm"
+  isActive: boolean("is_active").default(true).notNull(),
+  scanInterval: integer("scan_interval").default(2000).notNull(), // milliseconds
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Site Database Values (Real-time data storage)
+export const siteDatabaseValues = pgTable("site_database_values", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  tagId: text("tag_id").notNull().references(() => siteDatabaseTags.id, { onDelete: "cascade" }),
+  value: text("value").notNull(),
+  quality: text("quality").default("GOOD").notNull(), // GOOD, BAD, UNCERTAIN
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertSiteDatabaseTagSchema = createInsertSchema(siteDatabaseTags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSiteDatabaseValueSchema = createInsertSchema(siteDatabaseValues).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type SiteDatabaseTag = typeof siteDatabaseTags.$inferSelect;
+export type InsertSiteDatabaseTag = z.infer<typeof insertSiteDatabaseTagSchema>;
+export type SiteDatabaseValue = typeof siteDatabaseValues.$inferSelect;
+export type InsertSiteDatabaseValue = z.infer<typeof insertSiteDatabaseValueSchema>;

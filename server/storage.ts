@@ -8,6 +8,8 @@ import {
   projects,
   plcTags,
   plcTagHistory,
+  siteDatabaseTags,
+  siteDatabaseValues,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -26,6 +28,10 @@ import {
   type InsertPlcTag,
   type PlcTagHistory,
   type InsertPlcTagHistory,
+  type SiteDatabaseTag,
+  type InsertSiteDatabaseTag,
+  type SiteDatabaseValue,
+  type InsertSiteDatabaseValue,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -95,6 +101,17 @@ export interface IStorage {
     criticalAlerts: number;
     avgResponseTime: number;
   }>;
+
+  // Site Database Tags
+  getSiteDatabaseTags(siteId?: string): Promise<SiteDatabaseTag[]>;
+  createSiteDatabaseTag(tag: InsertSiteDatabaseTag): Promise<SiteDatabaseTag>;
+  updateSiteDatabaseTag(id: string, tag: Partial<InsertSiteDatabaseTag>): Promise<SiteDatabaseTag | undefined>;
+  deleteSiteDatabaseTag(id: string): Promise<boolean>;
+
+  // Site Database Values 
+  getSiteDatabaseValues(tagId: string, limit?: number): Promise<SiteDatabaseValue[]>;
+  createSiteDatabaseValue(value: InsertSiteDatabaseValue): Promise<SiteDatabaseValue>;
+  getLatestSiteDatabaseValues(siteId: string): Promise<Array<SiteDatabaseValue & { tag: SiteDatabaseTag }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -468,6 +485,75 @@ export class DatabaseStorage implements IStorage {
   async createPlcTagHistory(history: InsertPlcTagHistory): Promise<PlcTagHistory> {
     const [newHistory] = await db.insert(plcTagHistory).values(history).returning();
     return newHistory;
+  }
+
+  // Site Database Tags
+  async getSiteDatabaseTags(siteId?: string): Promise<SiteDatabaseTag[]> {
+    if (siteId) {
+      return await db.select().from(siteDatabaseTags).where(eq(siteDatabaseTags.siteId, siteId));
+    }
+    return await db.select().from(siteDatabaseTags);
+  }
+
+  async createSiteDatabaseTag(tag: InsertSiteDatabaseTag): Promise<SiteDatabaseTag> {
+    const [newTag] = await db.insert(siteDatabaseTags).values(tag).returning();
+    return newTag;
+  }
+
+  async updateSiteDatabaseTag(id: string, tag: Partial<InsertSiteDatabaseTag>): Promise<SiteDatabaseTag | undefined> {
+    const [updatedTag] = await db
+      .update(siteDatabaseTags)
+      .set({ ...tag, updatedAt: new Date() })
+      .where(eq(siteDatabaseTags.id, id))
+      .returning();
+    return updatedTag;
+  }
+
+  async deleteSiteDatabaseTag(id: string): Promise<boolean> {
+    const result = await db.delete(siteDatabaseTags).where(eq(siteDatabaseTags.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Site Database Values
+  async getSiteDatabaseValues(tagId: string, limit = 100): Promise<SiteDatabaseValue[]> {
+    return await db
+      .select()
+      .from(siteDatabaseValues)
+      .where(eq(siteDatabaseValues.tagId, tagId))
+      .orderBy(desc(siteDatabaseValues.timestamp))
+      .limit(limit);
+  }
+
+  async createSiteDatabaseValue(value: InsertSiteDatabaseValue): Promise<SiteDatabaseValue> {
+    const [newValue] = await db.insert(siteDatabaseValues).values(value).returning();
+    return newValue;
+  }
+
+  async getLatestSiteDatabaseValues(siteId: string): Promise<Array<SiteDatabaseValue & { tag: SiteDatabaseTag }>> {
+    // Get the latest value for each tag in a site
+    const result = await db
+      .select({
+        id: siteDatabaseValues.id,
+        tagId: siteDatabaseValues.tagId,
+        value: siteDatabaseValues.value,
+        quality: siteDatabaseValues.quality,
+        timestamp: siteDatabaseValues.timestamp,
+        tag: siteDatabaseTags,
+      })
+      .from(siteDatabaseValues)
+      .innerJoin(siteDatabaseTags, eq(siteDatabaseValues.tagId, siteDatabaseTags.id))
+      .where(eq(siteDatabaseTags.siteId, siteId))
+      .orderBy(desc(siteDatabaseValues.timestamp));
+
+    // Filter to get only the latest value for each tag
+    const latestValues = new Map();
+    result.forEach(row => {
+      if (!latestValues.has(row.tagId) || latestValues.get(row.tagId).timestamp < row.timestamp) {
+        latestValues.set(row.tagId, row);
+      }
+    });
+
+    return Array.from(latestValues.values());
   }
 }
 
