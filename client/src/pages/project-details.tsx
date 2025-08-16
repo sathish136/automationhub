@@ -12,21 +12,22 @@ import { Building2, Cpu, Droplets, Zap, Settings, CheckCircle, ArrowLeft, Calend
 import type { Project, InsertProject, IpcManagement } from "@shared/schema";
 
 interface Project {
-  id: number;
+  id: string;
   projectNumber: string;
   projectName: string;
-  location: string;
+  location: string | null;
   status: string;
-  selectedIpcId: string;
-  selectedSystems: string[];
+  selectedIpcId: string | null;
+  selectedSystems: string[] | null;
   createdDate: string;
-  planStartDate: string;
-  capacity: string;
+  planStartDate: string | null;
+  capacity: string | null;
+  ipcName: string | null;
 }
 
 export default function ProjectDetails() {
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Project>>({});
   const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
@@ -36,6 +37,11 @@ export default function ProjectDetails() {
 
   const queryClient = useQueryClient();
 
+  // Fetch projects from database
+  const { data: projectsData = [], isLoading: projectsLoading, refetch: refetchProjects } = useQuery<Project[]>({
+    queryKey: ['/api/projects']
+  });
+
   // Fetch IPC management items for dropdown
   const { data: ipcItems = [], isLoading: ipcLoading } = useQuery<IpcManagement[]>({
     queryKey: ['/api/ipc-management']
@@ -43,22 +49,39 @@ export default function ProjectDetails() {
 
   // Create project mutation
   const createProjectMutation = useMutation({
-    mutationFn: (projectData: InsertProject) => 
-      fetch('/api/projects', {
+    mutationFn: async (projectData: InsertProject) => {
+      const response = await fetch('/api/projects', {
         method: 'POST',
         body: JSON.stringify(projectData),
         headers: { 'Content-Type': 'application/json' }
-      }).then(res => res.json()),
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }
+      
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      refetchProjects();
       setShowNewProjectForm(false);
       setNewProjectData({});
       setSelectedSystems([]);
+    },
+    onError: (error: Error) => {
+      console.error('Project creation error:', error);
+      if (error.message.includes('duplicate key')) {
+        alert('Project number already exists. Please use a unique project number.');
+      } else {
+        alert('Failed to create project. Please check your data and try again.');
+      }
     }
   });
 
-  const handleViewProject = (projectId: number) => {
-    const project = projects.find(p => p.id === projectId);
+  const handleViewProject = (projectId: string) => {
+    const project = projectsData.find(p => p.id === projectId);
     if (project) {
       setSelectedProjectId(projectId);
     }
@@ -70,18 +93,19 @@ export default function ProjectDetails() {
     setSelectedSystems(project.selectedSystems || []);
   };
 
-  const handleDeleteProject = (projectId: number) => {
+  const handleDeleteProject = (projectId: string) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
-      setProjects(prev => prev.filter(p => p.id !== projectId));
+      // TODO: Implement delete API call
+      refetchProjects();
     }
   };
 
   const handleUpdateProject = () => {
     if (editingProjectId) {
-      const updatedProject = { ...editFormData, selectedSystems, id: editingProjectId } as Project;
-      setProjects(prev => prev.map(p => p.id === editingProjectId ? updatedProject : p));
+      // TODO: Implement update API call
       setEditingProjectId(null);
       setEditFormData({});
+      refetchProjects();
     }
   };
 
@@ -129,9 +153,9 @@ export default function ProjectDetails() {
     return ipcItems.find(item => item.id === ipcId);
   };
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const selectedProject = projectsData.find(p => p.id === selectedProjectId);
 
-  if (ipcLoading) {
+  if (ipcLoading || projectsLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -252,7 +276,7 @@ export default function ProjectDetails() {
             </div>
 
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">All Projects ({projects.length})</h2>
+              <h2 className="text-xl font-semibold">All Projects ({projectsData.length})</h2>
               <Button
                 onClick={() => setShowNewProjectForm(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -423,7 +447,7 @@ export default function ProjectDetails() {
 
             <div className="bg-white rounded-lg border border-gray-200" data-testid="card-projects-list">
               <div className="p-6">
-                {projects.length === 0 ? (
+                {projectsData.length === 0 ? (
                   <div className="text-center py-12 text-gray-500" data-testid="text-no-projects">
                     <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
@@ -431,7 +455,7 @@ export default function ProjectDetails() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {projects.map((project) => (
+                    {projectsData.map((project) => (
                       <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50" data-testid={`card-project-${project.id}`}>
                         <div className="flex-1">
                           <div className="flex items-center gap-4">
