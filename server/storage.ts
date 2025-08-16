@@ -10,6 +10,8 @@ import {
   communicationLogs,
   alerts,
   projects,
+  plcTags,
+  plcTagHistory,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -32,6 +34,10 @@ import {
   type InsertAlert,
   type Project,
   type InsertProject,
+  type PlcTag,
+  type InsertPlcTag,
+  type PlcTagHistory,
+  type InsertPlcTagHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -96,6 +102,18 @@ export interface IStorage {
   markAlertAsRead(id: string): Promise<void>;
   markAlertAsResolved(id: string): Promise<void>;
   getUnreadAlertsCount(): Promise<number>;
+
+  // PLC Tags
+  getPlcTags(siteId?: string): Promise<PlcTag[]>;
+  getActivePlcTags(siteId?: string): Promise<PlcTag[]>;
+  createPlcTag(tag: InsertPlcTag): Promise<PlcTag>;
+  updatePlcTag(id: string, tag: Partial<InsertPlcTag>): Promise<PlcTag | undefined>;
+  deletePlcTag(id: string): Promise<boolean>;
+  updatePlcTagValue(id: string, newValue: string, createHistory?: boolean): Promise<void>;
+  
+  // PLC Tag History
+  getPlcTagHistory(tagId: string, limit?: number): Promise<PlcTagHistory[]>;
+  createPlcTagHistory(history: InsertPlcTagHistory): Promise<PlcTagHistory>;
 
   // Projects
   getAllProjects(): Promise<Project[]>;
@@ -518,6 +536,80 @@ export class DatabaseStorage implements IStorage {
       criticalAlerts: alertStats.critical,
       avgResponseTime: Math.round(siteStats.avgResponseTime),
     };
+  }
+
+  // PLC Tags
+  async getPlcTags(siteId?: string): Promise<PlcTag[]> {
+    if (siteId) {
+      return await db.select().from(plcTags).where(eq(plcTags.siteId, siteId)).orderBy(desc(plcTags.createdAt));
+    }
+    return await db.select().from(plcTags).orderBy(desc(plcTags.createdAt));
+  }
+
+  async getActivePlcTags(siteId?: string): Promise<PlcTag[]> {
+    if (siteId) {
+      return await db.select().from(plcTags).where(and(eq(plcTags.siteId, siteId), eq(plcTags.isActive, true))).orderBy(desc(plcTags.createdAt));
+    }
+    return await db.select().from(plcTags).where(eq(plcTags.isActive, true)).orderBy(desc(plcTags.createdAt));
+  }
+
+  async createPlcTag(tag: InsertPlcTag): Promise<PlcTag> {
+    const [newTag] = await db.insert(plcTags).values(tag).returning();
+    return newTag;
+  }
+
+  async updatePlcTag(id: string, tag: Partial<InsertPlcTag>): Promise<PlcTag | undefined> {
+    const [updatedTag] = await db
+      .update(plcTags)
+      .set({ ...tag, updatedAt: new Date() })
+      .where(eq(plcTags.id, id))
+      .returning();
+    return updatedTag;
+  }
+
+  async deletePlcTag(id: string): Promise<boolean> {
+    const result = await db.delete(plcTags).where(eq(plcTags.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async updatePlcTagValue(id: string, newValue: string, createHistory = true): Promise<void> {
+    if (createHistory) {
+      // Get current value first for history
+      const [currentTag] = await db.select().from(plcTags).where(eq(plcTags.id, id));
+      if (currentTag && currentTag.lastValue !== newValue) {
+        // Create history record
+        await db.insert(plcTagHistory).values({
+          tagId: id,
+          oldValue: currentTag.lastValue,
+          newValue: newValue,
+        });
+      }
+    }
+    
+    // Update the tag value
+    await db
+      .update(plcTags)
+      .set({ 
+        lastValue: newValue, 
+        lastReadTime: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(plcTags.id, id));
+  }
+
+  // PLC Tag History
+  async getPlcTagHistory(tagId: string, limit = 100): Promise<PlcTagHistory[]> {
+    return await db
+      .select()
+      .from(plcTagHistory)
+      .where(eq(plcTagHistory.tagId, tagId))
+      .orderBy(desc(plcTagHistory.timestamp))
+      .limit(limit);
+  }
+
+  async createPlcTagHistory(history: InsertPlcTagHistory): Promise<PlcTagHistory> {
+    const [newHistory] = await db.insert(plcTagHistory).values(history).returning();
+    return newHistory;
   }
 }
 

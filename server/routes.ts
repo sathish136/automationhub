@@ -14,7 +14,9 @@ import {
   insertCommunicationInterfaceSchema,
   insertInstrumentDataSchema,
   insertCommunicationLogSchema,
-  insertProjectSchema
+  insertProjectSchema,
+  insertPlcTagSchema,
+  insertPlcTagHistorySchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -710,6 +712,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching unread alerts count:", error);
       res.status(500).json({ message: "Failed to fetch unread alerts count" });
+    }
+  });
+
+  // PLC Tags
+  app.get("/api/plc-tags", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const tags = await storage.getPlcTags(siteId);
+      res.json(tags);
+    } catch (error) {
+      console.error("Error fetching PLC tags:", error);
+      res.status(500).json({ message: "Failed to fetch PLC tags" });
+    }
+  });
+
+  app.get("/api/plc-tags/active", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const tags = await storage.getActivePlcTags(siteId);
+      res.json(tags);
+    } catch (error) {
+      console.error("Error fetching active PLC tags:", error);
+      res.status(500).json({ message: "Failed to fetch active PLC tags" });
+    }
+  });
+
+  app.post("/api/plc-tags", async (req, res) => {
+    try {
+      const result = insertPlcTagSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const tag = await storage.createPlcTag(result.data);
+      res.status(201).json(tag);
+    } catch (error) {
+      console.error("Error creating PLC tag:", error);
+      res.status(500).json({ message: "Failed to create PLC tag" });
+    }
+  });
+
+  app.put("/api/plc-tags/:id", async (req, res) => {
+    try {
+      const result = insertPlcTagSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const tag = await storage.updatePlcTag(req.params.id, result.data);
+      if (!tag) {
+        return res.status(404).json({ message: "PLC tag not found" });
+      }
+      res.json(tag);
+    } catch (error) {
+      console.error("Error updating PLC tag:", error);
+      res.status(500).json({ message: "Failed to update PLC tag" });
+    }
+  });
+
+  app.delete("/api/plc-tags/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePlcTag(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "PLC tag not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting PLC tag:", error);
+      res.status(500).json({ message: "Failed to delete PLC tag" });
+    }
+  });
+
+  // PLC Tag History
+  app.get("/api/plc-tags/:id/history", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const history = await storage.getPlcTagHistory(req.params.id, limit);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching PLC tag history:", error);
+      res.status(500).json({ message: "Failed to fetch PLC tag history" });
+    }
+  });
+
+  // PLC Tag Value Update (for manual testing)
+  app.put("/api/plc-tags/:id/value", async (req, res) => {
+    try {
+      const { value, createHistory = true } = req.body;
+      if (typeof value !== 'string') {
+        return res.status(400).json({ message: "Value must be a string" });
+      }
+
+      await storage.updatePlcTagValue(req.params.id, value, createHistory);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error updating PLC tag value:", error);
+      res.status(500).json({ message: "Failed to update PLC tag value" });
     }
   });
 

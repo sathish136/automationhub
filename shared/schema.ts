@@ -275,6 +275,40 @@ export const alerts = pgTable("alerts", {
   index("idx_alerts_created").on(table.createdAt),
 ]);
 
+// PLC Tags to monitor
+export const plcTags = pgTable("plc_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  tagName: varchar("tag_name", { length: 255 }).notNull(),
+  plcAddress: varchar("plc_address", { length: 500 }).notNull(), // e.g., "GVL.M_HYPO_DOSING_PUMP_TRIP"
+  description: text("description"),
+  dataType: varchar("data_type", { length: 50 }).notNull().default("BOOL"), // BOOL, INT, REAL, STRING
+  isActive: boolean("is_active").default(true),
+  alarmOnTrue: boolean("alarm_on_true").default(true), // Create alarm when value becomes true
+  alarmOnFalse: boolean("alarm_on_false").default(false), // Create alarm when value becomes false
+  severityLevel: varchar("severity_level", { length: 20 }).default("warning"), // critical, warning, info
+  lastValue: text("last_value"), // Store as string for all data types
+  lastReadTime: timestamp("last_read_time"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_plc_tags_site").on(table.siteId),
+  index("idx_plc_tags_active").on(table.isActive),
+  index("idx_plc_tags_name").on(table.tagName),
+]);
+
+// PLC Tag History for tracking value changes
+export const plcTagHistory = pgTable("plc_tag_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tagId: varchar("tag_id").notNull().references(() => plcTags.id, { onDelete: "cascade" }),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+}, (table) => [
+  index("idx_plc_tag_history_tag").on(table.tagId),
+  index("idx_plc_tag_history_timestamp").on(table.timestamp),
+]);
+
 // Relations
 export const sitesRelations = relations(sites, ({ many }) => ({
   uptimeHistory: many(uptimeHistory),
@@ -284,6 +318,7 @@ export const sitesRelations = relations(sites, ({ many }) => ({
   vfdParameters: many(vfdParameters),
   communicationInterfaces: many(communicationInterfaces),
   alerts: many(alerts),
+  plcTags: many(plcTags),
 }));
 
 export const uptimeHistoryRelations = relations(uptimeHistory, ({ one }) => ({
@@ -348,6 +383,21 @@ export const alertsRelations = relations(alerts, ({ one }) => ({
   site: one(sites, {
     fields: [alerts.siteId],
     references: [sites.id],
+  }),
+}));
+
+export const plcTagsRelations = relations(plcTags, ({ one, many }) => ({
+  site: one(sites, {
+    fields: [plcTags.siteId],
+    references: [sites.id],
+  }),
+  history: many(plcTagHistory),
+}));
+
+export const plcTagHistoryRelations = relations(plcTagHistory, ({ one }) => ({
+  tag: one(plcTags, {
+    fields: [plcTagHistory.tagId],
+    references: [plcTags.id],
   }),
 }));
 
@@ -444,6 +494,18 @@ export const insertAlertSchema = createInsertSchema(alerts).omit({
   createdAt: true,
 });
 
+export const insertPlcTagSchema = createInsertSchema(plcTags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastReadTime: true,
+});
+
+export const insertPlcTagHistorySchema = createInsertSchema(plcTagHistory).omit({
+  id: true,
+  timestamp: true,
+});
+
 // Types
 export type Site = typeof sites.$inferSelect;
 export type InsertSite = z.infer<typeof insertSiteSchema>;
@@ -467,3 +529,7 @@ export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type PlcTag = typeof plcTags.$inferSelect;
+export type InsertPlcTag = z.infer<typeof insertPlcTagSchema>;
+export type PlcTagHistory = typeof plcTagHistory.$inferSelect;
+export type InsertPlcTagHistory = z.infer<typeof insertPlcTagHistorySchema>;

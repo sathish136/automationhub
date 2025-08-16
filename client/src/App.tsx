@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Sites from "@/pages/sites";
 import SiteEvents from "@/pages/site-events";
+import PlcTags from "@/pages/plc-tags";
 import Backups from "@/pages/backups";
 import Network from "@/pages/network";
 import Communication from "@/pages/communication";
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/sites" component={Sites} />
           <Route path="/site-events" component={SiteEvents} />
+          <Route path="/plc-tags" component={PlcTags} />
           <Route path="/backups" component={Backups} />
           <Route path="/network" component={Network} />
           <Route path="/communication" component={Communication} />

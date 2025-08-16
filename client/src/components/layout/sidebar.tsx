@@ -15,6 +15,7 @@ import {
   Settings2,
   Monitor,
   Bell,
+  Activity,
 } from "lucide-react";
 
 const navigation = [
@@ -22,6 +23,7 @@ const navigation = [
   { name: "Project Details", href: "/project-details", icon: FolderOpen },
   { name: "Site Monitoring", href: "/sites", icon: Building },
   { name: "Site Events", href: "/site-events", icon: Bell },
+  { name: "PLC Tag Monitoring", href: "/plc-tags", icon: Activity },
   { name: "Program Backups", href: "/backups", icon: Save },
   { name: "Network Equipment", href: "/network", icon: Network },
   { name: "Communication", href: "/communication", icon: Cable },

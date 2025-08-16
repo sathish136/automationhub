@@ -1,0 +1,111 @@
+Site KANCHAN 1.3 MLD (VPN) is offline
+Critical
+Unread
+Site KANCHAN 1.3 MLD (VPN) (15.15.50.12) is not responding to ping requests. Connection timeout
+
+KANCHAN 1.3 MLD (VPN)
+Site Offline
+1 min ago
+8/16/2025, 5:03:43 PM
+Mark Read
+Resolve
+Site Sachin (VPN) is offline
+Critical
+Unread
+Site Sachin (VPN) (15.15.50.19) is not responding to ping requests. Connection timeout
+
+Sachin (VPN)
+Site Offline
+1 min ago
+8/16/2025, 5:03:37 PM
+Mark Read
+Resolve
+Site KANCHAN 3 (VPN) is offline
+Critical
+Unread
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+1 min ago
+8/16/2025, 5:03:29 PM
+Mark Read
+Resolve
+Site Bhilkwara (VPN) is offline
+Critical
+Unread
+Site Bhilkwara (VPN) (15.15.50.22) is not responding to ping requests. Connection timeout
+
+Bhilkwara (VPN)
+Site Offline
+1 min ago
+8/16/2025, 5:03:27 PM
+Mark Read
+Resolve
+Site KANCHAN 3 (VPN) is offline
+Critical
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+2 mins ago
+8/16/2025, 5:02:51 PM
+Site Bhilkwara (VPN) is offline
+Critical
+Unread
+Resolved
+Site Bhilkwara (VPN) (15.15.50.22) is not responding to ping requests. Connection timeout
+
+Bhilkwara (VPN)
+Site Offline
+2 mins ago
+8/16/2025, 5:02:49 PM
+Mark Read
+Site KANCHAN 3 (VPN) is offline
+Critical
+Unread
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+2 mins ago
+8/16/2025, 5:02:43 PM
+Mark Read
+Site RSL (VPN) is offline
+Critical
+Site RSL (VPN) (15.15.50.13) is not responding to ping requests. Connection timeout
+
+RSL (VPN)
+Site Offline
+2 mins ago
+8/16/2025, 5:02:39 PM
+Resolve
+Site RSL (VPN) is offline
+Critical
+Resolved
+Site RSL (VPN) (15.15.50.13) is not responding to ping requests. Connection timeout
+
+RSL (VPN)
+Site Offline
+7 mins ago
+8/16/2025, 4:58:08 PM
+Site KANCHAN 3 (VPN) is offline
+Critical
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+7 mins ago
+8/16/2025, 4:58:06 PM
+Site KANCHAN 3 (VPN) is offline
+Critical
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+10 mins ago
+8/16/2025, 4:55:04 PM
