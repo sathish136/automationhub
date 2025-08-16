@@ -14,6 +14,7 @@ import Reports from "@/pages/reports";
 import Instruments from "@/pages/instruments";
 import ProjectDetails from "@/pages/project-details";
 import Settings from "@/pages/settings";
+import IPCDetails from "@/pages/ipc-details";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 
@@ -34,6 +35,7 @@ function Router() {
           <Route path="/instruments" component={Instruments} />
           <Route path="/project-details" component={ProjectDetails} />
           <Route path="/settings" component={Settings} />
+          <Route path="/ipc-details" component={IPCDetails} />
           <Route component={NotFound} />
         </Switch>
       </main>
