@@ -100,22 +100,12 @@ function UptimeBar({ siteId }: { siteId: string }) {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // Get last 96 data points (24 hours if checking every 15 minutes)
-  const recentHistory = uptimeHistory.slice(0, 96);
-  const totalBars = 96;
-  
-  // Fill missing data with unknown status
-  const bars = Array.from({ length: totalBars }, (_, i) => {
-    const historyItem = recentHistory[i];
-    if (historyItem) {
-      return {
-        status: historyItem.isOnline ? 'online' : 'offline',
-        timestamp: historyItem.timestamp,
-        responseTime: historyItem.responseTime
-      };
-    }
-    return { status: 'unknown', timestamp: null, responseTime: null };
-  });
+  // Show only actual data points that exist, no fake filling
+  const actualBars = uptimeHistory.map(historyItem => ({
+    status: historyItem.isOnline ? 'online' : 'offline',
+    timestamp: historyItem.timestamp,
+    responseTime: historyItem.responseTime
+  }));
 
   const getBarColor = (status: string) => {
     switch (status) {
@@ -126,15 +116,26 @@ function UptimeBar({ siteId }: { siteId: string }) {
     }
   };
 
+  if (actualBars.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-8 text-sm text-gray-500">
+        No monitoring data yet
+      </div>
+    );
+  }
+
   return (
     <div className="flex space-x-0.5 h-8 items-center">
-      {bars.map((bar, index) => (
+      {actualBars.map((bar, index) => (
         <div
           key={index}
           className={`w-1 h-6 rounded-sm ${getBarColor(bar.status)}`}
-          title={bar.timestamp ? `${bar.status} - ${new Date(bar.timestamp).toLocaleString()}${bar.responseTime ? ` (${bar.responseTime}ms)` : ''}` : 'No data'}
+          title={`${bar.status} - ${new Date(bar.timestamp).toLocaleString()}${bar.responseTime ? ` (${bar.responseTime}ms)` : ''}`}
         />
       ))}
+      <span className="ml-2 text-xs text-gray-500">
+        {actualBars.length} data points
+      </span>
     </div>
   );
 }
