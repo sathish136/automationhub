@@ -5,7 +5,7 @@ import SiteStatusOverview from "@/components/dashboard/site-status-overview";
 import RecentAlerts from "@/components/dashboard/recent-alerts";
 import QuickActions from "@/components/dashboard/quick-actions";
 import EquipmentStatus from "@/components/dashboard/equipment-status";
-import NetworkEquipmentStatus from "@/components/dashboard/network-equipment-status";
+
 
 export default function Dashboard() {
   const { data: metrics, isLoading: metricsLoading } = useQuery<{
@@ -51,10 +51,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Network Equipment Status */}
-        <div className="mt-6">
-          <NetworkEquipmentStatus />
-        </div>
+
       </div>
     </div>
   );

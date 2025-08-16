@@ -8,11 +8,8 @@ import Sites from "@/pages/sites";
 import SiteEvents from "@/pages/site-events";
 import PlcTags from "@/pages/plc-tags-new";
 import Backups from "@/pages/backups";
-import Network from "@/pages/network";
-import Communication from "@/pages/communication";
 import VFD from "@/pages/vfd";
 import Reports from "@/pages/reports";
-import Instruments from "@/pages/instruments";
 import ProjectDetails from "@/pages/project-details";
 import Settings from "@/pages/settings";
 import IPCDetails from "@/pages/ipc-details";
@@ -30,11 +27,8 @@ function Router() {
           <Route path="/site-events" component={SiteEvents} />
           <Route path="/plc-tags" component={PlcTags} />
           <Route path="/backups" component={Backups} />
-          <Route path="/network" component={Network} />
-          <Route path="/communication" component={Communication} />
           <Route path="/vfd" component={VFD} />
           <Route path="/reports" component={Reports} />
-          <Route path="/instruments" component={Instruments} />
           <Route path="/project-details" component={ProjectDetails} />
           <Route path="/settings" component={Settings} />
           <Route path="/ipc-management" component={IPCDetails} />

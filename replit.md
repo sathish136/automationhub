@@ -6,6 +6,7 @@ AutomationHub is a comprehensive industrial automation monitoring and management
 
 ## Recent Changes
 
+- **Network Equipment and Communication Systems Removed (December 2024)**: Completely removed network equipment management, communication interfaces, and instrument data functionality from the system. This included deleting database tables (networkEquipment, communicationInterfaces, instrumentData, communicationLogs), removing API endpoints, cleaning up frontend pages and navigation. The system now focuses on core industrial automation monitoring.
 - **PLC Tags Page Redesigned (August 2024)**: Completely redesigned PLC Tag Monitoring page to match IPC Management page style with proper font sizes, added bulk upload functionality for CSV data import, improved UI consistency with other management pages.
 - **Site Events Page Added (December 2024)**: Implemented comprehensive event management interface for viewing, filtering, and managing site alerts and system events with real-time updates and status management.
 
@@ -40,9 +41,10 @@ Preferred communication style: Simple, everyday language.
 - **Sites**: Core entity tracking IP addresses, status, uptime metrics, and site metadata
 - **Uptime History**: Time-series data for historical monitoring and analytics
 - **Program Backups**: File metadata and storage for HMI/PLC program backups
-- **Network Equipment**: Router and modem tracking with status monitoring
 - **IPC Credentials**: Encrypted credential storage with bcrypt hashing
 - **VFD Parameters**: Variable frequency drive configuration and monitoring data
+- **PLC Tags**: PLC tag monitoring and historical data tracking
+- **Projects**: Project management and planning functionality
 - **Alerts**: Notification system with severity levels and acknowledgment tracking
 
 ### Authentication and Authorization

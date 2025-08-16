@@ -65,29 +65,6 @@ export const programBackups = pgTable("program_backups", {
   index("idx_backups_type").on(table.type),
 ]);
 
-// Network equipment
-export const networkEquipment = pgTable("network_equipment", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }).notNull(),
-  type: varchar("type", { length: 50 }).notNull(), // router, modem, switch, firewall
-  model: varchar("model", { length: 100 }),
-  manufacturer: varchar("manufacturer", { length: 100 }),
-  ipAddress: varchar("ip_address", { length: 45 }).notNull(),
-  macAddress: varchar("mac_address", { length: 17 }),
-  status: varchar("status", { length: 20 }).notNull().default("unknown"),
-  lastCheck: timestamp("last_check"),
-  firmware: varchar("firmware", { length: 100 }),
-  configBackup: text("config_backup"),
-  credentials: text("credentials"), // encrypted
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_network_site").on(table.siteId),
-  index("idx_network_type").on(table.type),
-  index("idx_network_ip").on(table.ipAddress),
-]);
 
 // IPC management
 export const ipcManagement = pgTable("ipc_management", {
@@ -179,81 +156,6 @@ export const vfdParameters = pgTable("vfd_parameters", {
   index("idx_vfd_active").on(table.isActive),
 ]);
 
-// Communication interfaces and protocols
-export const communicationInterfaces = pgTable("communication_interfaces", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  type: varchar("type", { length: 50 }).notNull(), // rs485, 4-20ma, modbus_tcp, modbus_rtu, profinet
-  connectionType: varchar("connection_type", { length: 50 }), // serial, ethernet, fieldbus
-  ipAddress: varchar("ip_address", { length: 45 }),
-  port: integer("port"),
-  baudRate: integer("baud_rate"),
-  parity: varchar("parity", { length: 10 }), // none, odd, even
-  stopBits: integer("stop_bits"),
-  dataBits: integer("data_bits"),
-  slaveId: integer("slave_id"), // For Modbus devices
-  deviceAddress: varchar("device_address", { length: 100 }),
-  protocol: varchar("protocol", { length: 50 }), // modbus, profinet, hart, etc.
-  status: varchar("status", { length: 20 }).notNull().default("unknown"), // online, offline, error, unknown
-  lastCheck: timestamp("last_check"),
-  lastSuccessfulComm: timestamp("last_successful_comm"),
-  errorCount: integer("error_count").default(0),
-  configuration: jsonb("configuration"), // protocol-specific config
-  dataPoints: jsonb("data_points"), // mapped data points
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_comm_site").on(table.siteId),
-  index("idx_comm_type").on(table.type),
-  index("idx_comm_status").on(table.status),
-]);
-
-// Instrument data (for 4-20mA, analog signals, etc.)
-export const instrumentData = pgTable("instrument_data", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  commInterfaceId: varchar("comm_interface_id").notNull().references(() => communicationInterfaces.id, { onDelete: "cascade" }),
-  tagName: varchar("tag_name", { length: 255 }).notNull(),
-  description: text("description"),
-  dataType: varchar("data_type", { length: 50 }).notNull(), // analog, digital, temperature, pressure, flow, level
-  unit: varchar("unit", { length: 20 }), // mA, V, °C, bar, l/min, etc.
-  minValue: decimal("min_value", { precision: 10, scale: 3 }),
-  maxValue: decimal("max_value", { precision: 10, scale: 3 }),
-  currentValue: decimal("current_value", { precision: 10, scale: 3 }),
-  lastReading: timestamp("last_reading"),
-  quality: varchar("quality", { length: 20 }).default("good"), // good, bad, uncertain
-  alarmLow: decimal("alarm_low", { precision: 10, scale: 3 }),
-  alarmHigh: decimal("alarm_high", { precision: 10, scale: 3 }),
-  warningLow: decimal("warning_low", { precision: 10, scale: 3 }),
-  warningHigh: decimal("warning_high", { precision: 10, scale: 3 }),
-  scalingConfig: jsonb("scaling_config"), // raw to engineering units conversion
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_instrument_comm").on(table.commInterfaceId),
-  index("idx_instrument_tag").on(table.tagName),
-  index("idx_instrument_type").on(table.dataType),
-]);
-
-// Communication logs for troubleshooting
-export const communicationLogs = pgTable("communication_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  commInterfaceId: varchar("comm_interface_id").notNull().references(() => communicationInterfaces.id, { onDelete: "cascade" }),
-  timestamp: timestamp("timestamp").notNull().defaultNow(),
-  logType: varchar("log_type", { length: 50 }).notNull(), // request, response, error, status_change
-  message: text("message"),
-  rawData: text("raw_data"), // hex or raw communication data
-  errorCode: varchar("error_code", { length: 50 }),
-  responseTime: integer("response_time"), // in milliseconds
-  success: boolean("success").notNull(),
-}, (table) => [
-  index("idx_comm_logs_interface").on(table.commInterfaceId),
-  index("idx_comm_logs_timestamp").on(table.timestamp),
-  index("idx_comm_logs_type").on(table.logType),
-]);
 
 // Alerts and notifications
 export const alerts = pgTable("alerts", {
@@ -313,10 +215,8 @@ export const plcTagHistory = pgTable("plc_tag_history", {
 export const sitesRelations = relations(sites, ({ many }) => ({
   uptimeHistory: many(uptimeHistory),
   programBackups: many(programBackups),
-  networkEquipment: many(networkEquipment),
   ipcManagement: many(ipcManagement),
   vfdParameters: many(vfdParameters),
-  communicationInterfaces: many(communicationInterfaces),
   alerts: many(alerts),
   plcTags: many(plcTags),
 }));
@@ -335,13 +235,6 @@ export const programBackupsRelations = relations(programBackups, ({ one }) => ({
   }),
 }));
 
-export const networkEquipmentRelations = relations(networkEquipment, ({ one }) => ({
-  site: one(sites, {
-    fields: [networkEquipment.siteId],
-    references: [sites.id],
-  }),
-}));
-
 export const ipcManagementRelations = relations(ipcManagement, ({ one }) => ({
   site: one(sites, {
     fields: [ipcManagement.siteId],
@@ -353,29 +246,6 @@ export const vfdParametersRelations = relations(vfdParameters, ({ one }) => ({
   site: one(sites, {
     fields: [vfdParameters.siteId],
     references: [sites.id],
-  }),
-}));
-
-export const communicationInterfacesRelations = relations(communicationInterfaces, ({ one, many }) => ({
-  site: one(sites, {
-    fields: [communicationInterfaces.siteId],
-    references: [sites.id],
-  }),
-  instrumentData: many(instrumentData),
-  communicationLogs: many(communicationLogs),
-}));
-
-export const instrumentDataRelations = relations(instrumentData, ({ one }) => ({
-  communicationInterface: one(communicationInterfaces, {
-    fields: [instrumentData.commInterfaceId],
-    references: [communicationInterfaces.id],
-  }),
-}));
-
-export const communicationLogsRelations = relations(communicationLogs, ({ one }) => ({
-  communicationInterface: one(communicationInterfaces, {
-    fields: [communicationLogs.commInterfaceId],
-    references: [communicationInterfaces.id],
   }),
 }));
 
@@ -451,11 +321,7 @@ export const insertProgramBackupSchema = createInsertSchema(programBackups).omit
   createdAt: true,
 });
 
-export const insertNetworkEquipmentSchema = createInsertSchema(networkEquipment).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+
 
 export const insertIpcManagementSchema = createInsertSchema(ipcManagement).omit({
   id: true,
@@ -472,22 +338,7 @@ export const insertVfdParameterSchema = createInsertSchema(vfdParameters).omit({
   updatedAt: true,
 });
 
-export const insertCommunicationInterfaceSchema = createInsertSchema(communicationInterfaces).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
-export const insertInstrumentDataSchema = createInsertSchema(instrumentData).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCommunicationLogSchema = createInsertSchema(communicationLogs).omit({
-  id: true,
-  timestamp: true,
-});
 
 export const insertAlertSchema = createInsertSchema(alerts).omit({
   id: true,
@@ -513,18 +364,12 @@ export type UptimeHistory = typeof uptimeHistory.$inferSelect;
 export type InsertUptimeHistory = z.infer<typeof insertUptimeHistorySchema>;
 export type ProgramBackup = typeof programBackups.$inferSelect;
 export type InsertProgramBackup = z.infer<typeof insertProgramBackupSchema>;
-export type NetworkEquipment = typeof networkEquipment.$inferSelect;
-export type InsertNetworkEquipment = z.infer<typeof insertNetworkEquipmentSchema>;
+
 export type IpcManagement = typeof ipcManagement.$inferSelect;
 export type InsertIpcManagement = z.infer<typeof insertIpcManagementSchema>;
 export type VfdParameter = typeof vfdParameters.$inferSelect;
 export type InsertVfdParameter = z.infer<typeof insertVfdParameterSchema>;
-export type CommunicationInterface = typeof communicationInterfaces.$inferSelect;
-export type InsertCommunicationInterface = z.infer<typeof insertCommunicationInterfaceSchema>;
-export type InstrumentData = typeof instrumentData.$inferSelect;
-export type InsertInstrumentData = z.infer<typeof insertInstrumentDataSchema>;
-export type CommunicationLog = typeof communicationLogs.$inferSelect;
-export type InsertCommunicationLog = z.infer<typeof insertCommunicationLogSchema>;
+
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Project = typeof projects.$inferSelect;

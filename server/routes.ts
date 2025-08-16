@@ -7,13 +7,9 @@ import path from "path";
 import fs from "fs/promises";
 import { 
   insertSiteSchema, 
-  insertNetworkEquipmentSchema, 
   insertIpcManagementSchema, 
   insertVfdParameterSchema, 
   insertProgramBackupSchema,
-  insertCommunicationInterfaceSchema,
-  insertInstrumentDataSchema,
-  insertCommunicationLogSchema,
   insertProjectSchema,
   insertPlcTagSchema,
   insertPlcTagHistorySchema
@@ -82,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(project);
     } catch (error) {
       console.error("Error creating project:", error);
-      res.status(400).json({ message: "Invalid project data", error: error.message });
+      res.status(400).json({ message: "Invalid project data" });
     }
   });
 
@@ -354,55 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Network equipment
-  app.get("/api/network-equipment", async (req, res) => {
-    try {
-      const siteId = req.query.siteId as string;
-      const equipment = await storage.getNetworkEquipment(siteId);
-      res.json(equipment);
-    } catch (error) {
-      console.error("Error fetching network equipment:", error);
-      res.status(500).json({ message: "Failed to fetch network equipment" });
-    }
-  });
 
-  app.post("/api/network-equipment", async (req, res) => {
-    try {
-      const equipmentData = insertNetworkEquipmentSchema.parse(req.body);
-      const equipment = await storage.createNetworkEquipment(equipmentData);
-      res.status(201).json(equipment);
-    } catch (error) {
-      console.error("Error creating network equipment:", error);
-      res.status(400).json({ message: "Invalid equipment data" });
-    }
-  });
-
-  app.put("/api/network-equipment/:id", async (req, res) => {
-    try {
-      const equipmentData = insertNetworkEquipmentSchema.partial().parse(req.body);
-      const equipment = await storage.updateNetworkEquipment(req.params.id, equipmentData);
-      if (!equipment) {
-        return res.status(404).json({ message: "Equipment not found" });
-      }
-      res.json(equipment);
-    } catch (error) {
-      console.error("Error updating network equipment:", error);
-      res.status(400).json({ message: "Invalid equipment data" });
-    }
-  });
-
-  app.delete("/api/network-equipment/:id", async (req, res) => {
-    try {
-      const success = await storage.deleteNetworkEquipment(req.params.id);
-      if (!success) {
-        return res.status(404).json({ message: "Equipment not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting network equipment:", error);
-      res.status(500).json({ message: "Failed to delete network equipment" });
-    }
-  });
 
   // IPC management
   app.get("/api/ipc-management", async (req, res) => {
@@ -545,133 +493,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Communication Interfaces
-  app.get("/api/communication-interfaces", async (req, res) => {
-    try {
-      const siteId = req.query.siteId as string;
-      const interfaces = await storage.getCommunicationInterfaces(siteId);
-      res.json(interfaces);
-    } catch (error) {
-      console.error("Error fetching communication interfaces:", error);
-      res.status(500).json({ message: "Failed to fetch communication interfaces" });
-    }
-  });
 
-  app.post("/api/communication-interfaces", async (req, res) => {
-    try {
-      const interfaceData = insertCommunicationInterfaceSchema.parse(req.body);
-      const commInterface = await storage.createCommunicationInterface(interfaceData);
-      res.status(201).json(commInterface);
-    } catch (error) {
-      console.error("Error creating communication interface:", error);
-      res.status(400).json({ message: "Invalid interface data" });
-    }
-  });
 
-  app.put("/api/communication-interfaces/:id", async (req, res) => {
-    try {
-      const interfaceData = insertCommunicationInterfaceSchema.partial().parse(req.body);
-      const commInterface = await storage.updateCommunicationInterface(req.params.id, interfaceData);
-      if (!commInterface) {
-        return res.status(404).json({ message: "Interface not found" });
-      }
-      res.json(commInterface);
-    } catch (error) {
-      console.error("Error updating communication interface:", error);
-      res.status(400).json({ message: "Invalid interface data" });
-    }
-  });
 
-  app.delete("/api/communication-interfaces/:id", async (req, res) => {
-    try {
-      const success = await storage.deleteCommunicationInterface(req.params.id);
-      if (!success) {
-        return res.status(404).json({ message: "Interface not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting communication interface:", error);
-      res.status(500).json({ message: "Failed to delete communication interface" });
-    }
-  });
-
-  // Instrument Data
-  app.get("/api/communication-interfaces/:id/instruments", async (req, res) => {
-    try {
-      const instruments = await storage.getInstrumentData(req.params.id);
-      res.json(instruments);
-    } catch (error) {
-      console.error("Error fetching instrument data:", error);
-      res.status(500).json({ message: "Failed to fetch instrument data" });
-    }
-  });
-
-  app.post("/api/communication-interfaces/:id/instruments", async (req, res) => {
-    try {
-      const instrumentData = insertInstrumentDataSchema.parse({
-        ...req.body,
-        commInterfaceId: req.params.id,
-      });
-      const instrument = await storage.createInstrumentData(instrumentData);
-      res.status(201).json(instrument);
-    } catch (error) {
-      console.error("Error creating instrument data:", error);
-      res.status(400).json({ message: "Invalid instrument data" });
-    }
-  });
-
-  app.put("/api/instruments/:id", async (req, res) => {
-    try {
-      const instrumentData = insertInstrumentDataSchema.partial().parse(req.body);
-      const instrument = await storage.updateInstrumentData(req.params.id, instrumentData);
-      if (!instrument) {
-        return res.status(404).json({ message: "Instrument not found" });
-      }
-      res.json(instrument);
-    } catch (error) {
-      console.error("Error updating instrument data:", error);
-      res.status(400).json({ message: "Invalid instrument data" });
-    }
-  });
-
-  app.delete("/api/instruments/:id", async (req, res) => {
-    try {
-      const success = await storage.deleteInstrumentData(req.params.id);
-      if (!success) {
-        return res.status(404).json({ message: "Instrument not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting instrument data:", error);
-      res.status(500).json({ message: "Failed to delete instrument data" });
-    }
-  });
-
-  // Communication Logs
-  app.get("/api/communication-interfaces/:id/logs", async (req, res) => {
-    try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
-      const logs = await storage.getCommunicationLogs(req.params.id, limit);
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching communication logs:", error);
-      res.status(500).json({ message: "Failed to fetch communication logs" });
-    }
-  });
-
-  app.post("/api/communication-interfaces/:id/logs", async (req, res) => {
-    try {
-      const logData = insertCommunicationLogSchema.parse({
-        ...req.body,
-        commInterfaceId: req.params.id,
-      });
-      const log = await storage.createCommunicationLog(logData);
-      res.status(201).json(log);
-    } catch (error) {
-      console.error("Error creating communication log:", error);
-      res.status(400).json({ message: "Invalid log data" });
-    }
-  });
 
   // Alerts
   app.get("/api/alerts", async (req, res) => {

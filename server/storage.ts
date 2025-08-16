@@ -2,12 +2,8 @@ import {
   sites,
   uptimeHistory,
   programBackups,
-  networkEquipment,
   ipcManagement,
   vfdParameters,
-  communicationInterfaces,
-  instrumentData,
-  communicationLogs,
   alerts,
   projects,
   plcTags,
@@ -18,18 +14,10 @@ import {
   type InsertUptimeHistory,
   type ProgramBackup,
   type InsertProgramBackup,
-  type NetworkEquipment,
-  type InsertNetworkEquipment,
   type IpcManagement,
   type InsertIpcManagement,
   type VfdParameter,
   type InsertVfdParameter,
-  type CommunicationInterface,
-  type InsertCommunicationInterface,
-  type InstrumentData,
-  type InsertInstrumentData,
-  type CommunicationLog,
-  type InsertCommunicationLog,
   type Alert,
   type InsertAlert,
   type Project,
@@ -62,12 +50,6 @@ export interface IStorage {
   createProgramBackup(backup: InsertProgramBackup): Promise<ProgramBackup>;
   deleteProgramBackup(id: string): Promise<boolean>;
 
-  // Network Equipment
-  getNetworkEquipment(siteId?: string): Promise<NetworkEquipment[]>;
-  createNetworkEquipment(equipment: InsertNetworkEquipment): Promise<NetworkEquipment>;
-  updateNetworkEquipment(id: string, equipment: Partial<InsertNetworkEquipment>): Promise<NetworkEquipment | undefined>;
-  deleteNetworkEquipment(id: string): Promise<boolean>;
-
   // IPC Credentials
   getIpcManagement(siteId?: string): Promise<IpcManagement[]>;
   createIpcManagement(device: InsertIpcManagement): Promise<IpcManagement>;
@@ -79,22 +61,6 @@ export interface IStorage {
   createVfdParameter(parameter: InsertVfdParameter): Promise<VfdParameter>;
   updateVfdParameter(id: string, parameter: Partial<InsertVfdParameter>): Promise<VfdParameter | undefined>;
   deleteVfdParameter(id: string): Promise<boolean>;
-
-  // Communication interfaces
-  getCommunicationInterfaces(siteId?: string): Promise<CommunicationInterface[]>;
-  createCommunicationInterface(commInterface: InsertCommunicationInterface): Promise<CommunicationInterface>;
-  updateCommunicationInterface(id: string, updates: Partial<InsertCommunicationInterface>): Promise<CommunicationInterface | undefined>;
-  deleteCommunicationInterface(id: string): Promise<boolean>;
-
-  // Instrument data
-  getInstrumentData(commInterfaceId: string): Promise<InstrumentData[]>;
-  createInstrumentData(data: InsertInstrumentData): Promise<InstrumentData>;
-  updateInstrumentData(id: string, updates: Partial<InsertInstrumentData>): Promise<InstrumentData | undefined>;
-  deleteInstrumentData(id: string): Promise<boolean>;
-
-  // Communication logs
-  getCommunicationLogs(commInterfaceId: string, limit?: number): Promise<CommunicationLog[]>;
-  createCommunicationLog(log: InsertCommunicationLog): Promise<CommunicationLog>;
 
   // Alerts
   getAlerts(limit?: number): Promise<Alert[]>;
@@ -240,33 +206,7 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  // Network Equipment
-  async getNetworkEquipment(siteId?: string): Promise<NetworkEquipment[]> {
-    const query = db.select().from(networkEquipment);
-    if (siteId) {
-      return await query.where(eq(networkEquipment.siteId, siteId));
-    }
-    return await query;
-  }
 
-  async createNetworkEquipment(equipment: InsertNetworkEquipment): Promise<NetworkEquipment> {
-    const [newEquipment] = await db.insert(networkEquipment).values(equipment).returning();
-    return newEquipment;
-  }
-
-  async updateNetworkEquipment(id: string, equipment: Partial<InsertNetworkEquipment>): Promise<NetworkEquipment | undefined> {
-    const [updatedEquipment] = await db
-      .update(networkEquipment)
-      .set({ ...equipment, updatedAt: new Date() })
-      .where(eq(networkEquipment.id, id))
-      .returning();
-    return updatedEquipment;
-  }
-
-  async deleteNetworkEquipment(id: string): Promise<boolean> {
-    const result = await db.delete(networkEquipment).where(eq(networkEquipment.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
-  }
 
   // IPC Management
   async getIpcManagement(siteId?: string): Promise<IpcManagement[]> {
@@ -359,89 +299,7 @@ export class DatabaseStorage implements IStorage {
 
 
 
-  // Communication Interfaces
-  async getCommunicationInterfaces(siteId?: string): Promise<CommunicationInterface[]> {
-    if (siteId) {
-      return await db
-        .select()
-        .from(communicationInterfaces)
-        .where(and(eq(communicationInterfaces.siteId, siteId), eq(communicationInterfaces.isActive, true)));
-    }
-    return await db
-      .select()
-      .from(communicationInterfaces)
-      .where(eq(communicationInterfaces.isActive, true));
-  }
 
-  async createCommunicationInterface(commInterface: InsertCommunicationInterface): Promise<CommunicationInterface> {
-    const [newInterface] = await db
-      .insert(communicationInterfaces)
-      .values(commInterface)
-      .returning();
-    return newInterface;
-  }
-
-  async updateCommunicationInterface(id: string, updates: Partial<InsertCommunicationInterface>): Promise<CommunicationInterface | undefined> {
-    const [updated] = await db
-      .update(communicationInterfaces)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(communicationInterfaces.id, id))
-      .returning();
-    return updated;
-  }
-
-  async deleteCommunicationInterface(id: string): Promise<boolean> {
-    const result = await db
-      .update(communicationInterfaces)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(communicationInterfaces.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
-  }
-
-  // Instrument Data
-  async getInstrumentData(commInterfaceId: string): Promise<InstrumentData[]> {
-    return await db
-      .select()
-      .from(instrumentData)
-      .where(and(eq(instrumentData.commInterfaceId, commInterfaceId), eq(instrumentData.isActive, true)));
-  }
-
-  async createInstrumentData(data: InsertInstrumentData): Promise<InstrumentData> {
-    const [newData] = await db.insert(instrumentData).values(data).returning();
-    return newData;
-  }
-
-  async updateInstrumentData(id: string, updates: Partial<InsertInstrumentData>): Promise<InstrumentData | undefined> {
-    const [updated] = await db
-      .update(instrumentData)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(instrumentData.id, id))
-      .returning();
-    return updated;
-  }
-
-  async deleteInstrumentData(id: string): Promise<boolean> {
-    const result = await db
-      .update(instrumentData)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(instrumentData.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
-  }
-
-  // Communication Logs
-  async getCommunicationLogs(commInterfaceId: string, limit = 100): Promise<CommunicationLog[]> {
-    return await db
-      .select()
-      .from(communicationLogs)
-      .where(eq(communicationLogs.commInterfaceId, commInterfaceId))
-      .orderBy(desc(communicationLogs.timestamp))
-      .limit(limit);
-  }
-
-  async createCommunicationLog(log: InsertCommunicationLog): Promise<CommunicationLog> {
-    const [newLog] = await db.insert(communicationLogs).values(log).returning();
-    return newLog;
-  }
 
   // Alerts
   async getAlerts(limit = 50): Promise<Alert[]> {
