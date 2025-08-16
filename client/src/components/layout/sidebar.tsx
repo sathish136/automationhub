@@ -9,6 +9,7 @@ import {
   Sliders,
   BarChart3,
   Settings,
+  Cable,
 } from "lucide-react";
 
 const navigation = [
@@ -16,6 +17,7 @@ const navigation = [
   { name: "Site Monitoring", href: "/sites", icon: Building },
   { name: "Program Backups", href: "/backups", icon: Save },
   { name: "Network Equipment", href: "/network", icon: Network },
+  { name: "Communication", href: "/communication", icon: Cable },
   { name: "IPC Credentials", href: "/credentials", icon: Key },
   { name: "VFD Parameters", href: "/vfd", icon: Sliders },
   { name: "Reports", href: "/reports", icon: BarChart3 },
@@ -42,9 +44,9 @@ export default function Sidebar() {
             return (
               <li key={item.name}>
                 <Link href={item.href}>
-                  <a 
+                  <span 
                     className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
+                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors cursor-pointer",
                       isActive 
                         ? "bg-primary text-white" 
                         : "hover:bg-gray-700"
@@ -53,7 +55,7 @@ export default function Sidebar() {
                   >
                     <Icon size={18} />
                     <span>{item.name}</span>
-                  </a>
+                  </span>
                 </Link>
               </li>
             );

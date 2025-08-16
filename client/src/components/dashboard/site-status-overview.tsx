@@ -79,7 +79,7 @@ export default function SiteStatusOverview() {
     return `${responseTime}ms`;
   };
 
-  const formatLastSeen = (lastOnline: string | null) => {
+  const formatLastSeen = (lastOnline: string | Date | null) => {
     if (!lastOnline) return "Never";
     const date = new Date(lastOnline);
     const now = new Date();

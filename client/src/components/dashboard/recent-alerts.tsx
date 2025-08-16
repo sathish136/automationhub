@@ -40,7 +40,7 @@ export default function RecentAlerts() {
     }
   };
 
-  const formatTimeAgo = (createdAt: string) => {
+  const formatTimeAgo = (createdAt: string | Date) => {
     const date = new Date(createdAt);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -87,7 +87,7 @@ export default function RecentAlerts() {
                     {alert.message}
                   </p>
                   <span className={`text-xs ${getSeverityTextColor(alert.severity)}`}>
-                    {formatTimeAgo(alert.createdAt)}
+                    {alert.createdAt && formatTimeAgo(alert.createdAt)}
                   </span>
                 </div>
               </div>

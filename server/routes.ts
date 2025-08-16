@@ -5,7 +5,16 @@ import { pingService } from "./services/pingService";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
-import { insertSiteSchema, insertNetworkEquipmentSchema, insertIpcCredentialSchema, insertVfdParameterSchema, insertProgramBackupSchema } from "@shared/schema";
+import { 
+  insertSiteSchema, 
+  insertNetworkEquipmentSchema, 
+  insertIpcCredentialSchema, 
+  insertVfdParameterSchema, 
+  insertProgramBackupSchema,
+  insertCommunicationInterfaceSchema,
+  insertInstrumentDataSchema,
+  insertCommunicationLogSchema
+} from "@shared/schema";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -344,6 +353,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting VFD parameter:", error);
       res.status(500).json({ message: "Failed to delete VFD parameter" });
+    }
+  });
+
+  // Communication Interfaces
+  app.get("/api/communication-interfaces", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const interfaces = await storage.getCommunicationInterfaces(siteId);
+      res.json(interfaces);
+    } catch (error) {
+      console.error("Error fetching communication interfaces:", error);
+      res.status(500).json({ message: "Failed to fetch communication interfaces" });
+    }
+  });
+
+  app.post("/api/communication-interfaces", async (req, res) => {
+    try {
+      const interfaceData = insertCommunicationInterfaceSchema.parse(req.body);
+      const commInterface = await storage.createCommunicationInterface(interfaceData);
+      res.status(201).json(commInterface);
+    } catch (error) {
+      console.error("Error creating communication interface:", error);
+      res.status(400).json({ message: "Invalid interface data" });
+    }
+  });
+
+  app.put("/api/communication-interfaces/:id", async (req, res) => {
+    try {
+      const interfaceData = insertCommunicationInterfaceSchema.partial().parse(req.body);
+      const commInterface = await storage.updateCommunicationInterface(req.params.id, interfaceData);
+      if (!commInterface) {
+        return res.status(404).json({ message: "Interface not found" });
+      }
+      res.json(commInterface);
+    } catch (error) {
+      console.error("Error updating communication interface:", error);
+      res.status(400).json({ message: "Invalid interface data" });
+    }
+  });
+
+  app.delete("/api/communication-interfaces/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteCommunicationInterface(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Interface not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting communication interface:", error);
+      res.status(500).json({ message: "Failed to delete communication interface" });
+    }
+  });
+
+  // Instrument Data
+  app.get("/api/communication-interfaces/:id/instruments", async (req, res) => {
+    try {
+      const instruments = await storage.getInstrumentData(req.params.id);
+      res.json(instruments);
+    } catch (error) {
+      console.error("Error fetching instrument data:", error);
+      res.status(500).json({ message: "Failed to fetch instrument data" });
+    }
+  });
+
+  app.post("/api/communication-interfaces/:id/instruments", async (req, res) => {
+    try {
+      const instrumentData = insertInstrumentDataSchema.parse({
+        ...req.body,
+        commInterfaceId: req.params.id,
+      });
+      const instrument = await storage.createInstrumentData(instrumentData);
+      res.status(201).json(instrument);
+    } catch (error) {
+      console.error("Error creating instrument data:", error);
+      res.status(400).json({ message: "Invalid instrument data" });
+    }
+  });
+
+  app.put("/api/instruments/:id", async (req, res) => {
+    try {
+      const instrumentData = insertInstrumentDataSchema.partial().parse(req.body);
+      const instrument = await storage.updateInstrumentData(req.params.id, instrumentData);
+      if (!instrument) {
+        return res.status(404).json({ message: "Instrument not found" });
+      }
+      res.json(instrument);
+    } catch (error) {
+      console.error("Error updating instrument data:", error);
+      res.status(400).json({ message: "Invalid instrument data" });
+    }
+  });
+
+  app.delete("/api/instruments/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteInstrumentData(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Instrument not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting instrument data:", error);
+      res.status(500).json({ message: "Failed to delete instrument data" });
+    }
+  });
+
+  // Communication Logs
+  app.get("/api/communication-interfaces/:id/logs", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const logs = await storage.getCommunicationLogs(req.params.id, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching communication logs:", error);
+      res.status(500).json({ message: "Failed to fetch communication logs" });
+    }
+  });
+
+  app.post("/api/communication-interfaces/:id/logs", async (req, res) => {
+    try {
+      const logData = insertCommunicationLogSchema.parse({
+        ...req.body,
+        commInterfaceId: req.params.id,
+      });
+      const log = await storage.createCommunicationLog(logData);
+      res.status(201).json(log);
+    } catch (error) {
+      console.error("Error creating communication log:", error);
+      res.status(400).json({ message: "Invalid log data" });
     }
   });
 

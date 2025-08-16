@@ -49,7 +49,7 @@ export default function NetworkEquipmentStatus() {
     }
   };
 
-  const formatLastCheck = (lastCheck: string | null) => {
+  const formatLastCheck = (lastCheck: string | Date | null) => {
     if (!lastCheck) return "Never";
     const date = new Date(lastCheck);
     const now = new Date();

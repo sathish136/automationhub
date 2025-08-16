@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle }: HeaderProps) {
-  const { data: unreadCount } = useQuery({
+  const { data: unreadCount } = useQuery<{ count: number }>({
     queryKey: ["/api/alerts/unread-count"],
     refetchInterval: 30000, // Check every 30 seconds
   });

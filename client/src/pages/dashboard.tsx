@@ -8,7 +8,12 @@ import EquipmentStatus from "@/components/dashboard/equipment-status";
 import NetworkEquipmentStatus from "@/components/dashboard/network-equipment-status";
 
 export default function Dashboard() {
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
+  const { data: metrics, isLoading: metricsLoading } = useQuery<{
+    totalSites: number;
+    onlineSites: number;
+    criticalAlerts: number;
+    avgResponseTime: number;
+  }>({
     queryKey: ["/api/dashboard/metrics"],
     refetchInterval: 30000, // Refresh every 30 seconds
   });

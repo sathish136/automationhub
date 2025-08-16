@@ -5,6 +5,9 @@ import {
   networkEquipment,
   ipcCredentials,
   vfdParameters,
+  communicationInterfaces,
+  instrumentData,
+  communicationLogs,
   alerts,
   type Site,
   type InsertSite,
@@ -18,6 +21,12 @@ import {
   type InsertIpcCredential,
   type VfdParameter,
   type InsertVfdParameter,
+  type CommunicationInterface,
+  type InsertCommunicationInterface,
+  type InstrumentData,
+  type InsertInstrumentData,
+  type CommunicationLog,
+  type InsertCommunicationLog,
   type Alert,
   type InsertAlert,
 } from "@shared/schema";
@@ -61,6 +70,22 @@ export interface IStorage {
   createVfdParameter(parameter: InsertVfdParameter): Promise<VfdParameter>;
   updateVfdParameter(id: string, parameter: Partial<InsertVfdParameter>): Promise<VfdParameter | undefined>;
   deleteVfdParameter(id: string): Promise<boolean>;
+
+  // Communication interfaces
+  getCommunicationInterfaces(siteId?: string): Promise<CommunicationInterface[]>;
+  createCommunicationInterface(commInterface: InsertCommunicationInterface): Promise<CommunicationInterface>;
+  updateCommunicationInterface(id: string, updates: Partial<InsertCommunicationInterface>): Promise<CommunicationInterface | undefined>;
+  deleteCommunicationInterface(id: string): Promise<boolean>;
+
+  // Instrument data
+  getInstrumentData(commInterfaceId: string): Promise<InstrumentData[]>;
+  createInstrumentData(data: InsertInstrumentData): Promise<InstrumentData>;
+  updateInstrumentData(id: string, updates: Partial<InsertInstrumentData>): Promise<InstrumentData | undefined>;
+  deleteInstrumentData(id: string): Promise<boolean>;
+
+  // Communication logs
+  getCommunicationLogs(commInterfaceId: string, limit?: number): Promise<CommunicationLog[]>;
+  createCommunicationLog(log: InsertCommunicationLog): Promise<CommunicationLog>;
 
   // Alerts
   getAlerts(limit?: number): Promise<Alert[]>;
@@ -262,11 +287,21 @@ export class DatabaseStorage implements IStorage {
 
   // VFD Parameters
   async getVfdParameters(siteId?: string): Promise<VfdParameter[]> {
-    const query = db.select().from(vfdParameters).where(eq(vfdParameters.isActive, true));
     if (siteId) {
-      return await query.where(eq(vfdParameters.siteId, siteId));
+      return await db
+        .select()
+        .from(vfdParameters)
+        .where(
+          and(
+            eq(vfdParameters.isActive, true),
+            eq(vfdParameters.siteId, siteId)
+          )
+        );
     }
-    return await query;
+    return await db
+      .select()
+      .from(vfdParameters)
+      .where(eq(vfdParameters.isActive, true));
   }
 
   async createVfdParameter(parameter: InsertVfdParameter): Promise<VfdParameter> {
@@ -358,6 +393,90 @@ export class DatabaseStorage implements IStorage {
       criticalAlerts: alertStats.criticalAlerts || 0,
       avgResponseTime: Math.round(siteStats.avgResponseTime || 0),
     };
+  }
+
+  // Communication Interfaces
+  async getCommunicationInterfaces(siteId?: string): Promise<CommunicationInterface[]> {
+    if (siteId) {
+      return await db
+        .select()
+        .from(communicationInterfaces)
+        .where(and(eq(communicationInterfaces.siteId, siteId), eq(communicationInterfaces.isActive, true)));
+    }
+    return await db
+      .select()
+      .from(communicationInterfaces)
+      .where(eq(communicationInterfaces.isActive, true));
+  }
+
+  async createCommunicationInterface(commInterface: InsertCommunicationInterface): Promise<CommunicationInterface> {
+    const [newInterface] = await db
+      .insert(communicationInterfaces)
+      .values(commInterface)
+      .returning();
+    return newInterface;
+  }
+
+  async updateCommunicationInterface(id: string, updates: Partial<InsertCommunicationInterface>): Promise<CommunicationInterface | undefined> {
+    const [updated] = await db
+      .update(communicationInterfaces)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(communicationInterfaces.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCommunicationInterface(id: string): Promise<boolean> {
+    const result = await db
+      .update(communicationInterfaces)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(communicationInterfaces.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Instrument Data
+  async getInstrumentData(commInterfaceId: string): Promise<InstrumentData[]> {
+    return await db
+      .select()
+      .from(instrumentData)
+      .where(and(eq(instrumentData.commInterfaceId, commInterfaceId), eq(instrumentData.isActive, true)));
+  }
+
+  async createInstrumentData(data: InsertInstrumentData): Promise<InstrumentData> {
+    const [newData] = await db.insert(instrumentData).values(data).returning();
+    return newData;
+  }
+
+  async updateInstrumentData(id: string, updates: Partial<InsertInstrumentData>): Promise<InstrumentData | undefined> {
+    const [updated] = await db
+      .update(instrumentData)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(instrumentData.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteInstrumentData(id: string): Promise<boolean> {
+    const result = await db
+      .update(instrumentData)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(instrumentData.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Communication Logs
+  async getCommunicationLogs(commInterfaceId: string, limit = 100): Promise<CommunicationLog[]> {
+    return await db
+      .select()
+      .from(communicationLogs)
+      .where(eq(communicationLogs.commInterfaceId, commInterfaceId))
+      .orderBy(desc(communicationLogs.timestamp))
+      .limit(limit);
+  }
+
+  async createCommunicationLog(log: InsertCommunicationLog): Promise<CommunicationLog> {
+    const [newLog] = await db.insert(communicationLogs).values(log).returning();
+    return newLog;
   }
 }
 
