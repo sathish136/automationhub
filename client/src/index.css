@@ -142,3 +142,16 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Force input fields to be white */
+input[type="text"], input[type="password"], input[type="email"], input[type="number"], select, textarea {
+  background-color: white !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+  background-color: white !important;
+  border-color: #3b82f6 !important;
+  color: #111827 !important;
+}
