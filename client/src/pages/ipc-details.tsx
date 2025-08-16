@@ -82,10 +82,32 @@ export default function IPCDetails() {
         description: "IPC device updated successfully",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Error updating IPC device:", error);
       toast({
         title: "Error", 
-        description: "Failed to update IPC device",
+        description: error?.message || "Failed to update IPC device",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete IPC device mutation
+  const deleteIpcMutation = useMutation({
+    mutationFn: (id: string) => apiRequest(`/api/ipc-management/${id}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ipc-management"] });
+      setSelectedIPCId(null);
+      toast({
+        title: "Success",
+        description: "IPC device deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Error deleting IPC device:", error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete IPC device",
         variant: "destructive",
       });
     },
@@ -190,6 +212,12 @@ export default function IPCDetails() {
 
   const handleNewIPCChange = (field: keyof InsertIpcManagement, value: any) => {
     setNewIPCData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this IPC device?")) {
+      deleteIpcMutation.mutate(id);
+    }
   };
 
   const togglePasswordVisibility = (ipcId: string | number) => {
@@ -593,7 +621,7 @@ export default function IPCDetails() {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -605,6 +633,33 @@ export default function IPCDetails() {
                                 title="View details"
                               >
                                 <Eye size={14} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditStart(ipc);
+                                  setSelectedIPCId(ipc.id);
+                                }}
+                                data-testid={`edit-ipc-${ipc.id}`}
+                                title="Edit device"
+                              >
+                                <Edit size={14} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(ipc.id);
+                                }}
+                                data-testid={`delete-ipc-${ipc.id}`}
+                                title="Delete device"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={deleteIpcMutation.isPending}
+                              >
+                                <X size={14} />
                               </Button>
                             </div>
                           </td>
@@ -657,19 +712,34 @@ export default function IPCDetails() {
                   <X size={16} className="mr-2" />
                   Cancel
                 </Button>
-                <Button onClick={handleEditSave} data-testid="save-edit-ipc">
+                <Button 
+                  onClick={handleEditSave} 
+                  data-testid="save-edit-ipc"
+                  disabled={updateIpcMutation.isPending}
+                >
                   <Save size={16} className="mr-2" />
-                  Save Changes
+                  {updateIpcMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </>
             ) : (
-              <Button
-                onClick={() => handleEditStart(selectedIPC)}
-                data-testid="edit-ipc"
-              >
-                <Edit size={16} className="mr-2" />
-                Edit Device
-              </Button>
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(selectedIPC.id)}
+                  data-testid="delete-ipc"
+                  disabled={deleteIpcMutation.isPending}
+                >
+                  <X size={16} className="mr-2" />
+                  {deleteIpcMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+                <Button
+                  onClick={() => handleEditStart(selectedIPC)}
+                  data-testid="edit-ipc"
+                >
+                  <Edit size={16} className="mr-2" />
+                  Edit Device
+                </Button>
+              </>
             )}
           </div>
         </div>
