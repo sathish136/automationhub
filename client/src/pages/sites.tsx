@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List, Trash2, Monitor, Server } from "lucide-react";
+import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List, Trash2, Monitor, Server, BarChart3, Eye } from "lucide-react";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; 
+import { Separator } from "@/components/ui/separator";
 import { type Site, type IpcManagement, type UptimeHistory } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -137,7 +139,7 @@ function UptimeBar({ siteId }: { siteId: string }) {
   );
 }
 
-function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRdpConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void; onRdpConnect: (vpnIp: string, username: string, password: string) => void }) {
+function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRdpConnect, onViewDetails }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void; onRdpConnect: (vpnIp: string, username: string, password: string) => void; onViewDetails: (siteId: string, siteName: string) => void }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -189,6 +191,16 @@ function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, 
             <div className="text-xs text-muted-foreground mb-1">24h Status</div>
             <UptimeBar siteId={site.id} />
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onViewDetails(site.id, site.name)}
+            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+            data-testid={`view-details-list-${site.id}`}
+            title="View detailed analytics and connection info"
+          >
+            <BarChart3 className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -247,7 +259,7 @@ function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, 
   );
 }
 
-function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRdpConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void; onRdpConnect: (vpnIp: string, username: string, password: string) => void }) {
+function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRdpConnect, onViewDetails }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void; onRdpConnect: (vpnIp: string, username: string, password: string) => void; onViewDetails: (siteId: string, siteName: string) => void }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -275,6 +287,16 @@ function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRd
           </div>
           <div className="flex items-center space-x-2">
             <SiteStatusBadge status={site.status} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onViewDetails(site.id, site.name)}
+              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+              data-testid={`view-details-card-${site.id}`}
+              title="View detailed analytics and connection info"
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -385,6 +407,7 @@ function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRd
 
 export default function Sites() {
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+  const [selectedSite, setSelectedSite] = useState<{site: Site, ipcDevice?: IpcManagement} | null>(null);
   const { toast } = useToast();
   
   const { data: sites = [], isLoading: sitesLoading } = useQuery<Site[]>({
@@ -442,6 +465,14 @@ export default function Sites() {
         title: "Opening RDP Connection",
         description: `Connecting to ${vpnIp} as ${username}`,
       });
+    }
+  };
+
+  const handleViewDetails = (siteId: string, siteName: string) => {
+    const site = sites.find(s => s.id === siteId);
+    const ipcDevice = site ? ipcByIP[site.ipAddress] : undefined;
+    if (site) {
+      setSelectedSite({ site, ipcDevice });
     }
   };
 
@@ -555,6 +586,7 @@ export default function Sites() {
                   isDeleting={deleteSiteMutation.isPending}
                   onRemoteConnect={handleRemoteConnect}
                   onRdpConnect={handleRdpConnect}
+                  onViewDetails={handleViewDetails}
                 />
               ) : (
                 <SiteListItem
@@ -565,12 +597,218 @@ export default function Sites() {
                   isDeleting={deleteSiteMutation.isPending}
                   onRemoteConnect={handleRemoteConnect}
                   onRdpConnect={handleRdpConnect}
+                  onViewDetails={handleViewDetails}
                 />
               )
             ))}
           </div>
         )}
       </div>
+      
+      {/* Site Details Modal */}
+      <Dialog open={!!selectedSite} onOpenChange={() => setSelectedSite(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <SiteStatusIcon status={selectedSite?.site.status || 'unknown'} />
+              <span>{selectedSite?.ipcDevice?.deviceName || selectedSite?.site.name}</span>
+              <SiteStatusBadge status={selectedSite?.site.status || 'unknown'} />
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedSite && (
+            <div className="space-y-6">
+              {/* Connection Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Globe className="h-5 w-5 mr-2" />
+                      Network Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Monitored IP:</span>
+                      <span className="font-medium">{selectedSite.site.ipAddress}</span>
+                    </div>
+                    {selectedSite.ipcDevice?.lanIp && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">LAN IP:</span>
+                        <span className="font-medium">{selectedSite.ipcDevice.lanIp}</span>
+                      </div>
+                    )}
+                    {selectedSite.ipcDevice?.vpnIp && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">VPN IP:</span>
+                        <span className="font-medium">{selectedSite.ipcDevice.vpnIp}</span>
+                      </div>
+                    )}
+                    {selectedSite.ipcDevice?.amsNetId && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">AMS Net ID:</span>
+                        <span className="font-medium">{selectedSite.ipcDevice.amsNetId}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Activity className="h-5 w-5 mr-2" />
+                      Status & Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Current Status:</span>
+                      <SiteStatusBadge status={selectedSite.site.status} />
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Uptime:</span>
+                      <span className="font-medium">{selectedSite.site.uptime ? parseFloat(selectedSite.site.uptime).toFixed(2) : 'N/A'}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Response Time:</span>
+                      <span className="font-medium">{selectedSite.site.responseTime ? `${selectedSite.site.responseTime}ms` : 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Last Check:</span>
+                      <span className="font-medium">
+                        {selectedSite.site.lastCheck ? formatDistanceToNow(new Date(selectedSite.site.lastCheck), { addSuffix: true }) : 'Never'}
+                      </span>
+                    </div>
+                    {selectedSite.site.lastOnline && selectedSite.site.status !== 'online' && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Last Online:</span>
+                        <span className="font-medium">
+                          {formatDistanceToNow(new Date(selectedSite.site.lastOnline), { addSuffix: true })}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Remote Connection Options */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Monitor className="h-5 w-5 mr-2" />
+                    Remote Connection Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* AnyDesk Connection */}
+                    {selectedSite.ipcDevice?.anydesk && (
+                      <div className="p-4 border rounded-lg bg-blue-50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <Monitor className="h-4 w-4 mr-2 text-blue-600" />
+                            <span className="font-medium">AnyDesk</span>
+                          </div>
+                          <Button
+                            onClick={() => handleRemoteConnect(selectedSite.ipcDevice!.anydesk!)}
+                            className="bg-blue-600 hover:bg-blue-700"
+                            size="sm"
+                          >
+                            <Monitor className="h-3 w-3 mr-1" />
+                            Connect
+                          </Button>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">AnyDesk ID:</span>
+                            <span className="font-mono">{selectedSite.ipcDevice.anydesk}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">Click Connect to open AnyDesk with this ID</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* RDP Connection */}
+                    {selectedSite.ipcDevice?.vpnIp && selectedSite.ipcDevice?.ipcUsername && (
+                      <div className="p-4 border rounded-lg bg-green-50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <Server className="h-4 w-4 mr-2 text-green-600" />
+                            <span className="font-medium">RDP Connection</span>
+                          </div>
+                          <Button
+                            onClick={() => handleRdpConnect(selectedSite.ipcDevice!.vpnIp!, selectedSite.ipcDevice!.ipcUsername!, selectedSite.ipcDevice!.ipcPassword || '')}
+                            className="bg-green-600 hover:bg-green-700"
+                            size="sm"
+                          >
+                            <Server className="h-3 w-3 mr-1" />
+                            Connect RDP
+                          </Button>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Host:</span>
+                            <span className="font-mono">{selectedSite.ipcDevice.vpnIp}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Username:</span>
+                            <span className="font-mono">{selectedSite.ipcDevice.ipcUsername}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Password:</span>
+                            <span className="font-mono">{'*'.repeat(selectedSite.ipcDevice.ipcPassword?.length || 0)}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">Click Connect to open RDP with saved credentials</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Uptime History Graph */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <BarChart3 className="h-5 w-5 mr-2" />
+                    24-Hour Uptime History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <UptimeBar siteId={selectedSite.site.id} />
+                  </div>
+                  <div className="grid grid-cols-4 gap-4 text-center">
+                    <div className="p-3 bg-green-50 rounded">
+                      <div className="text-green-600 font-bold">{selectedSite.site.uptime ? parseFloat(selectedSite.site.uptime).toFixed(1) : '0.0'}%</div>
+                      <div className="text-sm text-muted-foreground">Uptime</div>
+                    </div>
+                    <div className="p-3 bg-red-50 rounded">
+                      <div className="text-red-600 font-bold">{selectedSite.site.uptime ? (100 - parseFloat(selectedSite.site.uptime)).toFixed(1) : '100.0'}%</div>
+                      <div className="text-sm text-muted-foreground">Downtime</div>
+                    </div>
+                    <div className="p-3 bg-blue-50 rounded">
+                      <div className="text-blue-600 font-bold">{selectedSite.site.responseTime || 'N/A'}</div>
+                      <div className="text-sm text-muted-foreground">Avg Response (ms)</div>
+                    </div>
+                    <div className="p-3 bg-purple-50 rounded">
+                      <div className="text-purple-600 font-bold">{selectedSite.site.status === 'online' ? '🟢' : '🔴'}</div>
+                      <div className="text-sm text-muted-foreground">Current State</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-muted-foreground">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center"><div className="w-3 h-3 bg-green-500 rounded-sm mr-1"></div> Online</div>
+                      <div className="flex items-center"><div className="w-3 h-3 bg-red-500 rounded-sm mr-1"></div> Offline</div>
+                      <div className="flex items-center"><div className="w-3 h-3 bg-gray-300 rounded-sm mr-1"></div> No Data</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
