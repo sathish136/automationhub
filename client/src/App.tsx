@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Sites from "@/pages/sites";
 import SiteEvents from "@/pages/site-events";
-import PlcTags from "@/pages/plc-tags";
+import PlcTags from "@/pages/plc-tags-new";
 import Backups from "@/pages/backups";
 import Network from "@/pages/network";
 import Communication from "@/pages/communication";

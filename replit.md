@@ -6,6 +6,7 @@ AutomationHub is a comprehensive industrial automation monitoring and management
 
 ## Recent Changes
 
+- **PLC Tags Page Redesigned (August 2024)**: Completely redesigned PLC Tag Monitoring page to match IPC Management page style with proper font sizes, added bulk upload functionality for CSV data import, improved UI consistency with other management pages.
 - **Site Events Page Added (December 2024)**: Implemented comprehensive event management interface for viewing, filtering, and managing site alerts and system events with real-time updates and status management.
 
 ## User Preferences
