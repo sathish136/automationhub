@@ -27,6 +27,7 @@ import {
   EyeOff,
   Lock,
   FileText,
+  Network,
 } from "lucide-react";
 
 // Using types from shared schema
@@ -285,42 +286,7 @@ export default function IPCDetails() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
-                        <Label className="text-xs font-semibold text-gray-700">VPN IP</Label>
-                        <Input
-                          value={newIPCData.vpnIp || ""}
-                          onChange={(e) =>
-                            handleNewIPCChange("vpnIp", e.target.value)
-                          }
-                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                          placeholder="VPN IP address"
-                          data-testid="new-vpn-ip"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-semibold text-gray-700">LAN IP</Label>
-                        <Input
-                          value={newIPCData.lanIp || ""}
-                          onChange={(e) =>
-                            handleNewIPCChange("lanIp", e.target.value)
-                          }
-                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                          placeholder="LAN IP address"
-                          data-testid="new-lan-ip"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-semibold text-gray-700">Model</Label>
-                        <Input
-                          value={newIPCData.model || ""}
-                          onChange={(e) =>
-                            handleNewIPCChange("model", e.target.value)
-                          }
-                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                          placeholder="Select or enter model"
-                          data-testid="new-model"
-                        />
-                      </div>
+
                     </div>
                   </div>
 
@@ -420,48 +386,391 @@ export default function IPCDetails() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       <div>
-                        <Label className="text-xs font-medium">Manufacturer</Label>
+                        <Label className="text-xs font-semibold text-gray-700">Manufacturer</Label>
                         <Input
                           value={newIPCData.manufacture || ""}
                           onChange={(e) =>
                             handleNewIPCChange("manufacture", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="Manufacturer"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">Serial Number</Label>
+                        <Label className="text-xs font-semibold text-gray-700">Model</Label>
+                        <Input
+                          value={newIPCData.model || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("model", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="Model"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Serial Number</Label>
                         <Input
                           value={newIPCData.serialNo || ""}
                           onChange={(e) =>
                             handleNewIPCChange("serialNo", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="Serial number"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">CPU</Label>
+                        <Label className="text-xs font-semibold text-gray-700">Mainboard</Label>
+                        <Input
+                          value={newIPCData.mainboard || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("mainboard", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="Mainboard"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">CPU</Label>
                         <Input
                           value={newIPCData.cpu || ""}
                           onChange={(e) =>
                             handleNewIPCChange("cpu", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="CPU model"
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-medium">Memory</Label>
+                        <Label className="text-xs font-semibold text-gray-700">Flash</Label>
+                        <Input
+                          value={newIPCData.flash || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("flash", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="Flash storage"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Power Supply</Label>
+                        <Input
+                          value={newIPCData.powerSupply || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("powerSupply", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="Power supply"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Memory</Label>
                         <Input
                           value={newIPCData.memory || ""}
                           onChange={(e) =>
                             handleNewIPCChange("memory", e.target.value)
                           }
-                          className="text-sm h-8 mt-1"
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="Memory"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">MAC 1</Label>
+                        <Input
+                          value={newIPCData.mac1 || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("mac1", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="MAC address 1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">MAC 2</Label>
+                        <Input
+                          value={newIPCData.mac2 || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("mac2", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="MAC address 2"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Operating System</Label>
+                        <Input
+                          value={newIPCData.operatingSystem || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("operatingSystem", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="Operating system"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Image Version</Label>
+                        <Input
+                          value={newIPCData.imageVersion || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("imageVersion", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="Image version"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Serial Number of IPC</Label>
+                        <Input
+                          value={newIPCData.serialNumberOfIpc || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("serialNumberOfIpc", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                          placeholder="Serial number of IPC"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Network Configuration Section */}
+                  <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
+                      <Network size={16} className="text-indigo-600" />
+                      Network Configuration
+                    </h4>
+                    <div className="space-y-6">
+                      {/* Basic Network Info */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700">VPN IP</Label>
+                          <Input
+                            value={newIPCData.vpnIp || ""}
+                            onChange={(e) =>
+                              handleNewIPCChange("vpnIp", e.target.value)
+                            }
+                            className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                            placeholder="VPN IP address"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700">LAN IP</Label>
+                          <Input
+                            value={newIPCData.lanIp || ""}
+                            onChange={(e) =>
+                              handleNewIPCChange("lanIp", e.target.value)
+                            }
+                            className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                            placeholder="LAN IP address"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs font-semibold text-gray-700">Device Manager Version</Label>
+                          <Input
+                            value={newIPCData.deviceManagerVersion || ""}
+                            onChange={(e) =>
+                              handleNewIPCChange("deviceManagerVersion", e.target.value)
+                            }
+                            className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                            placeholder="Device manager version"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Network 1 Configuration */}
+                      <div>
+                        <h5 className="text-xs font-semibold text-gray-600 mb-3 bg-gray-50 px-2 py-1 rounded">Network 1</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Name</Label>
+                            <Input
+                              value={newIPCData.network1Name || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network1Name", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Network name"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Virtual Device</Label>
+                            <Input
+                              value={newIPCData.network1VirtualDevice || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network1VirtualDevice", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Virtual device name"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Gateway</Label>
+                            <Input
+                              value={newIPCData.network1Gateway || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network1Gateway", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Gateway"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">IP Address</Label>
+                            <Input
+                              value={newIPCData.network1Address || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network1Address", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="IP address"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">DHCP</Label>
+                            <Select
+                              value={newIPCData.network1Dhcp || ""}
+                              onValueChange={(value) => handleNewIPCChange("network1Dhcp", value)}
+                            >
+                              <SelectTrigger className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <SelectValue placeholder="DHCP" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Enable">Enable</SelectItem>
+                                <SelectItem value="Disabled">Disabled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Subnet Mask</Label>
+                            <Input
+                              value={newIPCData.network1SubnetMask || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network1SubnetMask", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Subnet mask"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">DNS Servers</Label>
+                            <Input
+                              value={newIPCData.network1DnsServers || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network1DnsServers", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="DNS servers"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">MAC Address</Label>
+                            <Input
+                              value={newIPCData.network1MacAddress || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network1MacAddress", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="MAC address"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Network 2 Configuration */}
+                      <div>
+                        <h5 className="text-xs font-semibold text-gray-600 mb-3 bg-gray-50 px-2 py-1 rounded">Network 2</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Name</Label>
+                            <Input
+                              value={newIPCData.network2Name || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network2Name", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Network name"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Virtual Device</Label>
+                            <Input
+                              value={newIPCData.network2VirtualDevice || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network2VirtualDevice", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Virtual device name"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Gateway</Label>
+                            <Input
+                              value={newIPCData.network2Gateway || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network2Gateway", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Gateway"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">IP Address</Label>
+                            <Input
+                              value={newIPCData.network2Address || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network2Address", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="IP address"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">DHCP</Label>
+                            <Select
+                              value={newIPCData.network2Dhcp || ""}
+                              onValueChange={(value) => handleNewIPCChange("network2Dhcp", value)}
+                            >
+                              <SelectTrigger className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <SelectValue placeholder="DHCP" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Enable">Enable</SelectItem>
+                                <SelectItem value="Disabled">Disabled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">Subnet Mask</Label>
+                            <Input
+                              value={newIPCData.network2SubnetMask || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network2SubnetMask", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="Subnet mask"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">DNS Servers</Label>
+                            <Input
+                              value={newIPCData.network2DnsServers || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network2DnsServers", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="DNS servers"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-semibold text-gray-700">MAC Address</Label>
+                            <Input
+                              value={newIPCData.network2MacAddress || ""}
+                              onChange={(e) =>
+                                handleNewIPCChange("network2MacAddress", e.target.value)
+                              }
+                              className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                              placeholder="MAC address"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
