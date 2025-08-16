@@ -146,50 +146,7 @@ export default function IPCDetails() {
 
   const handleNewIPC = () => {
     setShowNewIPCForm(true);
-    setNewIPCData({
-      status: "Active",
-      amsNetId: "",
-      vpnIp: "",
-      lanIp: "",
-      anydesk: "",
-      teamviewer: "",
-      namingSeries: "WTT-IPC-",
-      ipcUsername: "administrator",
-      ipcPassword: "",
-      anydeskPassword: "",
-      comments: "",
-      manufacture: "Beckhoff",
-      model: "C6015-0010",
-      serialNo: "",
-      mainboard: "CV263-0005",
-      cpu: "Atom E3827 1.75Ghz",
-      flash: "SSD 40 GB 3D-Flash",
-      powerSupply: "24V DC, Class2",
-      memory: "4 x 1024 MN DDR3L",
-      mac1: "",
-      mac2: "",
-      deviceName: "",
-      operatingSystem: "Windows 10",
-      imageVersion: "",
-      serialNumberOfIpc: "",
-      deviceManagerVersion: "",
-      network1Name: "",
-      network1VirtualDevice: "Ethernet",
-      network1Gateway: "0.0.0.0",
-      network1Address: "0.0.0.0",
-      network1Dhcp: "Enable",
-      network1SubnetMask: "0.0.0.0",
-      network1DnsServers: "0.0.0.0",
-      network1MacAddress: "",
-      network2Name: "",
-      network2VirtualDevice: "Ethernet 2",
-      network2Gateway: "",
-      network2Address: "",
-      network2Dhcp: "Disabled",
-      network2SubnetMask: "",
-      network2DnsServers: "",
-      network2MacAddress: "",
-    });
+    setNewIPCData({});
   };
 
   const handleNewIPCSave = () => {
@@ -284,7 +241,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("deviceName", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="CP-922BF2"
+                          placeholder="Enter device name"
                           data-testid="new-device-name"
                         />
                       </div>
@@ -296,7 +253,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("amsNetId", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="172.18.233.236.1.1"
+                          placeholder="Enter AMS Net ID"
                           data-testid="new-ams-id"
                         />
                       </div>
@@ -326,7 +283,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("vpnIp", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="10.0.0.1"
+                          placeholder="VPN IP address"
                           data-testid="new-vpn-ip"
                         />
                       </div>
@@ -338,7 +295,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("lanIp", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="192.168.1.100"
+                          placeholder="LAN IP address"
                           data-testid="new-lan-ip"
                         />
                       </div>
@@ -350,7 +307,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("model", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="C6015-0010"
+                          placeholder="Select or enter model"
                           data-testid="new-model"
                         />
                       </div>
@@ -369,7 +326,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("anydesk", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="123 456 789"
+                          placeholder="AnyDesk ID"
                         />
                       </div>
                       <div>
@@ -392,7 +349,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("teamviewer", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="987 654 321"
+                          placeholder="TeamViewer ID"
                         />
                       </div>
                       <div>
@@ -403,7 +360,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("namingSeries", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="IPC-001"
+                          placeholder="Naming series"
                         />
                       </div>
                     </div>
@@ -421,7 +378,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("ipcUsername", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="Administrator"
+                          placeholder="Username"
                         />
                       </div>
                       <div>
@@ -451,7 +408,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("manufacture", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="Beckhoff"
+                          placeholder="Manufacturer"
                         />
                       </div>
                       <div>
@@ -462,7 +419,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("serialNo", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="SN123456"
+                          placeholder="Serial number"
                         />
                       </div>
                       <div>
@@ -473,7 +430,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("cpu", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="Intel Atom"
+                          placeholder="CPU model"
                         />
                       </div>
                       <div>
@@ -484,7 +441,7 @@ export default function IPCDetails() {
                             handleNewIPCChange("memory", e.target.value)
                           }
                           className="text-sm h-8 mt-1"
-                          placeholder="4GB"
+                          placeholder="Memory"
                         />
                       </div>
                     </div>
@@ -501,7 +458,7 @@ export default function IPCDetails() {
                           handleNewIPCChange("comments", e.target.value)
                         }
                         className="text-sm h-8 mt-1"
-                        placeholder="Additional notes about this device..."
+                        placeholder="Optional comments..."
                       />
                     </div>
                   </div>
