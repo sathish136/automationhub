@@ -332,7 +332,7 @@ function SiteCard({ site, ipcDevice, onDelete, isDeleting }: { site: Site; ipcDe
 }
 
 export default function Sites() {
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
   const { toast } = useToast();
   
   const { data: sites = [], isLoading: sitesLoading } = useQuery<Site[]>({
