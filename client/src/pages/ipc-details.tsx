@@ -208,7 +208,7 @@ export default function IPCDetails() {
                 <CardTitle className="text-base text-primary">Add New IPC Device</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   <div>
                     <Label className="text-xs font-medium">Device Name</Label>
                     <Input 
@@ -241,6 +241,26 @@ export default function IPCDetails() {
                         <option key={status} value={status}>{status}</option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">VPN IP</Label>
+                    <Input 
+                      value={newIPCData.vpnIp || ''}
+                      onChange={(e) => handleNewIPCChange('vpnIp', e.target.value)}
+                      className="text-sm h-8 mt-1 !bg-white !border-gray-300"
+                      placeholder="10.0.0.1"
+                      data-testid="new-vpn-ip"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">LAN IP</Label>
+                    <Input 
+                      value={newIPCData.lanIp || ''}
+                      onChange={(e) => handleNewIPCChange('lanIp', e.target.value)}
+                      className="text-sm h-8 mt-1 !bg-white !border-gray-300"
+                      placeholder="192.168.1.100"
+                      data-testid="new-lan-ip"
+                    />
                   </div>
                   <div>
                     <Label className="text-xs font-medium">Model</Label>
