@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List, Trash2 } from "lucide-react";
+import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List, Trash2, Monitor } from "lucide-react";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,7 +137,7 @@ function UptimeBar({ siteId }: { siteId: string }) {
   );
 }
 
-function SiteListItem({ site, ipcDevice, onDelete, isDeleting }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean }) {
+function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -212,7 +212,19 @@ function SiteListItem({ site, ipcDevice, onDelete, isDeleting }: { site: Site; i
             <span>VPN: {ipcDevice.vpnIp}</span>
           )}
           {ipcDevice.anydesk && (
-            <span>AnyDesk: {ipcDevice.anydesk}</span>
+            <div className="flex items-center space-x-2">
+              <span>AnyDesk: {ipcDevice.anydesk}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRemoteConnect(ipcDevice.anydesk!)}
+                className="h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                data-testid={`connect-remote-list-${site.id}`}
+              >
+                <Monitor className="h-3 w-3 mr-1" />
+                Connect
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -220,7 +232,7 @@ function SiteListItem({ site, ipcDevice, onDelete, isDeleting }: { site: Site; i
   );
 }
 
-function SiteCard({ site, ipcDevice, onDelete, isDeleting }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean }) {
+function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -310,8 +322,18 @@ function SiteCard({ site, ipcDevice, onDelete, isDeleting }: { site: Site; ipcDe
                 </div>
               )}
               {ipcDevice.anydesk && (
-                <div className="col-span-2">
+                <div className="col-span-2 flex items-center justify-between">
                   <span>AnyDesk: {ipcDevice.anydesk}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRemoteConnect(ipcDevice.anydesk!)}
+                    className="h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    data-testid={`connect-remote-card-${site.id}`}
+                  >
+                    <Monitor className="h-3 w-3 mr-1" />
+                    Connect
+                  </Button>
                 </div>
               )}
             </div>
@@ -367,6 +389,17 @@ export default function Sites() {
   const handleDeleteSite = (siteId: string, siteName: string) => {
     if (window.confirm(`Are you sure you want to delete "${siteName}"? This action cannot be undone.`)) {
       deleteSiteMutation.mutate(siteId);
+    }
+  };
+
+  const handleRemoteConnect = (anydeskId: string) => {
+    if (anydeskId) {
+      // Open AnyDesk with the specific ID
+      window.open(`anydesk:${anydeskId}`, '_blank');
+      toast({
+        title: "Opening AnyDesk",
+        description: `Connecting to AnyDesk ID: ${anydeskId}`,
+      });
     }
   };
 
@@ -478,6 +511,7 @@ export default function Sites() {
                   ipcDevice={ipcByIP[site.ipAddress]}
                   onDelete={handleDeleteSite}
                   isDeleting={deleteSiteMutation.isPending}
+                  onRemoteConnect={handleRemoteConnect}
                 />
               ) : (
                 <SiteListItem
@@ -486,6 +520,7 @@ export default function Sites() {
                   ipcDevice={ipcByIP[site.ipAddress]}
                   onDelete={handleDeleteSite}
                   isDeleting={deleteSiteMutation.isPending}
+                  onRemoteConnect={handleRemoteConnect}
                 />
               )
             ))}
