@@ -13,7 +13,8 @@ import {
   insertProgramBackupSchema,
   insertCommunicationInterfaceSchema,
   insertInstrumentDataSchema,
-  insertCommunicationLogSchema
+  insertCommunicationLogSchema,
+  insertProjectSchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -36,6 +37,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
       res.status(500).json({ message: "Failed to fetch dashboard metrics" });
+    }
+  });
+
+  // Projects endpoints
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const projects = await storage.getAllProjects();
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      res.status(500).json({ message: "Failed to fetch project" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const projectData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(projectData);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(400).json({ message: "Invalid project data" });
+    }
+  });
+
+  app.put("/api/projects/:id", async (req, res) => {
+    try {
+      const projectData = insertProjectSchema.partial().parse(req.body);
+      const project = await storage.updateProject(req.params.id, projectData);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Error updating project:", error);
+      res.status(400).json({ message: "Invalid project data" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProject(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      res.status(500).json({ message: "Failed to delete project" });
     }
   });
 

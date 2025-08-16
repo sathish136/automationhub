@@ -9,6 +9,7 @@ import {
   instrumentData,
   communicationLogs,
   alerts,
+  projects,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -29,6 +30,8 @@ import {
   type InsertCommunicationLog,
   type Alert,
   type InsertAlert,
+  type Project,
+  type InsertProject,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -93,6 +96,13 @@ export interface IStorage {
   markAlertAsRead(id: string): Promise<void>;
   markAlertAsResolved(id: string): Promise<void>;
   getUnreadAlertsCount(): Promise<number>;
+
+  // Projects
+  getAllProjects(): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<boolean>;
 
   // Dashboard metrics
   getDashboardMetrics(): Promise<{
@@ -329,74 +339,7 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  // Alerts
-  async getAlerts(limit = 50): Promise<Alert[]> {
-    return await db
-      .select()
-      .from(alerts)
-      .orderBy(desc(alerts.createdAt))
-      .limit(limit);
-  }
 
-  async createAlert(alert: InsertAlert): Promise<Alert> {
-    const [newAlert] = await db.insert(alerts).values(alert).returning();
-    return newAlert;
-  }
-
-  async markAlertAsRead(id: string): Promise<void> {
-    await db.update(alerts).set({ isRead: true }).where(eq(alerts.id, id));
-  }
-
-  async markAlertAsResolved(id: string): Promise<void> {
-    await db
-      .update(alerts)
-      .set({ isResolved: true, resolvedAt: new Date() })
-      .where(eq(alerts.id, id));
-  }
-
-  async getUnreadAlertsCount(): Promise<number> {
-    const result = await db
-      .select({ count: count() })
-      .from(alerts)
-      .where(eq(alerts.isRead, false));
-    return result[0]?.count || 0;
-  }
-
-  // Dashboard metrics
-  async getDashboardMetrics(): Promise<{
-    totalSites: number;
-    onlineSites: number;
-    criticalAlerts: number;
-    avgResponseTime: number;
-  }> {
-    const [siteStats] = await db
-      .select({
-        totalSites: count(),
-        onlineSites: sql<number>`sum(case when ${sites.status} = 'online' then 1 else 0 end)`,
-        avgResponseTime: sql<number>`avg(${sites.responseTime})`,
-      })
-      .from(sites)
-      .where(eq(sites.isActive, true));
-
-    const [alertStats] = await db
-      .select({
-        criticalAlerts: count(),
-      })
-      .from(alerts)
-      .where(
-        and(
-          eq(alerts.severity, "critical"),
-          eq(alerts.isResolved, false)
-        )
-      );
-
-    return {
-      totalSites: siteStats.totalSites || 0,
-      onlineSites: siteStats.onlineSites || 0,
-      criticalAlerts: alertStats.criticalAlerts || 0,
-      avgResponseTime: Math.round(siteStats.avgResponseTime || 0),
-    };
-  }
 
   // Communication Interfaces
   async getCommunicationInterfaces(siteId?: string): Promise<CommunicationInterface[]> {
@@ -480,6 +423,101 @@ export class DatabaseStorage implements IStorage {
   async createCommunicationLog(log: InsertCommunicationLog): Promise<CommunicationLog> {
     const [newLog] = await db.insert(communicationLogs).values(log).returning();
     return newLog;
+  }
+
+  // Alerts
+  async getAlerts(limit = 50): Promise<Alert[]> {
+    return await db
+      .select()
+      .from(alerts)
+      .orderBy(desc(alerts.createdAt))
+      .limit(limit);
+  }
+
+  async createAlert(alert: InsertAlert): Promise<Alert> {
+    const [newAlert] = await db.insert(alerts).values(alert).returning();
+    return newAlert;
+  }
+
+  async markAlertAsRead(id: string): Promise<void> {
+    await db
+      .update(alerts)
+      .set({ isRead: true })
+      .where(eq(alerts.id, id));
+  }
+
+  async markAlertAsResolved(id: string): Promise<void> {
+    await db
+      .update(alerts)
+      .set({ isResolved: true, resolvedAt: new Date() })
+      .where(eq(alerts.id, id));
+  }
+
+  async getUnreadAlertsCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(alerts)
+      .where(eq(alerts.isRead, false));
+    return result.count;
+  }
+
+  // Projects
+  async getAllProjects(): Promise<Project[]> {
+    return await db.select().from(projects).orderBy(desc(projects.createdAt));
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async createProject(project: InsertProject): Promise<Project> {
+    const [newProject] = await db.insert(projects).values(project).returning();
+    return newProject;
+  }
+
+  async updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined> {
+    const [updatedProject] = await db
+      .update(projects)
+      .set({ ...project, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return updatedProject;
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Dashboard metrics
+  async getDashboardMetrics(): Promise<{
+    totalSites: number;
+    onlineSites: number;
+    criticalAlerts: number;
+    avgResponseTime: number;
+  }> {
+    const [siteStats] = await db
+      .select({
+        total: count(),
+        online: count(sql`CASE WHEN ${sites.status} = 'online' THEN 1 END`),
+        avgResponseTime: sql<number>`COALESCE(AVG(${sites.responseTime}), 0)`,
+      })
+      .from(sites)
+      .where(eq(sites.isActive, true));
+
+    const [alertStats] = await db
+      .select({
+        critical: count(sql`CASE WHEN ${alerts.severity} = 'critical' AND ${alerts.isResolved} = false THEN 1 END`),
+      })
+      .from(alerts);
+
+    return {
+      totalSites: siteStats.total,
+      onlineSites: siteStats.online,
+      criticalAlerts: alertStats.critical,
+      avgResponseTime: Math.round(siteStats.avgResponseTime),
+    };
   }
 }
 

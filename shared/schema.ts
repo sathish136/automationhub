@@ -351,8 +351,41 @@ export const alertsRelations = relations(alerts, ({ one }) => ({
   }),
 }));
 
+// Projects table
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectNumber: varchar("project_number", { length: 100 }).notNull().unique(),
+  projectName: varchar("project_name", { length: 255 }).notNull(),
+  location: varchar("location", { length: 255 }),
+  status: varchar("status", { length: 50 }).notNull().default("Planning"), // Planning, Active, In Progress, Completed
+  capacity: varchar("capacity", { length: 100 }),
+  ipcName: varchar("ipc_name", { length: 255 }),
+  selectedIpcId: varchar("selected_ipc_id").references(() => ipcManagement.id),
+  selectedSystems: varchar("selected_systems").array().default(sql`ARRAY[]::text[]`),
+  createdDate: timestamp("created_date").defaultNow(),
+  planStartDate: timestamp("plan_start_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_projects_number").on(table.projectNumber),
+  index("idx_projects_status").on(table.status),
+]);
+
+export const projectsRelations = relations(projects, ({ one }) => ({
+  selectedIpc: one(ipcManagement, {
+    fields: [projects.selectedIpcId],
+    references: [ipcManagement.id],
+  }),
+}));
+
 // Insert schemas
 export const insertSiteSchema = createInsertSchema(sites).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -432,3 +465,5 @@ export type CommunicationLog = typeof communicationLogs.$inferSelect;
 export type InsertCommunicationLog = z.infer<typeof insertCommunicationLogSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
