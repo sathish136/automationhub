@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus } from "lucide-react";
+import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List } from "lucide-react";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { type Site, type IpcManagement } from "@shared/schema";
+import { type Site, type IpcManagement, type UptimeHistory } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -73,6 +74,122 @@ function SyncFromIPCButton() {
       <RotateCw className={`h-4 w-4 mr-2 ${syncFromIPCMutation.isPending ? 'animate-spin' : ''}`} />
       {syncFromIPCMutation.isPending ? "Syncing..." : "Sync from IPC"}
     </Button>
+  );
+}
+
+function UptimeBar({ siteId }: { siteId: string }) {
+  const { data: uptimeHistory = [] } = useQuery<UptimeHistory[]>({
+    queryKey: ["/api/sites", siteId, "uptime"],
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  // Get last 96 data points (24 hours if checking every 15 minutes)
+  const recentHistory = uptimeHistory.slice(0, 96);
+  const totalBars = 96;
+  
+  // Fill missing data with unknown status
+  const bars = Array.from({ length: totalBars }, (_, i) => {
+    const historyItem = recentHistory[i];
+    if (historyItem) {
+      return {
+        status: historyItem.isOnline ? 'online' : 'offline',
+        timestamp: historyItem.timestamp,
+        responseTime: historyItem.responseTime
+      };
+    }
+    return { status: 'unknown', timestamp: null, responseTime: null };
+  });
+
+  const getBarColor = (status: string) => {
+    switch (status) {
+      case 'online': return 'bg-green-500';
+      case 'offline': return 'bg-red-500';
+      case 'warning': return 'bg-yellow-500';
+      default: return 'bg-gray-300';
+    }
+  };
+
+  return (
+    <div className="flex space-x-0.5 h-8 items-center">
+      {bars.map((bar, index) => (
+        <div
+          key={index}
+          className={`w-1 h-6 rounded-sm ${getBarColor(bar.status)}`}
+          title={bar.timestamp ? `${bar.status} - ${new Date(bar.timestamp).toLocaleString()}${bar.responseTime ? ` (${bar.responseTime}ms)` : ''}` : 'No data'}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SiteListItem({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManagement }) {
+  const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
+  const responseTime = site.responseTime || 0;
+  const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
+
+  return (
+    <div className="border rounded-lg p-4 bg-white hover:shadow-sm transition-shadow" data-testid={`list-site-${site.id}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4 flex-1">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <SiteStatusIcon status={site.status} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center space-x-2">
+                <h3 className="font-medium text-sm truncate" data-testid={`text-list-name-${site.id}`}>
+                  {ipcDevice?.deviceName || site.name}
+                </h3>
+                <SiteStatusBadge status={site.status} />
+              </div>
+              <p className="text-xs text-muted-foreground" data-testid={`text-list-ip-${site.id}`}>
+                {site.ipAddress}
+                {ipcDevice?.amsNetId && ` • AMS: ${ipcDevice.amsNetId}`}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-6 text-sm">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Uptime</div>
+              <div className="font-medium" data-testid={`text-list-uptime-${site.id}`}>
+                {uptimePercentage.toFixed(1)}%
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Response</div>
+              <div className="font-medium" data-testid={`text-list-response-${site.id}`}>
+                {responseTime > 0 ? `${responseTime}ms` : "—"}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Last Check</div>
+              <div className="font-medium text-xs" data-testid={`text-list-check-${site.id}`}>
+                {lastCheck ? formatDistanceToNow(lastCheck, { addSuffix: true }) : "Never"}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="ml-4 flex-shrink-0">
+          <div className="text-xs text-muted-foreground mb-1">24h Status</div>
+          <UptimeBar siteId={site.id} />
+        </div>
+      </div>
+      
+      {/* Additional IPC info in collapsed view */}
+      {ipcDevice && (ipcDevice.lanIp || ipcDevice.vpnIp || ipcDevice.anydesk) && (
+        <div className="mt-3 pt-3 border-t flex items-center space-x-4 text-xs text-muted-foreground">
+          {ipcDevice.lanIp && (
+            <span>LAN: {ipcDevice.lanIp}</span>
+          )}
+          {ipcDevice.vpnIp && (
+            <span>VPN: {ipcDevice.vpnIp}</span>
+          )}
+          {ipcDevice.anydesk && (
+            <span>AnyDesk: {ipcDevice.anydesk}</span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -176,6 +293,8 @@ function SiteCard({ site, ipcDevice }: { site: Site; ipcDevice?: IpcManagement }
 }
 
 export default function Sites() {
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+  
   const { data: sites = [], isLoading: sitesLoading } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -215,7 +334,25 @@ export default function Sites() {
               {totalSites} monitored sites from {totalIPCDevices} IPC devices
             </Badge>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex items-center space-x-2">
+            <div className="flex border rounded-lg p-1 bg-white">
+              <Button
+                variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('cards')}
+                data-testid="button-card-view"
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                data-testid="button-list-view"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
             <Button variant="outline" asChild>
               <a href="/ipc-management" data-testid="link-ipc-management">
                 <Plus className="h-4 w-4 mr-2" />
@@ -264,13 +401,24 @@ export default function Sites() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={viewMode === 'cards' 
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            : "space-y-3"
+          }>
             {sites.map((site) => (
-              <SiteCard 
-                key={site.id} 
-                site={site} 
-                ipcDevice={ipcByIP[site.ipAddress]}
-              />
+              viewMode === 'cards' ? (
+                <SiteCard 
+                  key={site.id} 
+                  site={site} 
+                  ipcDevice={ipcByIP[site.ipAddress]}
+                />
+              ) : (
+                <SiteListItem
+                  key={site.id}
+                  site={site}
+                  ipcDevice={ipcByIP[site.ipAddress]}
+                />
+              )
             ))}
           </div>
         )}
