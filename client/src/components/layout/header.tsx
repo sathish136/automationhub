@@ -62,7 +62,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
           
           {/* Settings */}
           <Button variant="ghost" size="icon" data-testid="settings-button">
-            <Settings className="h-5 w-5" />
+            <Settings className="h-5 w-5 transition-transform duration-300 hover:rotate-180" />
           </Button>
         </div>
       </div>
