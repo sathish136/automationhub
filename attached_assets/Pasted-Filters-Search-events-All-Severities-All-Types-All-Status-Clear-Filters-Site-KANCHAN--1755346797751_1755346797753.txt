@@ -1,0 +1,237 @@
+Filters
+Search events...
+
+All Severities
+
+All Types
+
+All Status
+Clear Filters
+Site KANCHAN 1.3 MLD (VPN) is offline
+Critical
+Unread
+Site KANCHAN 1.3 MLD (VPN) (15.15.50.12) is not responding to ping requests. Connection timeout
+
+KANCHAN 1.3 MLD (VPN)
+Site Offline
+43 mins ago
+8/16/2025, 5:06:30 PM
+Mark Read
+Resolve
+Site KANCHAN 1.3 MLD (VPN) is offline
+Critical
+Resolved
+Site KANCHAN 1.3 MLD (VPN) (15.15.50.12) is not responding to ping requests. Connection timeout
+
+KANCHAN 1.3 MLD (VPN)
+Site Offline
+45 mins ago
+8/16/2025, 5:03:43 PM
+Site Sachin (VPN) is offline
+Critical
+Unread
+Site Sachin (VPN) (15.15.50.19) is not responding to ping requests. Connection timeout
+
+Sachin (VPN)
+Site Offline
+46 mins ago
+8/16/2025, 5:03:37 PM
+Mark Read
+Resolve
+Site KANCHAN 3 (VPN) is offline
+Critical
+Unread
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+46 mins ago
+8/16/2025, 5:03:29 PM
+Mark Read
+Resolve
+Site Bhilkwara (VPN) is offline
+Critical
+Unread
+Site Bhilkwara (VPN) (15.15.50.22) is not responding to ping requests. Connection timeout
+
+Bhilkwara (VPN)
+Site Offline
+46 mins ago
+8/16/2025, 5:03:27 PM
+Mark Read
+Resolve
+Site KANCHAN 3 (VPN) is offline
+Critical
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+46 mins ago
+8/16/2025, 5:02:51 PM
+Site Bhilkwara (VPN) is offline
+Critical
+Unread
+Resolved
+Site Bhilkwara (VPN) (15.15.50.22) is not responding to ping requests. Connection timeout
+
+Bhilkwara (VPN)
+Site Offline
+46 mins ago
+8/16/2025, 5:02:49 PM
+Mark Read
+Site KANCHAN 3 (VPN) is offline
+Critical
+Unread
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+46 mins ago
+8/16/2025, 5:02:43 PM
+Mark Read
+Site RSL (VPN) is offline
+Critical
+Site RSL (VPN) (15.15.50.13) is not responding to ping requests. Connection timeout
+
+RSL (VPN)
+Site Offline
+47 mins ago
+8/16/2025, 5:02:39 PM
+Resolve
+Site RSL (VPN) is offline
+Critical
+Resolved
+Site RSL (VPN) (15.15.50.13) is not responding to ping requests. Connection timeout
+
+RSL (VPN)
+Site Offline
+51 mins ago
+8/16/2025, 4:58:08 PM
+Site KANCHAN 3 (VPN) is offline
+Critical
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+51 mins ago
+8/16/2025, 4:58:06 PM
+Site KANCHAN 3 (VPN) is offline
+Critical
+Resolved
+Site KANCHAN 3 (VPN) (15.15.50.15) is not responding to ping requests. Connection timeout
+
+KANCHAN 3 (VPN)
+Site Offline
+54 mins ago
+8/16/2025, 4:55:04 PM
+Site RSL (VPN) is offline
+Critical
+Unread
+Resolved
+Site RSL (VPN) (15.15.50.13) is not responding to ping requests. Connection timeout
+
+RSL (VPN)
+Site Offline
+54 mins ago
+8/16/2025, 4:55:00 PM
+Mark Read
+Site KANCHAN 1.3 MLD (VPN) is offline
+Critical
+Unread
+Site KANCHAN 1.3 MLD (VPN) (15.15.50.12) is not responding to ping requests. Connection timeout
+
+KANCHAN 1.3 MLD (VPN)
+Site Offline
+56 mins ago
+8/16/2025, 4:53:25 PM
+Mark Read
+Resolve
+Site Sachin (VPN) is offline
+Critical
+Unread
+Site Sachin (VPN) (15.15.50.19) is not responding to ping requests. Connection timeout
+
+Sachin (VPN)
+Site Offline
+1 hour ago
+8/16/2025, 4:18:29 PM
+Mark Read
+Resolve
+Site Bhilkwara (LAN) is offline
+Critical
+Unread
+Site Bhilkwara (LAN) (192.168.22.1) is not responding to ping requests. Connection timeout
+
+Unknown Site
+Site Offline
+1 hour ago
+8/16/2025, 4:17:08 PM
+Mark Read
+Resolve
+Site Bhilkwara (LAN) is offline
+Critical
+Unread
+Site Bhilkwara (LAN) (192.168.22.1) is not responding to ping requests. Connection timeout
+
+Unknown Site
+Site Offline
+1 hour ago
+8/16/2025, 4:17:08 PM
+Mark Read
+Resolve
+Site Bhilkwara (VPN) is offline
+Critical
+Unread
+Site Bhilkwara (VPN) (15.15.50.22) is not responding to ping requests. Connection timeout
+
+Bhilkwara (VPN)
+Site Offline
+1 hour ago
+8/16/2025, 4:17:04 PM
+Mark Read
+Resolve
+Site Bhilkwara (VPN) is offline
+Critical
+Unread
+Site Bhilkwara (VPN) (15.15.50.22) is not responding to ping requests. Connection timeout
+
+Bhilkwara (VPN)
+Site Offline
+1 hour ago
+8/16/2025, 4:17:04 PM
+Mark Read
+Resolve
+High response time for Kanchnan (VPN)
+Warning
+Unread
+Site Kanchnan (VPN) (122.165.225.42) has a response time of 1066ms, which exceeds the normal threshold.
+
+Kanchnan (VPN)
+High Response Time
+1 hour ago
+8/16/2025, 4:16:46 PM
+Mark Read
+Resolve
+Site Kanchnan (LAN) is offline
+Critical
+Unread
+Site Kanchnan (LAN) (192.168.2.1) is not responding to ping requests. ping: socktype: SOCK_RAW ping: socket: Operation not permitted ping: => missing cap_net_raw+p capability or setuid?
+
+Unknown Site
+Site Offline
+2 hours ago
+8/16/2025, 3:14:20 PM
+Mark Read
+Resolve
+Site Kanchnan (VPN) is offline
+Critical
+Unread
+Site Kanchnan (VPN) (122.165.225.42) is not responding to ping requests. ping: socktype: SOCK_RAW ping: socket: Operation not permitted ping: => missing cap_net_raw+p capability or setuid?
+
+Kanchnan (VPN)
+Site Offline
+2 hours ago
+8/16/2025, 3:14:19 PM
