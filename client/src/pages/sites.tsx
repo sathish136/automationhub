@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List, Trash2, Monitor } from "lucide-react";
+import { Activity, Clock, Globe, Wifi, WifiOff, AlertTriangle, RotateCw, Plus, Grid, List, Trash2, Monitor, Server } from "lucide-react";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,7 +137,7 @@ function UptimeBar({ siteId }: { siteId: string }) {
   );
 }
 
-function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void }) {
+function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRdpConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void; onRdpConnect: (vpnIp: string, username: string, password: string) => void }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -226,13 +226,28 @@ function SiteListItem({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect }
               </Button>
             </div>
           )}
+          {ipcDevice && ipcDevice.vpnIp && ipcDevice.ipcUsername && (
+            <div className="flex items-center space-x-2">
+              <span>RDP: {ipcDevice.vpnIp}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRdpConnect(ipcDevice.vpnIp!, ipcDevice.ipcUsername!, ipcDevice.ipcPassword || '')}
+                className="h-6 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                data-testid={`connect-rdp-list-${site.id}`}
+              >
+                <Server className="h-3 w-3 mr-1" />
+                RDP
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void }) {
+function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect, onRdpConnect }: { site: Site; ipcDevice?: IpcManagement; onDelete: (siteId: string, siteName: string) => void; isDeleting: boolean; onRemoteConnect: (anydeskId: string) => void; onRdpConnect: (vpnIp: string, username: string, password: string) => void }) {
   const uptimePercentage = site.uptime ? parseFloat(site.uptime) : 0;
   const responseTime = site.responseTime || 0;
   const lastCheck = site.lastCheck ? new Date(site.lastCheck) : null;
@@ -336,6 +351,21 @@ function SiteCard({ site, ipcDevice, onDelete, isDeleting, onRemoteConnect }: { 
                   </Button>
                 </div>
               )}
+              {ipcDevice && ipcDevice.vpnIp && ipcDevice.ipcUsername && (
+                <div className="col-span-2 flex items-center justify-between">
+                  <span>RDP: {ipcDevice.vpnIp}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRdpConnect(ipcDevice.vpnIp!, ipcDevice.ipcUsername!, ipcDevice.ipcPassword || '')}
+                    className="h-6 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    data-testid={`connect-rdp-card-${site.id}`}
+                  >
+                    <Server className="h-3 w-3 mr-1" />
+                    RDP
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -399,6 +429,18 @@ export default function Sites() {
       toast({
         title: "Opening AnyDesk",
         description: `Connecting to AnyDesk ID: ${anydeskId}`,
+      });
+    }
+  };
+
+  const handleRdpConnect = (vpnIp: string, username: string, password: string) => {
+    if (vpnIp && username) {
+      // Create RDP connection string
+      const rdpUrl = `rdp://${username}:${encodeURIComponent(password)}@${vpnIp}`;
+      window.open(rdpUrl, '_blank');
+      toast({
+        title: "Opening RDP Connection",
+        description: `Connecting to ${vpnIp} as ${username}`,
       });
     }
   };
@@ -512,6 +554,7 @@ export default function Sites() {
                   onDelete={handleDeleteSite}
                   isDeleting={deleteSiteMutation.isPending}
                   onRemoteConnect={handleRemoteConnect}
+                  onRdpConnect={handleRdpConnect}
                 />
               ) : (
                 <SiteListItem
@@ -521,6 +564,7 @@ export default function Sites() {
                   onDelete={handleDeleteSite}
                   isDeleting={deleteSiteMutation.isPending}
                   onRemoteConnect={handleRemoteConnect}
+                  onRdpConnect={handleRdpConnect}
                 />
               )
             ))}
