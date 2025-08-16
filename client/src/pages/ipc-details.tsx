@@ -59,10 +59,11 @@ export default function IPCDetails() {
         description: "IPC device created successfully",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Error creating IPC device:", error);
       toast({
         title: "Error",
-        description: "Failed to create IPC device",
+        description: error?.message || "Failed to create IPC device",
         variant: "destructive",
       });
     },
@@ -171,7 +172,14 @@ export default function IPCDetails() {
 
   const handleNewIPCSave = () => {
     if (newIPCData.deviceName && newIPCData.amsNetId) {
+      console.log("Submitting IPC data:", newIPCData);
       createIpcMutation.mutate(newIPCData as InsertIpcManagement);
+    } else {
+      toast({
+        title: "Validation Error",
+        description: "Device Name and AMS Net ID are required",
+        variant: "destructive",
+      });
     }
   };
 
