@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { Building2, Cpu, Droplets, Zap, Settings, CheckCircle, ArrowLeft, Calendar, MapPin, Plus, Eye, Edit, Save, X, Check } from "lucide-react";
+import { Building2, Cpu, Droplets, Zap, Settings, CheckCircle, ArrowLeft, Calendar, MapPin, Plus, Eye, Edit, Save, X, Check, Trash2 } from "lucide-react";
 
 interface Project {
   id: number;
@@ -25,56 +25,9 @@ export default function ProjectDetails() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Project>>({});
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: 1,
-      projectNumber: 'PRJ-2025-001',
-      projectName: 'Water Treatment Plant Automation',
-      location: 'Industrial Complex A',
-      status: 'Active',
-      plcName: 'Siemens S7-1500',
-      ipcName: 'Advantech IPC-610H',
-      selectedSystems: ['ETP', 'RO'],
-      createdDate: '2025-01-15',
-      capacity: '700 KLD'
-    },
-    {
-      id: 2,
-      projectNumber: 'PRJ-2025-002', 
-      projectName: 'Industrial Waste Management',
-      location: 'Manufacturing Plant B',
-      status: 'In Progress',
-      plcName: 'Allen-Bradley ControlLogix',
-      ipcName: 'Beckhoff CX5020',
-      selectedSystems: ['ETP', 'MBR', 'VTS'],
-      createdDate: '2025-01-10',
-      capacity: '1200 KLD'
-    },
-    {
-      id: 3,
-      projectNumber: 'PRJ-2025-003',
-      projectName: 'Chemical Processing Automation',
-      location: 'Chemical Complex C',
-      status: 'Planning',
-      plcName: 'Schneider Electric M580',
-      ipcName: 'SIMATIC IPC477E',
-      selectedSystems: ['RO', 'REJECT_RO'],
-      createdDate: '2025-01-08',
-      capacity: '300 KLD'
-    },
-    {
-      id: 4,
-      projectNumber: 'PRJ-2024-015',
-      projectName: 'Pharmaceutical Water Treatment',
-      location: 'Pharma Facility D',
-      status: 'Completed',
-      plcName: 'Siemens S7-1200',
-      ipcName: 'Advantech UNO-2372G',
-      selectedSystems: ['ETP', 'RO', 'MBR'],
-      createdDate: '2024-12-20',
-      capacity: '500 KLD'
-    }
-  ]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [showNewProjectForm, setShowNewProjectForm] = useState(false);
+  const [newProjectData, setNewProjectData] = useState<Partial<Project>>({});
   
   const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
 
@@ -111,10 +64,11 @@ export default function ProjectDetails() {
   };
 
   const statusOptions = ['Active', 'In Progress', 'Planning', 'Completed'];
+  const systemOptions = ['ETP', 'MBR', 'RO', 'VTS', 'REJECT_RO'];
 
   const handleEditStart = (project: Project) => {
     setEditingProjectId(project.id);
-    setEditFormData(project);
+    setEditFormData({ ...project });
   };
 
   const handleEditCancel = () => {
@@ -138,6 +92,54 @@ export default function ProjectDetails() {
     setEditFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleSystemToggleEdit = (systemId: string) => {
+    const currentSystems = editFormData.selectedSystems || [];
+    const updatedSystems = currentSystems.includes(systemId)
+      ? currentSystems.filter(s => s !== systemId)
+      : [...currentSystems, systemId];
+    handleFieldChange('selectedSystems', updatedSystems);
+  };
+
+  const handleDeleteProject = (projectId: number) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+  };
+
+  const handleNewProject = () => {
+    setShowNewProjectForm(true);
+    setNewProjectData({
+      projectNumber: '',
+      projectName: '',
+      location: '',
+      status: 'Planning',
+      plcName: '',
+      ipcName: '',
+      selectedSystems: [],
+      createdDate: new Date().toISOString().split('T')[0],
+      capacity: ''
+    });
+  };
+
+  const handleNewProjectSave = () => {
+    if (newProjectData.projectName && newProjectData.projectNumber) {
+      const newProject: Project = {
+        ...newProjectData as Project,
+        id: Date.now()
+      };
+      setProjects(prev => [...prev, newProject]);
+      setShowNewProjectForm(false);
+      setNewProjectData({});
+    }
+  };
+
+  const handleNewProjectCancel = () => {
+    setShowNewProjectForm(false);
+    setNewProjectData({});
+  };
+
+  const handleNewProjectChange = (field: keyof Project, value: any) => {
+    setNewProjectData(prev => ({ ...prev, [field]: value }));
+  };
+
   // If no project selected, show project list
   if (!selectedProjectId) {
     return (
@@ -149,12 +151,139 @@ export default function ProjectDetails() {
         
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">All Projects</h3>
-            <Button data-testid="button-new-project">
+            <h3 className="text-lg font-semibold text-gray-900">
+              All Projects ({projects.length})
+            </h3>
+            <Button onClick={handleNewProject} data-testid="button-new-project">
               <Plus size={16} className="mr-2" />
               New Project
             </Button>
           </div>
+          
+          {/* New Project Form */}
+          {showNewProjectForm && (
+            <Card className="mb-6 border-2 border-primary">
+              <CardHeader>
+                <CardTitle className="text-base text-primary">Create New Project</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs font-medium">Project Number</Label>
+                    <Input 
+                      value={newProjectData.projectNumber || ''}
+                      onChange={(e) => handleNewProjectChange('projectNumber', e.target.value)}
+                      className="text-sm h-8 mt-1"
+                      placeholder="PRJ-2025-XXX"
+                      data-testid="new-project-number"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Project Name</Label>
+                    <Input 
+                      value={newProjectData.projectName || ''}
+                      onChange={(e) => handleNewProjectChange('projectName', e.target.value)}
+                      className="text-sm h-8 mt-1"
+                      placeholder="Enter project name"
+                      data-testid="new-project-name"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Location</Label>
+                    <Input 
+                      value={newProjectData.location || ''}
+                      onChange={(e) => handleNewProjectChange('location', e.target.value)}
+                      className="text-sm h-8 mt-1"
+                      placeholder="Project location"
+                      data-testid="new-location"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Status</Label>
+                    <select 
+                      value={newProjectData.status || 'Planning'}
+                      onChange={(e) => handleNewProjectChange('status', e.target.value)}
+                      className="text-sm h-8 px-2 border border-gray-300 rounded-md bg-white w-full mt-1"
+                      data-testid="new-status"
+                    >
+                      {statusOptions.map(status => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Capacity</Label>
+                    <Input 
+                      value={newProjectData.capacity || ''}
+                      onChange={(e) => handleNewProjectChange('capacity', e.target.value)}
+                      className="text-sm h-8 mt-1"
+                      placeholder="500 KLD"
+                      data-testid="new-capacity"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">PLC Name</Label>
+                    <Input 
+                      value={newProjectData.plcName || ''}
+                      onChange={(e) => handleNewProjectChange('plcName', e.target.value)}
+                      className="text-sm h-8 mt-1"
+                      placeholder="PLC model"
+                      data-testid="new-plc"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">IPC Name</Label>
+                    <Input 
+                      value={newProjectData.ipcName || ''}
+                      onChange={(e) => handleNewProjectChange('ipcName', e.target.value)}
+                      className="text-sm h-8 mt-1"
+                      placeholder="IPC model"
+                      data-testid="new-ipc"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Created Date</Label>
+                    <Input 
+                      type="date"
+                      value={newProjectData.createdDate || ''}
+                      onChange={(e) => handleNewProjectChange('createdDate', e.target.value)}
+                      className="text-sm h-8 mt-1"
+                      data-testid="new-date"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Label className="text-xs font-medium">Plant Systems</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {systemOptions.map(system => (
+                      <label key={system} className="flex items-center space-x-2 cursor-pointer">
+                        <Checkbox 
+                          checked={(newProjectData.selectedSystems || []).includes(system)}
+                          onCheckedChange={() => {
+                            const currentSystems = newProjectData.selectedSystems || [];
+                            const updatedSystems = currentSystems.includes(system)
+                              ? currentSystems.filter(s => s !== system)
+                              : [...currentSystems, system];
+                            handleNewProjectChange('selectedSystems', updatedSystems);
+                          }}
+                          data-testid={`new-system-${system.toLowerCase()}`}
+                        />
+                        <span className="text-sm">{system}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" onClick={handleNewProjectCancel} data-testid="cancel-new-project">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleNewProjectSave} data-testid="save-new-project">
+                    Create Project
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           <Card>
             <CardContent className="p-0">
@@ -169,12 +298,27 @@ export default function ProjectDetails() {
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Capacity</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">PLC</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">IPC</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Date</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Systems</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {projects.map((project, index) => {
+                    {projects.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="py-12 text-center">
+                          <div className="text-gray-500">
+                            <Building2 size={48} className="mx-auto mb-4 text-gray-300" />
+                            <h3 className="text-sm font-medium text-gray-900 mb-2">No Projects Found</h3>
+                            <p className="text-xs text-gray-600 mb-4">Get started by creating your first project</p>
+                            <Button onClick={handleNewProject} size="sm">
+                              <Plus size={14} className="mr-2" />
+                              Create First Project
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : projects.map((project, index) => {
                       const isEditing = editingProjectId === project.id;
                       return (
                         <tr 
@@ -290,18 +434,51 @@ export default function ProjectDetails() {
                             )}
                           </td>
                           <td className="py-4 px-4">
-                            <div className="flex flex-wrap gap-1">
-                              {project.selectedSystems.slice(0, 2).map(system => (
-                                <Badge key={system} variant="outline" className="text-xs px-2 py-1">
-                                  {system}
-                                </Badge>
-                              ))}
-                              {project.selectedSystems.length > 2 && (
-                                <Badge variant="outline" className="text-xs px-2 py-1">
-                                  +{project.selectedSystems.length - 2}
-                                </Badge>
-                              )}
-                            </div>
+                            {isEditing ? (
+                              <Input 
+                                type="date"
+                                value={editFormData.createdDate || ''}
+                                onChange={(e) => handleFieldChange('createdDate', e.target.value)}
+                                className="text-sm h-8"
+                                data-testid={`edit-date-${project.id}`}
+                              />
+                            ) : (
+                              <div className="text-gray-600 text-sm">
+                                {project.createdDate}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <div className="space-y-1">
+                                <div className="text-xs font-medium mb-2">Select Systems:</div>
+                                <div className="flex flex-wrap gap-2">
+                                  {systemOptions.map(system => (
+                                    <label key={system} className="flex items-center space-x-1 cursor-pointer">
+                                      <Checkbox 
+                                        checked={(editFormData.selectedSystems || []).includes(system)}
+                                        onCheckedChange={() => handleSystemToggleEdit(system)}
+                                        data-testid={`edit-system-${system.toLowerCase()}-${project.id}`}
+                                      />
+                                      <span className="text-xs">{system}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-1">
+                                {project.selectedSystems.slice(0, 2).map(system => (
+                                  <Badge key={system} variant="outline" className="text-xs px-2 py-1">
+                                    {system}
+                                  </Badge>
+                                ))}
+                                {project.selectedSystems.length > 2 && (
+                                  <Badge variant="outline" className="text-xs px-2 py-1">
+                                    +{project.selectedSystems.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
@@ -333,6 +510,7 @@ export default function ProjectDetails() {
                                     variant="ghost"
                                     onClick={() => handleEditStart(project)}
                                     data-testid={`edit-project-${project.id}`}
+                                    title="Edit project"
                                   >
                                     <Edit size={14} />
                                   </Button>
@@ -341,8 +519,19 @@ export default function ProjectDetails() {
                                     variant="ghost"
                                     onClick={() => setSelectedProjectId(project.id)}
                                     data-testid={`view-project-${project.id}`}
+                                    title="View details"
                                   >
                                     <Eye size={14} />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => handleDeleteProject(project.id)}
+                                    data-testid={`delete-project-${project.id}`}
+                                    className="text-red-600 hover:text-red-700"
+                                    title="Delete project"
+                                  >
+                                    <Trash2 size={14} />
                                   </Button>
                                 </>
                               )}
