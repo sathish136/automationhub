@@ -35,6 +35,7 @@ export default function SiteEvents() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const { toast } = useToast();
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
@@ -176,6 +177,7 @@ export default function SiteEvents() {
     
     const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
     const matchesType = typeFilter === "all" || alert.type === typeFilter;
+    const matchesCategory = categoryFilter === "all" || getNetworkCategory(alert.type, alert.message) === categoryFilter;
     
     let matchesStatus = true;
     if (statusFilter === "unread") {
@@ -186,10 +188,23 @@ export default function SiteEvents() {
       matchesStatus = alert.isResolved;
     }
     
-    return matchesSearch && matchesSeverity && matchesType && matchesStatus;
+    return matchesSearch && matchesSeverity && matchesType && matchesCategory && matchesStatus;
   }) || [];
 
   const eventTypes = Array.from(new Set(filteredAlerts?.map(alert => alert.type) || []));
+  
+  // Available network categories
+  const networkCategories = Array.from(new Set(
+    alerts?.filter(alert => {
+      const isNetworkEvent = networkEventTypes.includes(alert.type) || 
+                            alert.message.toLowerCase().includes("ping") ||
+                            alert.message.toLowerCase().includes("timeout") ||
+                            alert.message.toLowerCase().includes("connection") ||
+                            alert.message.toLowerCase().includes("response time") ||
+                            alert.message.toLowerCase().includes("offline");
+      return isNetworkEvent;
+    }).map(alert => getNetworkCategory(alert.type, alert.message)) || []
+  ));
   
   // Network status summary
   const getNetworkSummary = () => {
@@ -255,6 +270,20 @@ export default function SiteEvents() {
               </SelectContent>
             </Select>
 
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-40 h-9" data-testid="select-category-filter">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {networkCategories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-32 h-9" data-testid="select-status-filter">
                 <SelectValue placeholder="Status" />
@@ -274,6 +303,7 @@ export default function SiteEvents() {
                 setSearchTerm("");
                 setSeverityFilter("all");
                 setTypeFilter("all");
+                setCategoryFilter("all");
                 setStatusFilter("all");
               }}
               className="h-9"
