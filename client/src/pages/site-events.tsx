@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, CheckCircle, Clock, Filter, Search, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -98,17 +98,35 @@ export default function SiteEvents() {
     }
   };
 
-  const getTypeIcon = (type: string) => {
+  const getNetworkCategoryIcon = (type: string, severity: string) => {
     switch (type) {
       case "site_offline":
-      case "equipment_failure":
+        return <WifiOff className="h-4 w-4 text-white" />;
+      case "high_response_time":
+        return <Timer className="h-4 w-4 text-white" />;
+      case "connection_timeout":
+        return <Network className="h-4 w-4 text-white" />;
       case "communication_error":
-        return <AlertCircle className="h-4 w-4" />;
-      case "backup_completed":
-        return <CheckCircle className="h-4 w-4" />;
+        return <AlertCircle className="h-4 w-4 text-white" />;
       default:
-        return <Clock className="h-4 w-4" />;
+        return <Wifi className="h-4 w-4 text-white" />;
     }
+  };
+
+  const getNetworkCategory = (type: string, message: string) => {
+    if (type === "site_offline" || message.includes("is not responding")) {
+      return "Connection Lost";
+    }
+    if (type === "high_response_time" || message.includes("response time")) {
+      return "High Latency";
+    }
+    if (message.includes("timeout")) {
+      return "Timeout";
+    }
+    if (message.includes("permission") || message.includes("capability")) {
+      return "Permission Error";
+    }
+    return "Network Issue";
   };
 
   const getSiteName = (siteId: string | null) => {
@@ -138,7 +156,20 @@ export default function SiteEvents() {
     return new Date(dateString).toLocaleString();
   };
 
+  // Filter to only show site/network-related events
+  const networkEventTypes = ["site_offline", "high_response_time", "communication_error", "connection_timeout"];
+  
   const filteredAlerts = alerts?.filter(alert => {
+    // Only show network/site events
+    const isNetworkEvent = networkEventTypes.includes(alert.type) || 
+                          alert.message.toLowerCase().includes("ping") ||
+                          alert.message.toLowerCase().includes("timeout") ||
+                          alert.message.toLowerCase().includes("connection") ||
+                          alert.message.toLowerCase().includes("response time") ||
+                          alert.message.toLowerCase().includes("offline");
+    
+    if (!isNetworkEvent) return false;
+    
     const matchesSearch = alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          alert.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          getSiteName(alert.siteId).toLowerCase().includes(searchTerm.toLowerCase());
@@ -158,86 +189,97 @@ export default function SiteEvents() {
     return matchesSearch && matchesSeverity && matchesType && matchesStatus;
   }) || [];
 
-  const eventTypes = Array.from(new Set(alerts?.map(alert => alert.type) || []));
+  const eventTypes = Array.from(new Set(filteredAlerts?.map(alert => alert.type) || []));
+  
+  // Network status summary
+  const getNetworkSummary = () => {
+    const critical = filteredAlerts.filter(a => a.severity === "critical" && !a.isResolved).length;
+    const warning = filteredAlerts.filter(a => a.severity === "warning" && !a.isResolved).length;
+    const unread = filteredAlerts.filter(a => !a.isRead).length;
+    return { critical, warning, unread };
+  };
+  
+  const networkSummary = getNetworkSummary();
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Site Events</h1>
-        <div className="text-sm text-gray-500">
-          Total Events: {filteredAlerts.length}
+        <div>
+          <h1 className="text-2xl font-bold">Network Events</h1>
+          <p className="text-sm text-gray-500">Real-time network monitoring and connectivity alerts</p>
+        </div>
+        <div className="flex gap-4">
+          <div className="text-center">
+            <div className="text-xl font-bold text-red-600 dark:text-red-400">{networkSummary.critical}</div>
+            <div className="text-xs text-gray-500">Critical</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{networkSummary.warning}</div>
+            <div className="text-xs text-gray-500">Warning</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{networkSummary.unread}</div>
+            <div className="text-xs text-gray-500">Unread</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{filteredAlerts.length}</div>
+            <div className="text-xs text-gray-500">Total</div>
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Compact Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="relative">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search events..."
+                placeholder="Search sites or messages..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-9"
+                data-testid="input-search-events"
               />
             </div>
             
             <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Severities" />
+              <SelectTrigger className="w-32 h-9" data-testid="select-severity-filter">
+                <SelectValue placeholder="Severity" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Severities</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
                 <SelectItem value="warning">Warning</SelectItem>
                 <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="success">Success</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {eventTypes.map(type => (
-                  <SelectItem key={type} value={type}>
-                    {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Status" />
+              <SelectTrigger className="w-32 h-9" data-testid="select-status-filter">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="unread">Unread</SelectItem>
-                <SelectItem value="unresolved">Unresolved</SelectItem>
+                <SelectItem value="unresolved">Active</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
               </SelectContent>
             </Select>
 
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => {
                 setSearchTerm("");
                 setSeverityFilter("all");
                 setTypeFilter("all");
                 setStatusFilter("all");
               }}
+              className="h-9"
+              data-testid="button-clear-filters"
             >
-              Clear Filters
+              Clear
             </Button>
           </div>
         </CardContent>
@@ -257,81 +299,77 @@ export default function SiteEvents() {
           </div>
         ) : filteredAlerts.length > 0 ? (
           filteredAlerts.map((alert) => (
-            <Card key={alert.id} className={`transition-all hover:shadow-md ${!alert.isRead ? 'ring-2 ring-blue-200' : ''}`}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
-                    <div className={`p-2 rounded-full ${getSeverityColor(alert.severity)}`}>
-                      {getTypeIcon(alert.type)}
+            <Card key={alert.id} className={`transition-all hover:shadow-md ${!alert.isRead ? 'ring-2 ring-blue-200 dark:ring-blue-400' : ''}`} data-testid={`alert-card-${alert.id}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className={`p-2 rounded-full ${getSeverityColor(alert.severity)} shrink-0`}>
+                      {getNetworkCategoryIcon(alert.type, alert.severity)}
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {alert.title}
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {getSiteName(alert.siteId)}
                         </h3>
-                        <Badge variant="outline" className={getSeverityTextColor(alert.severity)}>
-                          {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
+                        <Badge variant="outline" className={`text-xs ${getSeverityTextColor(alert.severity)}`}>
+                          {alert.severity}
                         </Badge>
-                        {!alert.isRead && (
-                          <Badge variant="secondary">
-                            Unread
-                          </Badge>
-                        )}
-                        {alert.isResolved && (
-                          <Badge variant="default" className="bg-green-100 text-green-800">
-                            Resolved
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-800">
+                          {getNetworkCategory(alert.type, alert.message)}
+                        </Badge>
                       </div>
                       
-                      <p className="text-gray-600 dark:text-gray-400 mb-3">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-1">
                         {alert.message}
                       </p>
                       
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="font-medium">
-                          {getSiteName(alert.siteId)}
-                        </span>
-                        <span>
-                          {alert.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                        <span>
-                          {formatTimeAgo(alert.createdAt)}
-                        </span>
-                        <span>
-                          {formatDate(alert.createdAt)}
-                        </span>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span>{formatTimeAgo(alert.createdAt)}</span>
+                        <span className="opacity-70">{formatDate(alert.createdAt)}</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-1 ml-3">
                     {!alert.isRead && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markAsReadMutation.mutate(alert.id)}
-                        disabled={markAsReadMutation.isPending}
-                        className="flex items-center gap-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Mark Read
-                      </Button>
+                      <Badge variant="secondary" className="text-xs px-2 py-1">
+                        New
+                      </Badge>
+                    )}
+                    {alert.isResolved && (
+                      <Badge variant="default" className="text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Resolved
+                      </Badge>
                     )}
                     
-                    {!alert.isResolved && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markAsResolvedMutation.mutate(alert.id)}
-                        disabled={markAsResolvedMutation.isPending}
-                        className="flex items-center gap-1"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Resolve
-                      </Button>
-                    )}
+                    <div className="flex gap-1">
+                      {!alert.isRead && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => markAsReadMutation.mutate(alert.id)}
+                          disabled={markAsReadMutation.isPending}
+                          className="h-8 w-8 p-0"
+                          data-testid={`button-mark-read-${alert.id}`}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      )}
+                      
+                      {!alert.isResolved && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => markAsResolvedMutation.mutate(alert.id)}
+                          disabled={markAsResolvedMutation.isPending}
+                          className="h-8 w-8 p-0"
+                          data-testid={`button-resolve-${alert.id}`}
+                        >
+                          <CheckCircle className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -339,15 +377,15 @@ export default function SiteEvents() {
           ))
         ) : (
           <Card>
-            <CardContent className="p-12 text-center">
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <CardContent className="p-8 text-center">
+              <Network className="h-10 w-10 text-gray-400 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                No events found
+                No network events found
               </h3>
-              <p className="text-gray-500">
+              <p className="text-sm text-gray-500">
                 {searchTerm || severityFilter !== "all" || typeFilter !== "all" || statusFilter !== "all"
-                  ? "Try adjusting your filters to see more events."
-                  : "There are no events to display at this time."}
+                  ? "Try adjusting your filters to see more network events."
+                  : "All sites are running smoothly - no connectivity issues detected."}
               </p>
             </CardContent>
           </Card>
