@@ -50,9 +50,24 @@ function SyncFromIPCButton() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      
+      const created = data.created || 0;
+      const removed = data.removed || 0;
+      let description = "";
+      
+      if (created > 0 && removed > 0) {
+        description = `${created} sites created, ${removed} orphaned sites removed.`;
+      } else if (created > 0) {
+        description = `${created} sites created from IPC management records.`;
+      } else if (removed > 0) {
+        description = `${removed} orphaned sites removed.`;
+      } else {
+        description = "All sites are already synchronized with IPC management.";
+      }
+      
       toast({
         title: "Sites synced successfully",
-        description: `${data.created || 0} sites created from IPC management records.`,
+        description,
       });
     },
     onError: (error: any) => {

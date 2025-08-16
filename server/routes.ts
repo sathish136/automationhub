@@ -108,8 +108,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingSites = await storage.getAllSites();
       const existingIPs = new Set(existingSites.map(site => site.ipAddress));
       
-      let created = 0;
+      // Collect all valid IPs from IPC devices
+      const validIPs = new Set<string>();
+      for (const ipc of ipcDevices) {
+        if (ipc.vpnIp) validIPs.add(ipc.vpnIp);
+        if (ipc.lanIp) validIPs.add(ipc.lanIp);
+      }
       
+      let created = 0;
+      let removed = 0;
+      
+      // Remove orphaned sites that no longer have corresponding IPC devices
+      for (const site of existingSites) {
+        if (!validIPs.has(site.ipAddress)) {
+          await storage.deleteSite(site.id);
+          removed++;
+          console.log(`Removed orphaned site: ${site.name} (${site.ipAddress})`);
+        }
+      }
+      
+      // Create new sites for IPC devices
       for (const ipc of ipcDevices) {
         // Create sites for VPN IPs
         if (ipc.vpnIp && !existingIPs.has(ipc.vpnIp)) {
@@ -140,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      res.json({ created, total: ipcDevices.length });
+      res.json({ created, removed, total: ipcDevices.length });
     } catch (error) {
       console.error("Error syncing sites from IPC:", error);
       res.status(500).json({ message: "Failed to sync sites from IPC management" });
@@ -350,10 +368,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/ipc-management/:id", async (req, res) => {
     try {
+      // Get the IPC device details before deletion to know which IPs to clean up
+      const ipcDevices = await storage.getIpcManagement();
+      const deviceToDelete = ipcDevices.find(device => device.id === req.params.id);
+      
       const success = await storage.deleteIpcManagement(req.params.id);
       if (!success) {
         return res.status(404).json({ message: "Device not found" });
       }
+      
+      // Clean up any monitoring sites that belong to this IPC device
+      if (deviceToDelete) {
+        const sitesToCleanup = [];
+        const allSites = await storage.getAllSites();
+        
+        for (const site of allSites) {
+          if ((deviceToDelete.vpnIp && site.ipAddress === deviceToDelete.vpnIp) ||
+              (deviceToDelete.lanIp && site.ipAddress === deviceToDelete.lanIp)) {
+            await storage.deleteSite(site.id);
+            sitesToCleanup.push(site.name);
+          }
+        }
+        
+        if (sitesToCleanup.length > 0) {
+          console.log(`Automatically removed ${sitesToCleanup.length} monitoring sites for deleted IPC device: ${sitesToCleanup.join(', ')}`);
+        }
+      }
+      
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting IPC device:", error);
