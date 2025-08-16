@@ -105,8 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sites/sync-from-ipc", async (req, res) => {
     try {
       const ipcDevices = await storage.getIpcManagement();
-      const existingSites = await storage.getAllSites();
-      const existingIPs = new Set(existingSites.map(site => site.ipAddress));
+      let existingSites = await storage.getAllSites();
       
       // Collect all valid IPs from IPC devices
       const validIPs = new Set<string>();
@@ -127,34 +126,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Refresh existing sites after deletions
+      existingSites = await storage.getAllSites();
+      const existingIPs = new Set(existingSites.map(site => site.ipAddress));
+      
       // Create new sites for IPC devices
       for (const ipc of ipcDevices) {
         // Create sites for VPN IPs
         if (ipc.vpnIp && !existingIPs.has(ipc.vpnIp)) {
-          await storage.createSite({
-            name: `${ipc.deviceName} (VPN)`,
-            description: `Monitoring ${ipc.deviceName} via VPN connection`,
-            ipAddress: ipc.vpnIp,
-            siteType: "production",
-            location: null,
-            isActive: true,
-          });
-          created++;
-          existingIPs.add(ipc.vpnIp);
+          try {
+            await storage.createSite({
+              name: `${ipc.deviceName} (VPN)`,
+              description: `Monitoring ${ipc.deviceName} via VPN connection`,
+              ipAddress: ipc.vpnIp,
+              siteType: "production",
+              location: null,
+              isActive: true,
+            });
+            created++;
+            existingIPs.add(ipc.vpnIp);
+          } catch (error: any) {
+            // Skip if duplicate (might be created by another sync operation)
+            if (error.code !== '23505') {
+              throw error;
+            }
+            console.log(`Site with VPN IP ${ipc.vpnIp} already exists, skipping...`);
+          }
         }
         
         // Create sites for LAN IPs
         if (ipc.lanIp && !existingIPs.has(ipc.lanIp)) {
-          await storage.createSite({
-            name: `${ipc.deviceName} (LAN)`,
-            description: `Monitoring ${ipc.deviceName} via LAN connection`,
-            ipAddress: ipc.lanIp,
-            siteType: "production", 
-            location: null,
-            isActive: true,
-          });
-          created++;
-          existingIPs.add(ipc.lanIp);
+          try {
+            await storage.createSite({
+              name: `${ipc.deviceName} (LAN)`,
+              description: `Monitoring ${ipc.deviceName} via LAN connection`,
+              ipAddress: ipc.lanIp,
+              siteType: "production", 
+              location: null,
+              isActive: true,
+            });
+            created++;
+            existingIPs.add(ipc.lanIp);
+          } catch (error: any) {
+            // Skip if duplicate (might be created by another sync operation)
+            if (error.code !== '23505') {
+              throw error;
+            }
+            console.log(`Site with LAN IP ${ipc.lanIp} already exists, skipping...`);
+          }
         }
       }
       
