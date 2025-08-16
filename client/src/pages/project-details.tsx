@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { Building2, Cpu, Droplets, Zap, Settings, CheckCircle, ArrowLeft, Calendar, MapPin, Plus } from "lucide-react";
+import { Building2, Cpu, Droplets, Zap, Settings, CheckCircle, ArrowLeft, Calendar, MapPin, Plus, Eye, Edit, Save, X, Check } from "lucide-react";
 
 interface Project {
   id: number;
@@ -23,7 +23,9 @@ interface Project {
 
 export default function ProjectDetails() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [projects] = useState<Project[]>([
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<Project>>({});
+  const [projects, setProjects] = useState<Project[]>([
     {
       id: 1,
       projectNumber: 'PRJ-2025-001',
@@ -108,6 +110,34 @@ export default function ProjectDetails() {
     }
   };
 
+  const statusOptions = ['Active', 'In Progress', 'Planning', 'Completed'];
+
+  const handleEditStart = (project: Project) => {
+    setEditingProjectId(project.id);
+    setEditFormData(project);
+  };
+
+  const handleEditCancel = () => {
+    setEditingProjectId(null);
+    setEditFormData({});
+  };
+
+  const handleEditSave = () => {
+    if (editingProjectId && editFormData) {
+      setProjects(prev => prev.map(p => 
+        p.id === editingProjectId 
+          ? { ...p, ...editFormData } as Project
+          : p
+      ));
+      setEditingProjectId(null);
+      setEditFormData({});
+    }
+  };
+
+  const handleFieldChange = (field: keyof Project, value: any) => {
+    setEditFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   // If no project selected, show project list
   if (!selectedProjectId) {
     return (
@@ -126,61 +156,206 @@ export default function ProjectDetails() {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <Card 
-                key={project.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => setSelectedProjectId(project.id)}
-                data-testid={`project-card-${project.id}`}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-base truncate">
-                        {project.projectName}
-                      </CardTitle>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {project.projectNumber}
-                      </p>
-                    </div>
-                    <Badge 
-                      variant="secondary" 
-                      className={`text-xs text-white ${getStatusColor(project.status)}`}
-                    >
-                      {project.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center text-xs text-gray-600">
-                      <MapPin size={12} className="mr-2" />
-                      <span className="truncate">{project.location}</span>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-600">
-                      <Calendar size={12} className="mr-2" />
-                      <span>{project.createdDate}</span>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-600">
-                      <Droplets size={12} className="mr-2" />
-                      <span>Capacity: {project.capacity}</span>
-                    </div>
-                    <div className="pt-2 border-t border-gray-100">
-                      <p className="text-xs text-gray-500 mb-2">Systems:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {project.selectedSystems.map(system => (
-                          <Badge key={system} variant="outline" className="text-xs px-2 py-1">
-                            {system}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Project No.</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Project Name</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Location</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Capacity</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">PLC</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">IPC</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Systems</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projects.map((project, index) => {
+                      const isEditing = editingProjectId === project.id;
+                      return (
+                        <tr 
+                          key={project.id} 
+                          className={`border-b hover:bg-gray-50 ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                          } ${isEditing ? 'bg-blue-50 border-blue-200' : ''}`}
+                          data-testid={`project-row-${project.id}`}
+                        >
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <Input 
+                                value={editFormData.projectNumber || ''}
+                                onChange={(e) => handleFieldChange('projectNumber', e.target.value)}
+                                className="text-sm h-8"
+                                data-testid={`edit-project-number-${project.id}`}
+                              />
+                            ) : (
+                              <div className="font-medium text-gray-900 text-sm">
+                                {project.projectNumber}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <Input 
+                                value={editFormData.projectName || ''}
+                                onChange={(e) => handleFieldChange('projectName', e.target.value)}
+                                className="text-sm h-8"
+                                data-testid={`edit-project-name-${project.id}`}
+                              />
+                            ) : (
+                              <div className="font-medium text-gray-900 text-sm">
+                                {project.projectName}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <Input 
+                                value={editFormData.location || ''}
+                                onChange={(e) => handleFieldChange('location', e.target.value)}
+                                className="text-sm h-8"
+                                data-testid={`edit-location-${project.id}`}
+                              />
+                            ) : (
+                              <div className="text-gray-600 text-sm">
+                                {project.location}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <select 
+                                value={editFormData.status || project.status}
+                                onChange={(e) => handleFieldChange('status', e.target.value)}
+                                className="text-sm h-8 px-2 border border-gray-300 rounded-md bg-white"
+                                data-testid={`edit-status-${project.id}`}
+                              >
+                                {statusOptions.map(status => (
+                                  <option key={status} value={status}>{status}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <Badge 
+                                variant="secondary" 
+                                className={`text-xs text-white ${getStatusColor(project.status)}`}
+                              >
+                                {project.status}
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <Input 
+                                value={editFormData.capacity || ''}
+                                onChange={(e) => handleFieldChange('capacity', e.target.value)}
+                                className="text-sm h-8"
+                                data-testid={`edit-capacity-${project.id}`}
+                              />
+                            ) : (
+                              <div className="text-gray-600 text-sm">
+                                {project.capacity}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <Input 
+                                value={editFormData.plcName || ''}
+                                onChange={(e) => handleFieldChange('plcName', e.target.value)}
+                                className="text-sm h-8"
+                                data-testid={`edit-plc-${project.id}`}
+                              />
+                            ) : (
+                              <div className="text-gray-600 text-sm">
+                                {project.plcName}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            {isEditing ? (
+                              <Input 
+                                value={editFormData.ipcName || ''}
+                                onChange={(e) => handleFieldChange('ipcName', e.target.value)}
+                                className="text-sm h-8"
+                                data-testid={`edit-ipc-${project.id}`}
+                              />
+                            ) : (
+                              <div className="text-gray-600 text-sm">
+                                {project.ipcName}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex flex-wrap gap-1">
+                              {project.selectedSystems.slice(0, 2).map(system => (
+                                <Badge key={system} variant="outline" className="text-xs px-2 py-1">
+                                  {system}
+                                </Badge>
+                              ))}
+                              {project.selectedSystems.length > 2 && (
+                                <Badge variant="outline" className="text-xs px-2 py-1">
+                                  +{project.selectedSystems.length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-2">
+                              {isEditing ? (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={handleEditSave}
+                                    data-testid={`save-project-${project.id}`}
+                                    className="text-green-600 hover:text-green-700"
+                                  >
+                                    <Check size={14} />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={handleEditCancel}
+                                    data-testid={`cancel-edit-${project.id}`}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <X size={14} />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => handleEditStart(project)}
+                                    data-testid={`edit-project-${project.id}`}
+                                  >
+                                    <Edit size={14} />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    onClick={() => setSelectedProjectId(project.id)}
+                                    data-testid={`view-project-${project.id}`}
+                                  >
+                                    <Eye size={14} />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
