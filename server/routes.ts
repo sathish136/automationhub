@@ -14,7 +14,9 @@ import {
   insertPlcTagSchema,
   insertPlcTagHistorySchema,
   insertSiteDatabaseTagSchema,
-  insertSiteDatabaseValueSchema
+  insertSiteDatabaseValueSchema,
+  insertMbrRealtimeDataSchema,
+  insertRoRealtimeDataSchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -764,6 +766,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching latest site database values:", error);
       res.status(500).json({ message: "Failed to fetch latest values" });
+    }
+  });
+
+  // Real-time MBR Data endpoints
+  app.get("/api/mbr-realtime-data", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const data = await storage.getMbrRealtimeData(siteId, limit);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching MBR realtime data:", error);
+      res.status(500).json({ message: "Failed to fetch MBR realtime data" });
+    }
+  });
+
+  app.post("/api/mbr-realtime-data", async (req, res) => {
+    try {
+      const dataToInsert = insertMbrRealtimeDataSchema.parse(req.body);
+      const data = await storage.createMbrRealtimeData(dataToInsert);
+      res.status(201).json(data);
+    } catch (error) {
+      console.error("Error creating MBR realtime data:", error);
+      res.status(400).json({ message: "Invalid MBR realtime data" });
+    }
+  });
+
+  app.get("/api/sites/:id/mbr-realtime-data/latest", async (req, res) => {
+    try {
+      const data = await storage.getLatestMbrRealtimeData(req.params.id);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching latest MBR realtime data:", error);
+      res.status(500).json({ message: "Failed to fetch latest MBR realtime data" });
+    }
+  });
+
+  // Real-time RO Data endpoints
+  app.get("/api/ro-realtime-data", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const data = await storage.getRoRealtimeData(siteId, limit);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching RO realtime data:", error);
+      res.status(500).json({ message: "Failed to fetch RO realtime data" });
+    }
+  });
+
+  app.post("/api/ro-realtime-data", async (req, res) => {
+    try {
+      const dataToInsert = insertRoRealtimeDataSchema.parse(req.body);
+      const data = await storage.createRoRealtimeData(dataToInsert);
+      res.status(201).json(data);
+    } catch (error) {
+      console.error("Error creating RO realtime data:", error);
+      res.status(400).json({ message: "Invalid RO realtime data" });
+    }
+  });
+
+  app.get("/api/sites/:id/ro-realtime-data/latest", async (req, res) => {
+    try {
+      const data = await storage.getLatestRoRealtimeData(req.params.id);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching latest RO realtime data:", error);
+      res.status(500).json({ message: "Failed to fetch latest RO realtime data" });
     }
   });
 

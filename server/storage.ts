@@ -10,6 +10,8 @@ import {
   plcTagHistory,
   siteDatabaseTags,
   siteDatabaseValues,
+  mbrRealtimeData,
+  roRealtimeData,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -32,6 +34,10 @@ import {
   type InsertSiteDatabaseTag,
   type SiteDatabaseValue,
   type InsertSiteDatabaseValue,
+  type MbrRealtimeData,
+  type InsertMbrRealtimeData,
+  type RoRealtimeData,
+  type InsertRoRealtimeData,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -122,6 +128,16 @@ export interface IStorage {
   getSiteDatabaseValues(tagId: string, limit?: number): Promise<SiteDatabaseValue[]>;
   createSiteDatabaseValue(value: InsertSiteDatabaseValue): Promise<SiteDatabaseValue>;
   getLatestSiteDatabaseValues(siteId: string): Promise<Array<SiteDatabaseValue & { tag: SiteDatabaseTag }>>;
+
+  // Real-time MBR Data
+  getMbrRealtimeData(siteId?: string, limit?: number): Promise<MbrRealtimeData[]>;
+  createMbrRealtimeData(data: InsertMbrRealtimeData): Promise<MbrRealtimeData>;
+  getLatestMbrRealtimeData(siteId: string): Promise<MbrRealtimeData | undefined>;
+
+  // Real-time RO Data
+  getRoRealtimeData(siteId?: string, limit?: number): Promise<RoRealtimeData[]>;
+  createRoRealtimeData(data: InsertRoRealtimeData): Promise<RoRealtimeData>;
+  getLatestRoRealtimeData(siteId: string): Promise<RoRealtimeData | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -602,6 +618,68 @@ export class DatabaseStorage implements IStorage {
     });
 
     return Array.from(latestValues.values());
+  }
+
+  // Real-time MBR Data methods
+  async getMbrRealtimeData(siteId?: string, limit = 100): Promise<MbrRealtimeData[]> {
+    const query = db.select().from(mbrRealtimeData);
+    
+    if (siteId) {
+      return await query
+        .where(eq(mbrRealtimeData.siteId, siteId))
+        .orderBy(desc(mbrRealtimeData.timestamp))
+        .limit(limit);
+    }
+    
+    return await query
+      .orderBy(desc(mbrRealtimeData.timestamp))
+      .limit(limit);
+  }
+
+  async createMbrRealtimeData(data: InsertMbrRealtimeData): Promise<MbrRealtimeData> {
+    const [newData] = await db.insert(mbrRealtimeData).values(data).returning();
+    return newData;
+  }
+
+  async getLatestMbrRealtimeData(siteId: string): Promise<MbrRealtimeData | undefined> {
+    const [latest] = await db
+      .select()
+      .from(mbrRealtimeData)
+      .where(eq(mbrRealtimeData.siteId, siteId))
+      .orderBy(desc(mbrRealtimeData.timestamp))
+      .limit(1);
+    return latest;
+  }
+
+  // Real-time RO Data methods
+  async getRoRealtimeData(siteId?: string, limit = 100): Promise<RoRealtimeData[]> {
+    const query = db.select().from(roRealtimeData);
+    
+    if (siteId) {
+      return await query
+        .where(eq(roRealtimeData.siteId, siteId))
+        .orderBy(desc(roRealtimeData.timestamp))
+        .limit(limit);
+    }
+    
+    return await query
+      .orderBy(desc(roRealtimeData.timestamp))
+      .limit(limit);
+  }
+
+  async createRoRealtimeData(data: InsertRoRealtimeData): Promise<RoRealtimeData> {
+    const [newData] = await db.insert(roRealtimeData).values(data).returning();
+    return newData;
+  }
+
+  async getLatestRoRealtimeData(siteId: string): Promise<RoRealtimeData | undefined> {
+    const [latest] = await db
+      .select()
+      .from(roRealtimeData)
+      .where(eq(roRealtimeData.siteId, siteId))
+      .orderBy(desc(roRealtimeData.timestamp))
+      .limit(1);
+    return latest;
   }
 }
 

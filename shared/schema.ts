@@ -418,3 +418,112 @@ export type SiteDatabaseTag = typeof siteDatabaseTags.$inferSelect;
 export type InsertSiteDatabaseTag = z.infer<typeof insertSiteDatabaseTagSchema>;
 export type SiteDatabaseValue = typeof siteDatabaseValues.$inferSelect;
 export type InsertSiteDatabaseValue = z.infer<typeof insertSiteDatabaseValueSchema>;
+
+// Real-time MBR Data Table (similar to sona1_reject_mbr from Python code)
+export const mbrRealtimeData = pgTable("mbr_realtime_data", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: text("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // MBR Parameters
+  mbrTmp: decimal("mbr_tmp", { precision: 8, scale: 2 }), // Temperature
+  mbrFlow: decimal("mbr_flow", { precision: 8, scale: 2 }), // Flow rate
+  mbrTankLevel: decimal("mbr_tank_level", { precision: 8, scale: 2 }), // Tank level
+  mbrRunningTimeHrs: decimal("mbr_running_time_hrs", { precision: 8, scale: 2 }),
+  mbrRunningTimeMin: decimal("mbr_running_time_min", { precision: 8, scale: 2 }),
+  mbrRunningTimeSec: decimal("mbr_running_time_sec", { precision: 8, scale: 2 }),
+  mbrBackwashWithoutFlow: decimal("mbr_backwash_without_flow", { precision: 8, scale: 2 }),
+  turbidity: decimal("turbidity", { precision: 8, scale: 2 }),
+  mbrPh: decimal("mbr_ph", { precision: 8, scale: 2 }),
+  ctsPh: decimal("cts_ph", { precision: 8, scale: 2 }),
+  mbrPt: decimal("mbr_pt", { precision: 8, scale: 2 }), // Pressure transmitter
+  backwashWithoutCount: decimal("backwash_without_count", { precision: 8, scale: 2 }),
+  backwashWithDrainFlow: decimal("backwash_with_drain_flow", { precision: 8, scale: 2 }),
+  mbrPermeate: decimal("mbr_permeate", { precision: 8, scale: 2 }),
+  mbrNetValueDay: decimal("mbr_net_value_day", { precision: 8, scale: 2 }),
+  netValue: decimal("net_value", { precision: 8, scale: 2 }),
+  h2so4: decimal("h2so4", { precision: 8, scale: 2 }),
+  energy: decimal("energy", { precision: 8, scale: 2 }),
+  mbrPhTemp: decimal("mbr_ph_temp", { precision: 8, scale: 2 }),
+  h2so4Temp: decimal("h2so4_temp", { precision: 8, scale: 2 }),
+  
+  // Boolean status fields
+  h2so4Rf: boolean("h2so4_rf"),
+  mbr1pumpRf: boolean("mbr1pump_rf"),
+  mbr2pumpRf: boolean("mbr2pump_rf"),
+  mbrRf: boolean("mbr_rf"),
+  
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => [
+  index("idx_mbr_site_timestamp").on(table.siteId, table.timestamp),
+]);
+
+// Real-time RO Data Table (similar to sona1_reject_ro from Python code)
+export const roRealtimeData = pgTable("ro_realtime_data", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: text("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // RO Parameters
+  feedFlow: decimal("feed_flow", { precision: 8, scale: 2 }),
+  roRecovery: decimal("ro_recovery", { precision: 8, scale: 2 }),
+  roFeedPh: decimal("ro_feed_ph", { precision: 8, scale: 2 }),
+  roFeedLt: decimal("ro_feed_lt", { precision: 8, scale: 2 }),
+  
+  // Stage 1 Parameters
+  stg1Per: decimal("stg1_per", { precision: 8, scale: 2 }),
+  stg1Recovery: decimal("stg1_recovery", { precision: 8, scale: 2 }),
+  stg1InPt: decimal("stg1_in_pt", { precision: 8, scale: 2 }),
+  stg1OutPt: decimal("stg1_out_pt", { precision: 8, scale: 2 }),
+  stg1Dp: decimal("stg1_dp", { precision: 8, scale: 2 }),
+  
+  // Stage 2 Parameters
+  stg2Per: decimal("stg2_per", { precision: 8, scale: 2 }),
+  stg2Recovery: decimal("stg2_recovery", { precision: 8, scale: 2 }),
+  stg2InPt: decimal("stg2_in_pt", { precision: 8, scale: 2 }),
+  stg2OutPt: decimal("stg2_out_pt", { precision: 8, scale: 2 }),
+  stg2Dp: decimal("stg2_dp", { precision: 8, scale: 2 }),
+  
+  // CAT Filter Parameters
+  roCatInPt: decimal("ro_cat_in_pt", { precision: 8, scale: 2 }),
+  roCatOutPt: decimal("ro_cat_out_pt", { precision: 8, scale: 2 }),
+  catDp: decimal("cat_dp", { precision: 8, scale: 2 }),
+  
+  // Totals
+  roFeedOverall: decimal("ro_feed_overall", { precision: 8, scale: 2 }),
+  stg1Overall: decimal("stg_1_overall", { precision: 8, scale: 2 }),
+  stg2Overall: decimal("stg2_overall", { precision: 8, scale: 2 }),
+  roFeedDay: decimal("ro_feed_day", { precision: 8, scale: 2 }),
+  stg1Day: decimal("stg_1_day", { precision: 8, scale: 2 }),
+  stg2Day: decimal("stg_2_day", { precision: 8, scale: 2 }),
+  
+  // CIP Parameters
+  roCipFlow: decimal("ro_cip_flow", { precision: 8, scale: 2 }),
+  roCipPt: decimal("ro_cip_pt", { precision: 8, scale: 2 }),
+  roCipStg1Dp: decimal("ro_cip_stg1_dp", { precision: 8, scale: 2 }),
+  roCipStg2Dp: decimal("ro_cip_stg2_dp", { precision: 8, scale: 2 }),
+  roRawWaterFlow: decimal("ro_raw_water_flow", { precision: 8, scale: 2 }),
+  
+  // Frequency data
+  hpp1Hz: decimal("hpp1_hz", { precision: 8, scale: 2 }),
+  hpp2Hz: decimal("hpp2_hz", { precision: 8, scale: 2 }),
+  
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ro_site_timestamp").on(table.siteId, table.timestamp),
+]);
+
+// Insert schemas for the new tables
+export const insertMbrRealtimeDataSchema = createInsertSchema(mbrRealtimeData).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertRoRealtimeDataSchema = createInsertSchema(roRealtimeData).omit({
+  id: true,
+  timestamp: true,
+});
+
+// Types for the new tables
+export type MbrRealtimeData = typeof mbrRealtimeData.$inferSelect;
+export type InsertMbrRealtimeData = z.infer<typeof insertMbrRealtimeDataSchema>;
+export type RoRealtimeData = typeof roRealtimeData.$inferSelect;
+export type InsertRoRealtimeData = z.infer<typeof insertRoRealtimeDataSchema>;
