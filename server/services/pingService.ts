@@ -1,6 +1,6 @@
-import { spawn } from "child_process";
 import { storage } from "../storage";
 import cron from "node-cron";
+import { createConnection } from "net";
 
 interface PingResult {
   isOnline: boolean;
@@ -13,67 +13,81 @@ class PingService {
 
   async pingHost(ipAddress: string): Promise<PingResult> {
     return new Promise((resolve) => {
-      const isWindows = process.platform === "win32";
-      const pingCommand = isWindows ? "ping" : "ping";
-      const pingArgs = isWindows 
-        ? ["-n", "1", "-w", "5000", ipAddress]
-        : ["-c", "1", "-W", "5", ipAddress];
-
-      const ping = spawn(pingCommand, pingArgs);
-      let output = "";
-      let error = "";
-
-      ping.stdout.on("data", (data) => {
-        output += data.toString();
-      });
-
-      ping.stderr.on("data", (data) => {
-        error += data.toString();
-      });
-
-      ping.on("close", (code) => {
-        if (code === 0) {
-          // Parse response time from output
-          const responseTime = this.parseResponseTime(output, isWindows);
-          resolve({
-            isOnline: true,
-            responseTime,
-          });
-        } else {
+      console.log(`Attempting to connect to ${ipAddress}...`);
+      const startTime = Date.now();
+      
+      // Try to connect to common ports (80, 443, 22, 3389) to test connectivity
+      const testPorts = [80, 443, 22, 3389, 21, 23];
+      let attempts = 0;
+      let connected = false;
+      
+      const tryPort = (port: number) => {
+        const socket = createConnection({ 
+          port, 
+          host: ipAddress, 
+          timeout: 3000 
+        });
+        
+        socket.on('connect', () => {
+          if (!connected) {
+            connected = true;
+            const responseTime = Date.now() - startTime;
+            console.log(`Successfully connected to ${ipAddress}:${port} - ${responseTime}ms`);
+            socket.destroy();
+            resolve({
+              isOnline: true,
+              responseTime,
+              error: undefined
+            });
+          }
+        });
+        
+        socket.on('error', () => {
+          attempts++;
+          socket.destroy();
+          
+          if (attempts >= testPorts.length && !connected) {
+            console.log(`No open ports found on ${ipAddress}`);
+            resolve({
+              isOnline: false,
+              responseTime: undefined,
+              error: "No accessible ports found"
+            });
+          }
+        });
+        
+        socket.on('timeout', () => {
+          attempts++;
+          socket.destroy();
+          
+          if (attempts >= testPorts.length && !connected) {
+            console.log(`Connection timeout for ${ipAddress}`);
+            resolve({
+              isOnline: false,
+              responseTime: undefined,
+              error: "Connection timeout"
+            });
+          }
+        });
+      };
+      
+      // Try multiple ports simultaneously
+      testPorts.forEach(port => tryPort(port));
+      
+      // Overall timeout
+      setTimeout(() => {
+        if (!connected) {
+          console.log(`Overall timeout for ${ipAddress}`);
           resolve({
             isOnline: false,
-            error: error || "Host unreachable",
+            responseTime: undefined,
+            error: "Host unreachable"
           });
         }
-      });
-
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        ping.kill();
-        resolve({
-          isOnline: false,
-          error: "Ping timeout",
-        });
-      }, 10000);
+      }, 5000);
     });
   }
 
-  private parseResponseTime(output: string, isWindows: boolean): number | undefined {
-    try {
-      if (isWindows) {
-        // Windows: "Average = 12ms" or "time=12ms"
-        const match = output.match(/time[<=](\d+)ms|Average = (\d+)ms/i);
-        return match ? parseInt(match[1] || match[2]) : undefined;
-      } else {
-        // Linux/macOS: "time=12.345 ms"
-        const match = output.match(/time=(\d+(?:\.\d+)?) ms/);
-        return match ? Math.round(parseFloat(match[1])) : undefined;
-      }
-    } catch (error) {
-      console.error("Error parsing ping response time:", error);
-      return undefined;
-    }
-  }
 
   async checkAllSites(): Promise<void> {
     try {
