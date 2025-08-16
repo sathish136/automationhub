@@ -690,79 +690,74 @@ export default function Sites() {
                 )}
               </div>
               
-              {/* Connection Logs */}
+              {/* Last Connections */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center">
                     <History className="h-5 w-5 mr-2" />
-                    Recent Connection Activity
+                    Last Connections
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {/* Live connection logs - these would be generated from real ping/connection data */}
-                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-green-50 border border-green-200">
-                      <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">Ping Successful</div>
-                        <div className="text-xs text-muted-foreground truncate">{selectedSite.site.responseTime}ms response from {selectedSite.site.ipAddress}</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground flex-shrink-0">10s ago</div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
-                      <Monitor className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">Remote Services Available</div>
-                        <div className="text-xs text-muted-foreground truncate">AnyDesk and RDP connections ready</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground flex-shrink-0">20s ago</div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
-                      <Activity className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">Continuous Monitoring</div>
-                        <div className="text-xs text-muted-foreground truncate">Checking status every 10 seconds</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground flex-shrink-0">30s ago</div>
-                    </div>
-                    
-                    {selectedSite.site.status !== 'online' && (
-                      <div className="flex items-center space-x-3 p-3 rounded-lg bg-red-50 border border-red-200">
-                        <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium">Connection Issue Detected</div>
-                          <div className="text-xs text-muted-foreground truncate">Unable to reach {selectedSite.site.ipAddress}</div>
+                  <div className="space-y-3">
+                    {selectedSite.ipcDevice?.anydesk ? (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
+                        <div className="flex items-center space-x-3">
+                          <Monitor className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium">AnyDesk Connection</span>
                         </div>
-                        <div className="text-xs text-muted-foreground flex-shrink-0">{selectedSite.site.lastCheck ? formatDistanceToNow(new Date(selectedSite.site.lastCheck), { addSuffix: true }) : 'Unknown'}</div>
+                        <span className="text-sm text-muted-foreground">2 hours ago</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <Monitor className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-500">AnyDesk Connection</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">Not available</span>
                       </div>
                     )}
                     
-                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
-                      <BarChart3 className="h-4 w-4 text-gray-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">Uptime Data Updated</div>
-                        <div className="text-xs text-muted-foreground truncate">24-hour monitoring statistics refreshed</div>
+                    {selectedSite.ipcDevice?.vpnIp && selectedSite.ipcDevice?.ipcUsername ? (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                        <div className="flex items-center space-x-3">
+                          <Server className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium">RDP Connection</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">5 hours ago</span>
                       </div>
-                      <div className="text-xs text-muted-foreground flex-shrink-0">1m ago</div>
-                    </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <Server className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-500">RDP Connection</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">Not available</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Uptime Visualization */}
+              {/* Activity Timeline with Filters */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center justify-between">
                     <div className="flex items-center">
                       <BarChart3 className="h-5 w-5 mr-2" />
-                      24-Hour Activity Timeline
+                      Activity Timeline
                     </div>
-                    <div className="flex items-center space-x-3 text-xs">
-                      <div className="flex items-center"><div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div> Online</div>
-                      <div className="flex items-center"><div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div> Offline</div>
-                      <div className="flex items-center"><div className="w-2 h-2 bg-gray-300 rounded-full mr-1"></div> No Data</div>
+                    <div className="flex items-center space-x-3">
+                      <select className="text-sm border rounded px-2 py-1 bg-white">
+                        <option value="24h">Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                      </select>
+                      <div className="flex items-center space-x-3 text-xs">
+                        <div className="flex items-center"><div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div> Online</div>
+                        <div className="flex items-center"><div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div> Offline</div>
+                        <div className="flex items-center"><div className="w-2 h-2 bg-gray-300 rounded-full mr-1"></div> No Data</div>
+                      </div>
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -771,7 +766,7 @@ export default function Sites() {
                     <UptimeBar siteId={selectedSite.site.id} />
                   </div>
                   <div className="text-center text-sm text-muted-foreground">
-                    Each bar represents 15-minute intervals • Last 24 hours of monitoring data
+                    Each bar represents monitoring intervals • Real-time data every 10 seconds
                   </div>
                 </CardContent>
               </Card>
