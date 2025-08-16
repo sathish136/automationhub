@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network, Gauge, Fan, Beaker, Activity, Settings } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -99,35 +99,54 @@ export default function SiteEvents() {
     }
   };
 
-  const getNetworkCategoryIcon = (type: string, severity: string) => {
-    switch (type) {
-      case "site_offline":
-        return <WifiOff className="h-4 w-4 text-white" />;
-      case "high_response_time":
-        return <Timer className="h-4 w-4 text-white" />;
-      case "connection_timeout":
-        return <Network className="h-4 w-4 text-white" />;
-      case "communication_error":
-        return <AlertCircle className="h-4 w-4 text-white" />;
-      default:
-        return <Wifi className="h-4 w-4 text-white" />;
+  const getPlcCategoryIcon = (type: string, message: string) => {
+    if (type === "plc_tag_trip" || message.toLowerCase().includes("trip")) {
+      return <AlertTriangle className="h-4 w-4 text-white" />;
     }
+    if (type === "plc_tag_alarm" || message.toLowerCase().includes("alarm")) {
+      return <AlertCircle className="h-4 w-4 text-white" />;
+    }
+    if (message.toLowerCase().includes("pump")) {
+      return <Gauge className="h-4 w-4 text-white" />;
+    }
+    if (message.toLowerCase().includes("blower") || message.toLowerCase().includes("aeration")) {
+      return <Fan className="h-4 w-4 text-white" />;
+    }
+    if (message.toLowerCase().includes("chemical") || message.toLowerCase().includes("dosing")) {
+      return <Beaker className="h-4 w-4 text-white" />;
+    }
+    if (message.toLowerCase().includes("flow") || message.toLowerCase().includes("pressure") || message.toLowerCase().includes("level")) {
+      return <Activity className="h-4 w-4 text-white" />;
+    }
+    if (type === "site_offline" || message.toLowerCase().includes("offline")) {
+      return <WifiOff className="h-4 w-4 text-white" />;
+    }
+    return <Settings className="h-4 w-4 text-white" />;
   };
 
-  const getNetworkCategory = (type: string, message: string) => {
-    if (type === "site_offline" || message.includes("is not responding")) {
-      return "Connection Lost";
+  const getPlcCategory = (type: string, message: string) => {
+    if (type === "plc_tag_trip" || message.toLowerCase().includes("trip")) {
+      return "Equipment Trip";
     }
-    if (type === "high_response_time" || message.includes("response time")) {
-      return "High Latency";
+    if (type === "plc_tag_alarm" || message.toLowerCase().includes("alarm")) {
+      return "Process Alarm";
     }
-    if (message.includes("timeout")) {
-      return "Timeout";
+    if (message.toLowerCase().includes("pump")) {
+      return "Pump Systems";
     }
-    if (message.includes("permission") || message.includes("capability")) {
-      return "Permission Error";
+    if (message.toLowerCase().includes("blower") || message.toLowerCase().includes("aeration")) {
+      return "Aeration Systems";
     }
-    return "Network Issue";
+    if (message.toLowerCase().includes("chemical") || message.toLowerCase().includes("dosing")) {
+      return "Chemical Systems";
+    }
+    if (message.toLowerCase().includes("flow") || message.toLowerCase().includes("pressure") || message.toLowerCase().includes("level")) {
+      return "Process Monitoring";
+    }
+    if (type === "site_offline" || message.toLowerCase().includes("offline")) {
+      return "Site Connection";
+    }
+    return "Other";
   };
 
   const getSiteName = (siteId: string | null) => {
@@ -157,19 +176,20 @@ export default function SiteEvents() {
     return new Date(dateString).toLocaleString();
   };
 
-  // Filter to only show site/network-related events
-  const networkEventTypes = ["site_offline", "high_response_time", "communication_error", "connection_timeout"];
+  // Filter to show PLC tag and site events
+  const plcEventTypes = ["plc_tag_trip", "plc_tag_alarm", "site_offline", "equipment_failure"];
   
   const filteredAlerts = alerts?.filter(alert => {
-    // Only show network/site events
-    const isNetworkEvent = networkEventTypes.includes(alert.type) || 
-                          alert.message.toLowerCase().includes("ping") ||
-                          alert.message.toLowerCase().includes("timeout") ||
-                          alert.message.toLowerCase().includes("connection") ||
-                          alert.message.toLowerCase().includes("response time") ||
-                          alert.message.toLowerCase().includes("offline");
+    // Show PLC tag events and critical site events
+    const isPlcEvent = plcEventTypes.includes(alert.type) || 
+                      alert.message.toLowerCase().includes("trip") ||
+                      alert.message.toLowerCase().includes("pump") ||
+                      alert.message.toLowerCase().includes("blower") ||
+                      alert.message.toLowerCase().includes("alarm") ||
+                      alert.message.toLowerCase().includes("chemical") ||
+                      alert.message.toLowerCase().includes("offline");
     
-    if (!isNetworkEvent) return false;
+    if (!isPlcEvent) return false;
     
     const matchesSearch = alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          alert.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -177,7 +197,7 @@ export default function SiteEvents() {
     
     const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
     const matchesType = typeFilter === "all" || alert.type === typeFilter;
-    const matchesCategory = categoryFilter === "all" || getNetworkCategory(alert.type, alert.message) === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || getPlcCategory(alert.type, alert.message) === categoryFilter;
     
     let matchesStatus = true;
     if (statusFilter === "unread") {
@@ -193,47 +213,48 @@ export default function SiteEvents() {
 
   const eventTypes = Array.from(new Set(filteredAlerts?.map(alert => alert.type) || []));
   
-  // Available network categories
-  const networkCategories = Array.from(new Set(
+  // Available PLC categories
+  const plcCategories = Array.from(new Set(
     alerts?.filter(alert => {
-      const isNetworkEvent = networkEventTypes.includes(alert.type) || 
-                            alert.message.toLowerCase().includes("ping") ||
-                            alert.message.toLowerCase().includes("timeout") ||
-                            alert.message.toLowerCase().includes("connection") ||
-                            alert.message.toLowerCase().includes("response time") ||
-                            alert.message.toLowerCase().includes("offline");
-      return isNetworkEvent;
-    }).map(alert => getNetworkCategory(alert.type, alert.message)) || []
+      const isPlcEvent = plcEventTypes.includes(alert.type) || 
+                        alert.message.toLowerCase().includes("trip") ||
+                        alert.message.toLowerCase().includes("pump") ||
+                        alert.message.toLowerCase().includes("blower") ||
+                        alert.message.toLowerCase().includes("alarm") ||
+                        alert.message.toLowerCase().includes("chemical") ||
+                        alert.message.toLowerCase().includes("offline");
+      return isPlcEvent;
+    }).map(alert => getPlcCategory(alert.type, alert.message)) || []
   ));
   
-  // Network status summary
-  const getNetworkSummary = () => {
+  // Site events summary
+  const getSiteEventsSummary = () => {
     const critical = filteredAlerts.filter(a => a.severity === "critical" && !a.isResolved).length;
     const warning = filteredAlerts.filter(a => a.severity === "warning" && !a.isResolved).length;
     const unread = filteredAlerts.filter(a => !a.isRead).length;
     return { critical, warning, unread };
   };
   
-  const networkSummary = getNetworkSummary();
+  const siteEventsSummary = getSiteEventsSummary();
 
   return (
     <div className="p-4 space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Network Events</h1>
-          <p className="text-sm text-gray-500">Real-time network monitoring and connectivity alerts</p>
+          <h1 className="text-2xl font-bold">Site Events</h1>
+          <p className="text-sm text-gray-500">Real-time PLC tag monitoring and site alerts for industrial equipment</p>
         </div>
         <div className="flex gap-4">
           <div className="text-center">
-            <div className="text-xl font-bold text-red-600 dark:text-red-400">{networkSummary.critical}</div>
+            <div className="text-xl font-bold text-red-600 dark:text-red-400">{siteEventsSummary.critical}</div>
             <div className="text-xs text-gray-500">Critical</div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{networkSummary.warning}</div>
+            <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{siteEventsSummary.warning}</div>
             <div className="text-xs text-gray-500">Warning</div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{networkSummary.unread}</div>
+            <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{siteEventsSummary.unread}</div>
             <div className="text-xs text-gray-500">Unread</div>
           </div>
           <div className="text-center">
@@ -276,7 +297,7 @@ export default function SiteEvents() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {networkCategories.map(category => (
+                {plcCategories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>
@@ -334,7 +355,7 @@ export default function SiteEvents() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1">
                     <div className={`p-2 rounded-full ${getSeverityColor(alert.severity)} shrink-0`}>
-                      {getNetworkCategoryIcon(alert.type, alert.severity)}
+                      {getPlcCategoryIcon(alert.type, alert.message)}
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -346,7 +367,7 @@ export default function SiteEvents() {
                           {alert.severity}
                         </Badge>
                         <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-800">
-                          {getNetworkCategory(alert.type, alert.message)}
+                          {getPlcCategory(alert.type, alert.message)}
                         </Badge>
                       </div>
                       

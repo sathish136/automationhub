@@ -161,7 +161,7 @@ export const vfdParameters = pgTable("vfd_parameters", {
 export const alerts = pgTable("alerts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   siteId: varchar("site_id").references(() => sites.id, { onDelete: "cascade" }),
-  type: varchar("type", { length: 50 }).notNull(), // site_offline, high_response_time, backup_completed, equipment_failure, communication_error
+  type: varchar("type", { length: 50 }).notNull(), // site_offline, high_response_time, backup_completed, equipment_failure, communication_error, plc_tag_alarm, plc_tag_trip
   severity: varchar("severity", { length: 20 }).notNull().default("info"), // critical, warning, info, success
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
