@@ -8,6 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { IpcManagement, InsertIpcManagement } from "@shared/schema";
 import {
   Monitor,
   Cpu,
@@ -23,69 +27,68 @@ import {
   EyeOff,
 } from "lucide-react";
 
-interface IPCDevice {
-  id: number;
-  // Details
-  status: string;
-  amsNetId: string;
-  vpnIp: string;
-  lanIp: string;
-  anydesk: string;
-  teamviewer: string;
-  anydeskPassword: string;
-  namingSeries: string;
-  ipcUsername: string;
-  ipcPassword: string;
-  comments: string;
-
-  // Hardware Specs - IPC CPU
-  manufacture: string;
-  model: string;
-  serialNo: string;
-  mainboard: string;
-  cpu: string;
-  flash: string;
-  powerSupply: string;
-  memory: string;
-  mac1: string;
-  mac2: string;
-  deviceName: string;
-  operatingSystem: string;
-  imageVersion: string;
-  serialNumberOfIpc: string;
-  deviceManagerVersion: string;
-
-  // Network 1
-  network1Name: string;
-  network1VirtualDevice: string;
-  network1Gateway: string;
-  network1Address: string;
-  network1Dhcp: string;
-  network1SubnetMask: string;
-  network1DnsServers: string;
-  network1MacAddress: string;
-
-  // Network 2
-  network2Name: string;
-  network2VirtualDevice: string;
-  network2Gateway: string;
-  network2Address: string;
-  network2Dhcp: string;
-  network2SubnetMask: string;
-  network2DnsServers: string;
-  network2MacAddress: string;
-}
+// Using types from shared schema
 
 export default function IPCDetails() {
-  const [selectedIPCId, setSelectedIPCId] = useState<number | null>(null);
-  const [editingIPCId, setEditingIPCId] = useState<number | null>(null);
-  const [editFormData, setEditFormData] = useState<Partial<IPCDevice>>({});
-  const [ipcDevices, setIPCDevices] = useState<IPCDevice[]>([]);
+  const { toast } = useToast();
+  const [selectedIPCId, setSelectedIPCId] = useState<string | null>(null);
+  const [editingIPCId, setEditingIPCId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<IpcManagement>>({});
   const [showNewIPCForm, setShowNewIPCForm] = useState(false);
-  const [newIPCData, setNewIPCData] = useState<Partial<IPCDevice>>({});
+  const [newIPCData, setNewIPCData] = useState<Partial<InsertIpcManagement>>({});
   const [showPasswords, setShowPasswords] = useState<{
     [key: string]: boolean;
   }>({});
+
+  // Fetch IPC devices from API
+  const { data: ipcDevices = [], isLoading, refetch } = useQuery<IpcManagement[]>({
+    queryKey: ["/api/ipc-management"],
+    queryFn: () => fetch("/api/ipc-management").then(res => res.json()),
+  });
+
+  // Create IPC device mutation
+  const createIpcMutation = useMutation({
+    mutationFn: (data: InsertIpcManagement) => 
+      apiRequest("/api/ipc-management", "POST", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ipc-management"] });
+      setShowNewIPCForm(false);
+      setNewIPCData({});
+      toast({
+        title: "Success",
+        description: "IPC device created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create IPC device",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update IPC device mutation
+  const updateIpcMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<InsertIpcManagement> }) =>
+      apiRequest(`/api/ipc-management/${id}`, "PUT", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ipc-management"] });
+      setEditingIPCId(null);
+      setEditFormData({});
+      toast({
+        title: "Success",
+        description: "IPC device updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error", 
+        description: "Failed to update IPC device",
+        variant: "destructive",
+      });
+    },
+  });
 
   const statusOptions = ["Active", "Inactive", "Maintenance", "Offline"];
   const dhcpOptions = ["Enable", "Disabled"];
@@ -98,7 +101,7 @@ export default function IPCDetails() {
   const memoryOptions = ["4 x 1024 MN DDR3L", "8 x 1024 MN DDR3L", "Other"];
   const osOptions = ["Windows 10", "Windows 11", "Linux", "Other"];
 
-  const handleEditStart = (ipc: IPCDevice) => {
+  const handleEditStart = (ipc: IpcManagement) => {
     setEditingIPCId(ipc.id);
     setEditFormData({ ...ipc });
   };
@@ -110,19 +113,11 @@ export default function IPCDetails() {
 
   const handleEditSave = () => {
     if (editingIPCId && editFormData) {
-      setIPCDevices((prev) =>
-        prev.map((ipc) =>
-          ipc.id === editingIPCId
-            ? ({ ...ipc, ...editFormData } as IPCDevice)
-            : ipc,
-        ),
-      );
-      setEditingIPCId(null);
-      setEditFormData({});
+      updateIpcMutation.mutate({ id: editingIPCId, data: editFormData });
     }
   };
 
-  const handleFieldChange = (field: keyof IPCDevice, value: any) => {
+  const handleFieldChange = (field: keyof IpcManagement, value: any) => {
     setEditFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -176,13 +171,7 @@ export default function IPCDetails() {
 
   const handleNewIPCSave = () => {
     if (newIPCData.deviceName && newIPCData.amsNetId) {
-      const newIPC: IPCDevice = {
-        ...(newIPCData as IPCDevice),
-        id: Date.now(),
-      };
-      setIPCDevices((prev) => [...prev, newIPC]);
-      setShowNewIPCForm(false);
-      setNewIPCData({});
+      createIpcMutation.mutate(newIPCData as InsertIpcManagement);
     }
   };
 
@@ -191,7 +180,7 @@ export default function IPCDetails() {
     setNewIPCData({});
   };
 
-  const handleNewIPCChange = (field: keyof IPCDevice, value: any) => {
+  const handleNewIPCChange = (field: keyof InsertIpcManagement, value: any) => {
     setNewIPCData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -489,8 +478,12 @@ export default function IPCDetails() {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleNewIPCSave} data-testid="save-new-ipc">
-                    Add IPC Device
+                  <Button 
+                    onClick={handleNewIPCSave} 
+                    data-testid="save-new-ipc"
+                    disabled={createIpcMutation.isPending}
+                  >
+                    {createIpcMutation.isPending ? "Adding..." : "Add IPC Device"}
                   </Button>
                 </div>
               </CardContent>
