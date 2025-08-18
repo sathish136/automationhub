@@ -6,6 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { IpcManagement } from "@shared/schema";
 import {
   Building2,
   Cpu,
@@ -47,6 +49,12 @@ export default function ProjectDetails() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [newProjectData, setNewProjectData] = useState<Partial<Project>>({});
+
+  // Fetch IPC devices for dropdown
+  const { data: ipcDevices = [], isLoading: isLoadingIpcDevices } = useQuery<IpcManagement[]>({
+    queryKey: ['/api/ipc-management'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
 
@@ -311,15 +319,22 @@ export default function ProjectDetails() {
                   </div>
                   <div>
                     <Label className="text-xs font-medium">IPC Name</Label>
-                    <Input
+                    <select
                       value={newProjectData.ipcName || ""}
                       onChange={(e) =>
                         handleNewProjectChange("ipcName", e.target.value)
                       }
-                      className="text-sm h-8 mt-1"
-                      placeholder="IPC model"
+                      className="text-sm h-8 px-2 border border-gray-300 rounded-md bg-white w-full mt-1"
                       data-testid="new-ipc"
-                    />
+                      disabled={isLoadingIpcDevices}
+                    >
+                      <option value="">Select IPC Device</option>
+                      {ipcDevices.map((ipc) => (
+                        <option key={ipc.id} value={ipc.deviceName}>
+                          {ipc.deviceName} ({ipc.amsNetId})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <Label className="text-xs font-medium">Created Date</Label>
