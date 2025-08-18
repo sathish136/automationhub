@@ -27,6 +27,7 @@ import {
   X,
   Check,
   Trash2,
+  Gauge,
 } from "lucide-react";
 
 // Use the database project type from schema
@@ -488,40 +489,55 @@ export default function ProjectDetails() {
             </Card>
           )}
 
-          <Card>
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="pb-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-gray-800">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Building2 size={22} className="text-blue-600" />
+                    </div>
+                    Project Portfolio
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">Industrial automation projects overview</p>
+                </div>
+                <Button
+                  onClick={handleNewProject}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105"
+                  data-testid="button-new-project"
+                >
+                  <Plus size={16} />
+                  New Project
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
-                        Project No.
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                    <tr>
+                      <th className="text-left py-4 px-6 font-semibold text-sm text-gray-700">
+                        Project Details
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
-                        Project Name
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
+                      <th className="text-left py-4 px-6 font-semibold text-sm text-gray-700">
                         Location
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
+                      <th className="text-left py-4 px-6 font-semibold text-sm text-gray-700">
                         Status
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
+                      <th className="text-left py-4 px-6 font-semibold text-sm text-gray-700">
                         Capacity
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
-                        PLC
+                      <th className="text-left py-4 px-6 font-semibold text-sm text-gray-700">
+                        IPC Device
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
-                        IPC
+                      <th className="text-left py-4 px-6 font-semibold text-sm text-gray-700">
+                        Created
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
-                        Date
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
+                      <th className="text-left py-4 px-6 font-semibold text-sm text-gray-700">
                         Systems
                       </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-xs">
+                      <th className="text-center py-4 px-6 font-semibold text-sm text-gray-700">
                         Actions
                       </th>
                     </tr>
@@ -529,20 +545,25 @@ export default function ProjectDetails() {
                   <tbody>
                     {projects.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="py-12 text-center">
-                          <div className="text-gray-500">
-                            <Building2
-                              size={48}
-                              className="mx-auto mb-4 text-gray-300"
-                            />
-                            <h3 className="text-sm font-medium text-gray-900 mb-2">
-                              No Projects Found
+                        <td colSpan={8} className="py-16 text-center">
+                          <div className="max-w-sm mx-auto">
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                              <Building2
+                                size={32}
+                                className="text-blue-500"
+                              />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              No Projects Yet
                             </h3>
-                            <p className="text-xs text-gray-600 mb-4">
-                              Get started by creating your first project
+                            <p className="text-sm text-gray-600 mb-6">
+                              Start managing your industrial automation projects by creating your first project
                             </p>
-                            <Button onClick={handleNewProject} size="sm">
-                              <Plus size={14} className="mr-2" />
+                            <Button 
+                              onClick={handleNewProject}
+                              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2 shadow-lg"
+                            >
+                              <Plus size={16} className="mr-2" />
                               Create First Project
                             </Button>
                           </div>
@@ -554,50 +575,55 @@ export default function ProjectDetails() {
                         return (
                           <tr
                             key={project.id}
-                            className={`border-b hover:bg-gray-50 ${
+                            className={`border-b border-gray-100 transition-all duration-200 ${
                               index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                            } ${isEditing ? "bg-blue-50 border-blue-200" : ""}`}
+                            } ${
+                              isEditing 
+                                ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-md" 
+                                : "hover:bg-gray-50 hover:shadow-sm"
+                            }`}
                             data-testid={`project-row-${project.id}`}
                           >
-                            <td className="py-4 px-4">
+                            <td className="py-5 px-6">
                               {isEditing ? (
-                                <Input
-                                  value={editFormData.projectNumber || ""}
-                                  onChange={(e) =>
-                                    handleFieldChange(
-                                      "projectNumber",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="text-sm h-8"
-                                  data-testid={`edit-project-number-${project.id}`}
-                                />
+                                <div className="space-y-2">
+                                  <Input
+                                    value={editFormData.projectNumber || ""}
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        "projectNumber",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="text-sm h-9 border-blue-200 focus:border-blue-400 bg-white"
+                                    placeholder="Project Number"
+                                    data-testid={`edit-project-number-${project.id}`}
+                                  />
+                                  <Input
+                                    value={editFormData.projectName || ""}
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        "projectName",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="text-sm h-9 border-blue-200 focus:border-blue-400 bg-white"
+                                    placeholder="Project Name"
+                                    data-testid={`edit-project-name-${project.id}`}
+                                  />
+                                </div>
                               ) : (
-                                <div className="font-medium text-gray-900 text-sm">
-                                  {project.projectNumber}
+                                <div className="space-y-1">
+                                  <div className="font-semibold text-gray-900 text-sm">
+                                    {project.projectNumber}
+                                  </div>
+                                  <div className="text-gray-600 text-sm font-medium">
+                                    {project.projectName}
+                                  </div>
                                 </div>
                               )}
                             </td>
-                            <td className="py-4 px-4">
-                              {isEditing ? (
-                                <Input
-                                  value={editFormData.projectName || ""}
-                                  onChange={(e) =>
-                                    handleFieldChange(
-                                      "projectName",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="text-sm h-8"
-                                  data-testid={`edit-project-name-${project.id}`}
-                                />
-                              ) : (
-                                <div className="font-medium text-gray-900 text-sm">
-                                  {project.projectName}
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-4 px-4">
+                            <td className="py-5 px-6">
                               {isEditing ? (
                                 <Input
                                   value={editFormData.location || ""}
@@ -607,23 +633,27 @@ export default function ProjectDetails() {
                                       e.target.value,
                                     )
                                   }
-                                  className="text-sm h-8"
+                                  className="text-sm h-9 border-blue-200 focus:border-blue-400 bg-white"
+                                  placeholder="Location"
                                   data-testid={`edit-location-${project.id}`}
                                 />
                               ) : (
-                                <div className="text-gray-600 text-sm">
-                                  {project.location}
+                                <div className="flex items-center gap-2">
+                                  <MapPin size={14} className="text-gray-400" />
+                                  <span className="text-gray-700 text-sm">
+                                    {project.location || 'Not specified'}
+                                  </span>
                                 </div>
                               )}
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-5 px-6">
                               {isEditing ? (
                                 <select
                                   value={editFormData.status || project.status}
                                   onChange={(e) =>
                                     handleFieldChange("status", e.target.value)
                                   }
-                                  className="text-sm h-8 px-2 border border-gray-300 rounded-md bg-white"
+                                  className="text-sm h-9 px-3 border border-blue-200 focus:border-blue-400 rounded-md bg-white w-full"
                                   data-testid={`edit-status-${project.id}`}
                                 >
                                   {statusOptions.map((status) => (
@@ -635,13 +665,13 @@ export default function ProjectDetails() {
                               ) : (
                                 <Badge
                                   variant="secondary"
-                                  className={`text-xs text-white ${getStatusColor(project.status)}`}
+                                  className={`text-xs text-white px-3 py-1.5 rounded-full font-medium shadow-sm ${getStatusColor(project.status)}`}
                                 >
                                   {project.status}
                                 </Badge>
                               )}
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-5 px-6">
                               {isEditing ? (
                                 <Input
                                   value={editFormData.capacity || ""}
@@ -651,37 +681,47 @@ export default function ProjectDetails() {
                                       e.target.value,
                                     )
                                   }
-                                  className="text-sm h-8"
+                                  className="text-sm h-9 border-blue-200 focus:border-blue-400 bg-white"
+                                  placeholder="e.g., 500 KLD"
                                   data-testid={`edit-capacity-${project.id}`}
                                 />
                               ) : (
-                                <div className="text-gray-600 text-sm">
-                                  {project.capacity}
+                                <div className="flex items-center gap-2">
+                                  <Gauge size={14} className="text-gray-400" />
+                                  <span className="text-gray-700 text-sm font-medium">
+                                    {project.capacity || 'Not specified'}
+                                  </span>
                                 </div>
                               )}
                             </td>
-                            <td className="py-4 px-4">
-                              <div className="text-gray-600 text-sm">
-                                -
-                              </div>
-                            </td>
-                            <td className="py-4 px-4">
+                            <td className="py-5 px-6">
                               {isEditing ? (
-                                <Input
+                                <select
                                   value={editFormData.ipcName || ""}
                                   onChange={(e) =>
                                     handleFieldChange("ipcName", e.target.value)
                                   }
-                                  className="text-sm h-8"
+                                  className="text-sm h-9 px-3 border border-blue-200 focus:border-blue-400 rounded-md bg-white w-full"
                                   data-testid={`edit-ipc-${project.id}`}
-                                />
+                                  disabled={isLoadingIpcDevices}
+                                >
+                                  <option value="">Select IPC Device</option>
+                                  {ipcDevices.map((ipc) => (
+                                    <option key={ipc.id} value={ipc.deviceName}>
+                                      {ipc.deviceName} ({ipc.amsNetId})
+                                    </option>
+                                  ))}
+                                </select>
                               ) : (
-                                <div className="text-gray-600 text-sm">
-                                  {project.ipcName}
+                                <div className="flex items-center gap-2">
+                                  <Cpu size={14} className="text-gray-400" />
+                                  <span className="text-gray-700 text-sm">
+                                    {project.ipcName || 'Not assigned'}
+                                  </span>
                                 </div>
                               )}
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-5 px-6">
                               {isEditing ? (
                                 <Input
                                   type="date"
@@ -697,31 +737,34 @@ export default function ProjectDetails() {
                                       new Date(e.target.value),
                                     )
                                   }
-                                  className="text-sm h-8"
+                                  className="text-sm h-9 border-blue-200 focus:border-blue-400 bg-white"
                                   data-testid={`edit-date-${project.id}`}
                                 />
                               ) : (
-                                <div className="text-gray-600 text-sm">
-                                  {project.createdDate ? 
-                                    (project.createdDate instanceof Date ? 
-                                      project.createdDate.toLocaleDateString() :
-                                      new Date(project.createdDate).toLocaleDateString()
-                                    ) : '-'
-                                  }
+                                <div className="flex items-center gap-2">
+                                  <Calendar size={14} className="text-gray-400" />
+                                  <span className="text-gray-700 text-sm">
+                                    {project.createdDate ? 
+                                      (project.createdDate instanceof Date ? 
+                                        project.createdDate.toLocaleDateString() :
+                                        new Date(project.createdDate).toLocaleDateString()
+                                      ) : 'Not set'
+                                    }
+                                  </span>
                                 </div>
                               )}
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-5 px-6">
                               {isEditing ? (
-                                <div className="space-y-1">
-                                  <div className="text-xs font-medium mb-2">
-                                    Select Systems:
+                                <div className="space-y-2">
+                                  <div className="text-xs font-medium text-gray-600 mb-2">
+                                    Plant Systems:
                                   </div>
-                                  <div className="flex flex-wrap gap-2">
+                                  <div className="flex flex-wrap gap-2 max-w-xs">
                                     {systemOptions.map((system) => (
                                       <label
                                         key={system}
-                                        className="flex items-center space-x-1 cursor-pointer"
+                                        className="flex items-center space-x-2 cursor-pointer bg-white rounded-lg p-2 border border-blue-200 hover:border-blue-300 transition-colors"
                                       >
                                         <Checkbox
                                           checked={(
@@ -732,7 +775,7 @@ export default function ProjectDetails() {
                                           }
                                           data-testid={`edit-system-${system.toLowerCase()}-${project.id}`}
                                         />
-                                        <span className="text-xs">
+                                        <span className="text-xs font-medium">
                                           {system}
                                         </span>
                                       </label>
@@ -740,14 +783,14 @@ export default function ProjectDetails() {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex flex-wrap gap-1">
+                                <div className="flex flex-wrap gap-1.5">
                                   {(project.selectedSystems || [])
                                     .slice(0, 2)
                                     .map((system) => (
                                       <Badge
                                         key={system}
                                         variant="outline"
-                                        className="text-xs px-2 py-1"
+                                        className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 border-blue-200 font-medium"
                                       >
                                         {system}
                                       </Badge>
@@ -755,16 +798,19 @@ export default function ProjectDetails() {
                                   {(project.selectedSystems || []).length > 2 && (
                                     <Badge
                                       variant="outline"
-                                      className="text-xs px-2 py-1"
+                                      className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 border-gray-300 font-medium"
                                     >
                                       +{(project.selectedSystems || []).length - 2}
                                     </Badge>
                                   )}
+                                  {(project.selectedSystems || []).length === 0 && (
+                                    <span className="text-xs text-gray-500 italic">No systems selected</span>
+                                  )}
                                 </div>
                               )}
                             </td>
-                            <td className="py-4 px-4">
-                              <div className="flex items-center gap-2">
+                            <td className="py-5 px-6">
+                              <div className="flex items-center justify-center gap-1">
                                 {isEditing ? (
                                   <>
                                     <Button
@@ -772,18 +818,21 @@ export default function ProjectDetails() {
                                       variant="ghost"
                                       onClick={handleEditSave}
                                       data-testid={`save-project-${project.id}`}
-                                      className="text-green-600 hover:text-green-700"
+                                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 transition-all duration-200"
+                                      title="Save changes"
+                                      disabled={updateProjectMutation.isPending}
                                     >
-                                      <Check size={14} />
+                                      <Check size={16} />
                                     </Button>
                                     <Button
                                       size="sm"
                                       variant="ghost"
                                       onClick={handleEditCancel}
                                       data-testid={`cancel-edit-${project.id}`}
-                                      className="text-red-600 hover:text-red-700"
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
+                                      title="Cancel edit"
                                     >
-                                      <X size={14} />
+                                      <X size={16} />
                                     </Button>
                                   </>
                                 ) : (
@@ -793,9 +842,10 @@ export default function ProjectDetails() {
                                       variant="ghost"
                                       onClick={() => handleEditStart(project)}
                                       data-testid={`edit-project-${project.id}`}
+                                      className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200"
                                       title="Edit project"
                                     >
-                                      <Edit size={14} />
+                                      <Edit size={16} />
                                     </Button>
                                     <Button
                                       size="sm"
@@ -804,9 +854,10 @@ export default function ProjectDetails() {
                                         setSelectedProjectId(project.id)
                                       }
                                       data-testid={`view-project-${project.id}`}
+                                      className="h-8 w-8 p-0 text-gray-600 hover:text-gray-700 hover:bg-gray-50 transition-all duration-200"
                                       title="View details"
                                     >
-                                      <Eye size={14} />
+                                      <Eye size={16} />
                                     </Button>
                                     <Button
                                       size="sm"
@@ -815,10 +866,11 @@ export default function ProjectDetails() {
                                         handleDeleteProject(project.id)
                                       }
                                       data-testid={`delete-project-${project.id}`}
-                                      className="text-red-600 hover:text-red-700"
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
                                       title="Delete project"
+                                      disabled={deleteProjectMutation.isPending}
                                     >
-                                      <Trash2 size={14} />
+                                      <Trash2 size={16} />
                                     </Button>
                                   </>
                                 )}
