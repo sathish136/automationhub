@@ -6,8 +6,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import type { IpcManagement } from "@shared/schema";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import type { IpcManagement, Project as DBProject, InsertProject } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import {
   Building2,
   Cpu,
@@ -27,33 +29,127 @@ import {
   Trash2,
 } from "lucide-react";
 
-interface Project {
-  id: number;
-  projectNumber: string;
-  projectName: string;
-  location: string;
-  status: string;
-  plcName: string;
-  ipcName: string;
-  selectedSystems: string[];
-  createdDate: string;
-  capacity: string;
-}
+// Use the database project type from schema
+type Project = DBProject;
 
 export default function ProjectDetails() {
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null,
   );
-  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Project>>({});
-  const [projects, setProjects] = useState<Project[]>([]);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
-  const [newProjectData, setNewProjectData] = useState<Partial<Project>>({});
+  const [newProjectData, setNewProjectData] = useState<Partial<InsertProject>>({});
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Fetch projects from database
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   // Fetch IPC devices for dropdown
   const { data: ipcDevices = [], isLoading: isLoadingIpcDevices } = useQuery<IpcManagement[]>({
     queryKey: ['/api/ipc-management'],
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async (projectData: InsertProject) => {
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        body: JSON.stringify(projectData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create project");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      setShowNewProjectForm(false);
+      setNewProjectData({});
+      toast({
+        title: "Success",
+        description: "Project created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create project",
+        variant: "destructive",
+      });
+      console.error("Error creating project:", error);
+    },
+  });
+
+  // Update project mutation
+  const updateProjectMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertProject> }) => {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update project");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      setEditingProjectId(null);
+      setEditFormData({});
+      toast({
+        title: "Success",
+        description: "Project updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update project",
+        variant: "destructive",
+      });
+      console.error("Error updating project:", error);
+    },
+  });
+
+  // Delete project mutation
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete project");
+      }
+      return response.ok;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      toast({
+        title: "Success",
+        description: "Project deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete project",
+        variant: "destructive",
+      });
+      console.error("Error deleting project:", error);
+    },
   });
 
   const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
@@ -110,7 +206,7 @@ export default function ProjectDetails() {
 
   const isSystemSelected = (systemId: string) => {
     return selectedProject
-      ? selectedProject.selectedSystems.includes(systemId)
+      ? (selectedProject.selectedSystems || []).includes(systemId)
       : false;
   };
 
@@ -144,15 +240,10 @@ export default function ProjectDetails() {
 
   const handleEditSave = () => {
     if (editingProjectId && editFormData) {
-      setProjects((prev) =>
-        prev.map((p) =>
-          p.id === editingProjectId
-            ? ({ ...p, ...editFormData } as Project)
-            : p,
-        ),
-      );
-      setEditingProjectId(null);
-      setEditFormData({});
+      updateProjectMutation.mutate({ 
+        id: editingProjectId, 
+        data: editFormData as Partial<InsertProject> 
+      });
     }
   };
 
@@ -168,8 +259,8 @@ export default function ProjectDetails() {
     handleFieldChange("selectedSystems", updatedSystems);
   };
 
-  const handleDeleteProject = (projectId: number) => {
-    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+  const handleDeleteProject = (projectId: string) => {
+    deleteProjectMutation.mutate(projectId);
   };
 
   const handleNewProject = () => {
@@ -179,23 +270,16 @@ export default function ProjectDetails() {
       projectName: "",
       location: "",
       status: "Planning",
-      plcName: "",
       ipcName: "",
       selectedSystems: [],
-      createdDate: new Date().toISOString().split("T")[0],
+      createdDate: new Date(),
       capacity: "",
     });
   };
 
   const handleNewProjectSave = () => {
     if (newProjectData.projectName && newProjectData.projectNumber) {
-      const newProject: Project = {
-        ...(newProjectData as Project),
-        id: Date.now(),
-      };
-      setProjects((prev) => [...prev, newProject]);
-      setShowNewProjectForm(false);
-      setNewProjectData({});
+      createProjectMutation.mutate(newProjectData as InsertProject);
     }
   };
 
@@ -204,7 +288,7 @@ export default function ProjectDetails() {
     setNewProjectData({});
   };
 
-  const handleNewProjectChange = (field: keyof Project, value: any) => {
+  const handleNewProjectChange = (field: keyof InsertProject, value: any) => {
     setNewProjectData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -308,13 +392,12 @@ export default function ProjectDetails() {
                   <div>
                     <Label className="text-xs font-medium">PLC Name</Label>
                     <Input
-                      value={newProjectData.plcName || ""}
-                      onChange={(e) =>
-                        handleNewProjectChange("plcName", e.target.value)
-                      }
+                      value=""
+                      onChange={() => {}}
                       className="text-sm h-8 mt-1"
-                      placeholder="PLC model"
+                      placeholder="PLC model (not implemented)"
                       data-testid="new-plc"
+                      disabled
                     />
                   </div>
                   <div>
@@ -340,9 +423,14 @@ export default function ProjectDetails() {
                     <Label className="text-xs font-medium">Created Date</Label>
                     <Input
                       type="date"
-                      value={newProjectData.createdDate || ""}
+                      value={newProjectData.createdDate ? 
+                        (newProjectData.createdDate instanceof Date ? 
+                          newProjectData.createdDate.toISOString().split('T')[0] :
+                          new Date(newProjectData.createdDate).toISOString().split('T')[0]
+                        ) : ""
+                      }
                       onChange={(e) =>
-                        handleNewProjectChange("createdDate", e.target.value)
+                        handleNewProjectChange("createdDate", new Date(e.target.value))
                       }
                       className="text-sm h-8 mt-1"
                       data-testid="new-date"
@@ -573,20 +661,9 @@ export default function ProjectDetails() {
                               )}
                             </td>
                             <td className="py-4 px-4">
-                              {isEditing ? (
-                                <Input
-                                  value={editFormData.plcName || ""}
-                                  onChange={(e) =>
-                                    handleFieldChange("plcName", e.target.value)
-                                  }
-                                  className="text-sm h-8"
-                                  data-testid={`edit-plc-${project.id}`}
-                                />
-                              ) : (
-                                <div className="text-gray-600 text-sm">
-                                  {project.plcName}
-                                </div>
-                              )}
+                              <div className="text-gray-600 text-sm">
+                                -
+                              </div>
                             </td>
                             <td className="py-4 px-4">
                               {isEditing ? (
@@ -608,11 +685,16 @@ export default function ProjectDetails() {
                               {isEditing ? (
                                 <Input
                                   type="date"
-                                  value={editFormData.createdDate || ""}
+                                  value={editFormData.createdDate ? 
+                                    (editFormData.createdDate instanceof Date ? 
+                                      editFormData.createdDate.toISOString().split('T')[0] :
+                                      new Date(editFormData.createdDate).toISOString().split('T')[0]
+                                    ) : ""
+                                  }
                                   onChange={(e) =>
                                     handleFieldChange(
                                       "createdDate",
-                                      e.target.value,
+                                      new Date(e.target.value),
                                     )
                                   }
                                   className="text-sm h-8"
@@ -620,7 +702,12 @@ export default function ProjectDetails() {
                                 />
                               ) : (
                                 <div className="text-gray-600 text-sm">
-                                  {project.createdDate}
+                                  {project.createdDate ? 
+                                    (project.createdDate instanceof Date ? 
+                                      project.createdDate.toLocaleDateString() :
+                                      new Date(project.createdDate).toLocaleDateString()
+                                    ) : '-'
+                                  }
                                 </div>
                               )}
                             </td>
@@ -654,7 +741,7 @@ export default function ProjectDetails() {
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap gap-1">
-                                  {project.selectedSystems
+                                  {(project.selectedSystems || [])
                                     .slice(0, 2)
                                     .map((system) => (
                                       <Badge
@@ -665,12 +752,12 @@ export default function ProjectDetails() {
                                         {system}
                                       </Badge>
                                     ))}
-                                  {project.selectedSystems.length > 2 && (
+                                  {(project.selectedSystems || []).length > 2 && (
                                     <Badge
                                       variant="outline"
                                       className="text-xs px-2 py-1"
                                     >
-                                      +{project.selectedSystems.length - 2}
+                                      +{(project.selectedSystems || []).length - 2}
                                     </Badge>
                                   )}
                                 </div>
@@ -843,9 +930,10 @@ export default function ProjectDetails() {
                   PLC Name
                 </Label>
                 <Input
-                  value={selectedProject?.plcName || ""}
+                  value="Not configured"
                   className="mt-1 text-sm"
                   data-testid="input-plc-name"
+                  disabled
                 />
               </div>
               <div>
