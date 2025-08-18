@@ -1,5 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "./env"; // Load environment variables first
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
