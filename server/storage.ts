@@ -530,7 +530,7 @@ export class DatabaseStorage implements IStorage {
       type: 'plc_tag_alarm',
       severity: tag.severityLevel as 'info' | 'warning' | 'critical',
       title: `${tag.tagName} Triggered`,
-      description: `PLC tag ${tag.tagName} (${tag.plcAddress}) changed to ${value}`,
+      message: `PLC tag ${tag.tagName} (${tag.plcAddress}) changed to ${value}`,
       isRead: false,
       isResolved: false,
     });

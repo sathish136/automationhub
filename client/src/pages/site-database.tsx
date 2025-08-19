@@ -39,8 +39,15 @@ import type {
   RoRealtimeData
 } from "@shared/schema";
 import { z } from "zod";
+import { format } from "date-fns";
 
 const tagFormSchema = insertSiteDatabaseTagSchema;
+
+// Utility functions
+const formatTimestamp = (timestamp: string | Date) => {
+  const date = typeof timestamp === "string" ? new Date(timestamp) : timestamp;
+  return format(date, "MMM dd, yyyy HH:mm:ss");
+};
 
 type TagFormValues = z.infer<typeof tagFormSchema>;
 
@@ -195,9 +202,7 @@ export default function SiteDatabase() {
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
-  };
+
 
   return (
     <div className="container mx-auto p-6 space-y-6" data-testid="site-database-page">
@@ -407,7 +412,7 @@ export default function SiteDatabase() {
                             <TableCell className="font-mono font-semibold text-blue-600">{item.value}</TableCell>
                             <TableCell>{getQualityBadge(item.quality)}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {formatTimestamp(item.timestamp)}
+                              {item.timestamp ? formatTimestamp(item.timestamp) : "Never"}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -518,7 +523,11 @@ export default function SiteDatabase() {
                     <FormControl>
                       <Textarea 
                         placeholder="Tag description..."
-                        {...field} 
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                         data-testid="input-description"
                       />
                     </FormControl>
