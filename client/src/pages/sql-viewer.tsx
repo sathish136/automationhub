@@ -513,11 +513,11 @@ const SQLViewerPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="w-full border rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
-                        {/* Table Container with Horizontal Scroll */}
-                        <div className="overflow-x-auto max-w-full">
+                        {/* Table Container with Both Horizontal and Vertical Scroll */}
+                        <div className="overflow-x-auto max-w-full max-h-96 overflow-y-auto">
                           <div className="min-w-fit">
                             {/* Frozen Header */}
-                            <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+                            <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600 sticky top-0 z-10">
                               <div className="flex">
                                 {columns.map((column) => (
                                   <div 
@@ -635,11 +635,11 @@ const SQLViewerPage: React.FC = () => {
               </div>
 
               <div className="w-full border rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
-                {/* Table Container with Horizontal Scroll */}
-                <div className="overflow-x-auto max-w-full">
+                {/* Table Container with Both Horizontal and Vertical Scroll */}
+                <div className="overflow-x-auto max-w-full max-h-96 overflow-y-auto">
                   <div className="min-w-fit">
                     {/* Demo Table Headers */}
-                    <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+                    <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600 sticky top-0 z-10">
                       <div className="flex">
                         {['date_time', 'rej_recovery', 'rej_feed', 'rej_1st_db', 'rej_1st_stg_fm', 'rej_1st_stg_in', 'rej_1st_stg_out', 'rej_2nd_stg_fm', 'rej_2nd_stg_in', 'rej_2nd_stg_out', 'rej_feed_lt', 'rej_ph_out'].map((column) => (
                           <div 
