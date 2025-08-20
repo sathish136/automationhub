@@ -6,6 +6,8 @@ AutomationHub is a comprehensive industrial automation monitoring and management
 
 ## Recent Changes
 
+- **Project Migration to Replit Completed (August 2025)**: Successfully migrated the industrial automation monitoring system from Replit Agent to standard Replit environment. Fixed package dependencies, updated workflows, and enhanced the SQL Viewer with professional design including advanced search, filtering, export functionality, and proper error handling for database connections.
+- **SQL Viewer Professional Redesign (August 2025)**: Completely redesigned SQL Viewer interface with modern professional appearance featuring advanced search capabilities, real-time filtering, CSV export functionality, sortable columns, connection status indicators, and comprehensive error handling for database connectivity issues.
 - **Network Equipment and Communication Systems Removed (December 2024)**: Completely removed network equipment management, communication interfaces, and instrument data functionality from the system. This included deleting database tables (networkEquipment, communicationInterfaces, instrumentData, communicationLogs), removing API endpoints, cleaning up frontend pages and navigation. The system now focuses on core industrial automation monitoring.
 - **PLC Tags Page Redesigned (August 2024)**: Completely redesigned PLC Tag Monitoring page to match IPC Management page style with proper font sizes, added bulk upload functionality for CSV data import, improved UI consistency with other management pages.
 - **Site Events Page Added (December 2024)**: Implemented comprehensive event management interface for viewing, filtering, and managing site alerts and system events with real-time updates and status management.
