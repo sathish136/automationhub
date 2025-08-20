@@ -267,104 +267,103 @@ const SQLViewerPage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Database Selection */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-sm">
-              <Database className="h-4 w-4 mr-1" />
-              Database Selection
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-3">
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <Select 
-                  value={selectedDatabase} 
-                  onValueChange={setSelectedDatabase}
-                  disabled={loading || databases.length === 0}
-                >
-                  <SelectTrigger className="h-8 text-sm" data-testid="select-database">
-                    <SelectValue placeholder="Select Database" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {databases.map((db) => (
-                      <SelectItem key={db.name} value={db.name}>
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-sm">{db.name}</span>
-                          <Badge variant="secondary" className="ml-2 text-xs px-1 py-0">
-                            {db.tableCount || 0}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {selectedDatabase && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs px-2 py-1">
-                    {tables.length} tables
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={refreshData} disabled={loading} className="h-7 w-7 p-0">
-                    <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                  </Button>
+        {/* Database Selection and Tables */}
+        <div className="grid grid-cols-12 gap-3">
+          {/* Database Selection */}
+          <Card className="col-span-12 lg:col-span-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-sm">
+                <Database className="h-4 w-4 mr-1" />
+                Database Selection
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-3">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Select 
+                    value={selectedDatabase} 
+                    onValueChange={setSelectedDatabase}
+                    disabled={loading || databases.length === 0}
+                  >
+                    <SelectTrigger className="h-8 text-sm" data-testid="select-database">
+                      <SelectValue placeholder="Select Database" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {databases.map((db) => (
+                        <SelectItem key={db.name} value={db.name}>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-sm">{db.name}</span>
+                            <Badge variant="secondary" className="ml-2 text-xs px-1 py-0">
+                              {db.tableCount || 0}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                
+                {selectedDatabase && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs px-2 py-1">
+                      {tables.length} tables
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={refreshData} disabled={loading} className="h-7 w-7 p-0">
+                      <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Main Content */}
-        {selectedDatabase && (
-          <div className="grid grid-cols-12 gap-3">
-            {/* Tables Sidebar */}
-            <Card className="col-span-12 lg:col-span-2">
-              <CardHeader className="pb-1">
-                <CardTitle className="flex items-center text-xs">
-                  <TableIcon className="h-3 w-3 mr-1" />
+          {/* Tables List */}
+          {selectedDatabase && (
+            <Card className="col-span-12 lg:col-span-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-sm">
+                  <TableIcon className="h-4 w-4 mr-1" />
                   Tables ({tables.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-80">
-                  <div className="p-1">
+              <CardContent className="py-3">
+                <ScrollArea className="h-24">
+                  <div className="grid grid-cols-2 gap-1">
                     {loading && tables.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-3">
+                      <div className="col-span-2 text-center text-muted-foreground py-2">
                         <RefreshCw className="h-3 w-3 animate-spin mx-auto mb-1" />
                         <div className="text-xs">Loading...</div>
                       </div>
                     ) : tables.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-3">
+                      <div className="col-span-2 text-center text-muted-foreground py-2">
                         <TableIcon className="h-3 w-3 mx-auto mb-1 opacity-50" />
                         <div className="text-xs">No tables</div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 gap-0.5">
-                        {tables.map((table) => (
-                          <Button
-                            key={table}
-                            variant={selectedTable === table ? 'default' : 'ghost'}
-                            className="w-full justify-start h-6 px-1.5 text-left text-xs font-mono rounded-sm"
-                            onClick={() => setSelectedTable(table)}
-                            data-testid={`button-select-table-${table}`}
-                          >
-                            <div className="flex items-center w-full min-w-0">
-                              <TableIcon className="h-2.5 w-2.5 mr-1 flex-shrink-0" />
-                              <span className="truncate text-xs">{table}</span>
-                            </div>
-                          </Button>
-                        ))}
-                      </div>
+                      tables.map((table) => (
+                        <Button
+                          key={table}
+                          variant={selectedTable === table ? 'default' : 'ghost'}
+                          className="h-5 px-2 text-xs font-mono rounded-sm justify-start"
+                          onClick={() => setSelectedTable(table)}
+                          data-testid={`button-select-table-${table}`}
+                        >
+                          <TableIcon className="h-2 w-2 mr-1 flex-shrink-0" />
+                          <span className="truncate text-xs">{table}</span>
+                        </Button>
+                      ))
                     )}
                   </div>
                 </ScrollArea>
               </CardContent>
             </Card>
+          )}
+        </div>
 
-            {/* Data Viewer */}
-            <Card className="col-span-12 lg:col-span-10">
-              <CardHeader className="pb-2">
+        {/* Data Viewer */}
+        {selectedDatabase && (
+          <Card>
+            <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center text-sm">
                     {selectedTable ? (
@@ -515,7 +514,6 @@ const SQLViewerPage: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
         )}
 
         {/* No Database Selected State */}
