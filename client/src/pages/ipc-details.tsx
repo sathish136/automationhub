@@ -46,10 +46,13 @@ export default function IPCDetails() {
   }>({});
 
   // Fetch IPC devices from API
-  const { data: ipcDevices = [], isLoading, refetch } = useQuery<IpcManagement[]>({
+  const { data: ipcDevicesData = [], isLoading, refetch } = useQuery<IpcManagement[]>({
     queryKey: ["/api/ipc-management"],
     queryFn: () => fetch("/api/ipc-management").then(res => res.json()),
   });
+
+  // Ensure ipcDevices is always an array
+  const ipcDevices = Array.isArray(ipcDevicesData) ? ipcDevicesData : [];
 
   // Create IPC device mutation
   const createIpcMutation = useMutation({
