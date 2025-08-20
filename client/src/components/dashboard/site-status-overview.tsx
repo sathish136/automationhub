@@ -14,7 +14,8 @@ export default function SiteStatusOverview() {
   const queryClient = useQueryClient();
   
   const { data: sites, isLoading } = useQuery<Site[]>({
-    queryKey: ["/api/sites"],
+    queryKey: ["sites"],
+    queryFn: () => apiRequest("GET", "/api/sites").then((res) => res.json()),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 

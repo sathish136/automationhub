@@ -4,6 +4,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { adsMonitoringService } from "./services/adsMonitoringService";
+import { storage } from "./storage";
+import { sqlViewerService } from "./services/sqlViewerService";
+import { pingService } from "./services/pingService";
 
 const app = express();
 app.use(express.json());
@@ -39,41 +42,75 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+// Test ADS Connection
+app.post('/api/test-ads-connection', async (req, res) => {
+  const { siteId, tagId } = req.body;
+  if (!siteId || !tagId) {
+    return res.status(400).json({ message: 'siteId and tagId are required' });
+  }
+  try {
+    // We need to fetch the full site and tag objects to pass to the service
+    const site = await storage.getSite(siteId);
+    const tag = await storage.getSiteDatabaseTag(tagId);
 
+    if (!site) {
+      return res.status(404).json({ message: 'Site not found' });
+    }
+    if (!tag) {
+      return res.status(404).json({ message: 'Tag not found' });
+    }
+
+    const result = await adsMonitoringService.testADSConnection(site, tag);
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error(`[API] Error testing ADS connection for site ${siteId}:`, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+(async () => {
+  // Register all API routes and create the HTTP server
+  const httpServer = await registerRoutes(app);
+
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
-    throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Setup Vite for development or serve static files for production
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    await setupVite(app, httpServer);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Define the port
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-    
-    // Initialize ADS monitoring service
-    adsMonitoringService.startMonitoring().catch(error => {
-      console.error("Failed to start ADS monitoring service:", error);
-    });
+
+  // Start the server and initialize services
+  httpServer.listen(port, async () => {
+    log(`Server listening on http://localhost:${port}`);
+
+    // Test SQL Viewer Connection
+    try {
+      await sqlViewerService.testConnection();
+    } catch (error) {
+      console.error("[FATAL] Could not connect to the external SQL Server. The SQL Viewer will not be available.");
+    }
+
+    // Initialize and start monitoring services
+    try {
+      const allSites = await storage.getAllSites();
+      const allTags = await storage.getSiteDatabaseTags();
+      console.log(`[INIT] Fetched ${allSites.length} sites and ${allTags.length} tags for monitoring.`);
+      adsMonitoringService.startMonitoringAllSites(allSites, allTags);
+    } catch (error) {
+      console.error("Failed to fetch initial data for monitoring:", error);
+      process.exit(1); // Exit if we can't get monitoring data
+    }
+
+    pingService.startMonitoring();
   });
 })();

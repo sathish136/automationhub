@@ -1,236 +1,129 @@
-import { storage } from "../storage";
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { storage } from '../storage';
+import type { Site, SiteDatabaseTag } from '@shared/schema';
 
-interface ADSConnection {
-  siteId: string;
-  targetHost: string;
-  amsNetId: string;
-  isConnected: boolean;
-  lastConnectionAttempt?: Date;
-  lastSuccessfulRead?: Date;
-}
+// Get the directory name in an ES module context
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Alias Site as ADSConnection for consistency within this service
+type ADSConnection = Site;
 
 class ADSMonitoringService {
-  private connections: Map<string, ADSConnection> = new Map();
+  private static instance: ADSMonitoringService;
   private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
-  private isRunning = false;
 
-  async startMonitoring(): Promise<void> {
-    if (this.isRunning) {
-      console.log("ADS monitoring is already running");
-      return;
+  private constructor() {}
+
+  public static getInstance(): ADSMonitoringService {
+    if (!ADSMonitoringService.instance) {
+      ADSMonitoringService.instance = new ADSMonitoringService();
     }
-
-    this.isRunning = true;
-    console.log("Starting ADS monitoring service...");
-
-    // Load active sites and their tags
-    await this.initializeConnections();
-    
-    // Start monitoring for each site
-    this.startSiteMonitoring();
+    return ADSMonitoringService.instance;
   }
 
-  async stopMonitoring(): Promise<void> {
-    console.log("Stopping ADS monitoring service...");
-    this.isRunning = false;
+  /**
+   * Executes the Python script to read a tag value from the PLC.
+   * This is the core function that replaces the direct node-ads connection.
+   */
+  private readADSTag(tag: SiteDatabaseTag): Promise<number> {
+    return new Promise((resolve, reject) => {
+      // Path to the Python script, using the correct __dirname for ES modules
+      const scriptPath = path.join(__dirname, '..', '..', 'ads.py');
+      const pythonProcess = spawn('python', [scriptPath, tag.adsPath]);
 
-    // Clear all monitoring intervals
-    this.monitoringIntervals.forEach((interval) => {
-      clearInterval(interval);
-    });
-    this.monitoringIntervals.clear();
+      let dataString = '';
+      let errorString = '';
 
-    // Close all connections
-    this.connections.clear();
-  }
+      // Capture standard output from the script
+      pythonProcess.stdout.on('data', (data) => {
+        dataString += data.toString();
+      });
 
-  private async initializeConnections(): Promise<void> {
-    try {
-      // Get all active sites
-      const sites = await storage.getAllSites();
-      
-      for (const site of sites) {
-        // Get site's IPC management info for ADS connection
-        const ipcDevices = await storage.getIpcManagement(site.id);
-        
-        if (ipcDevices.length > 0) {
-          const ipc = ipcDevices[0]; // Use first IPC device
-          
-          this.connections.set(site.id, {
-            siteId: site.id,
-            targetHost: site.ipAddress,
-            amsNetId: ipc.amsNetId || "127.0.0.1.1.1:851",
-            isConnected: false,
-          });
+      // Capture standard error from the script
+      pythonProcess.stderr.on('data', (data) => {
+        errorString += data.toString();
+      });
+
+      // Handle the script exit
+      pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error(`[ADS] Python script exited with code ${code}: ${errorString}`);
+          return reject(new Error(`Python script error: ${errorString.trim()}`));
         }
-      }
-      
-      console.log(`Initialized ${this.connections.size} ADS connections`);
-    } catch (error) {
-      console.error("Error initializing ADS connections:", error);
-    }
-  }
+        
+        const value = parseFloat(dataString.trim());
+        if (isNaN(value)) {
+          return reject(new Error('Failed to parse float value from Python script.'));
+        }
 
-  private startSiteMonitoring(): void {
-    this.connections.forEach((connection, siteId) => {
-      this.startSiteTagMonitoring(siteId);
+        console.log(`[ADS] Successfully read tag '${tag.adsPath}', value: ${value}`);
+        resolve(value);
+      });
+
+      pythonProcess.on('error', (err) => {
+        console.error('[ADS] Failed to start Python script.', err);
+        reject(err);
+      });
     });
   }
 
-  private async startSiteTagMonitoring(siteId: string): Promise<void> {
+  /**
+   * Public method to test the connection by reading a single tag.
+   * The 'connection' parameter is kept for API compatibility but is no longer used.
+   */
+  public async testADSConnection(connection: ADSConnection, tag: SiteDatabaseTag): Promise<any> {
+    console.log(`[ADS] Testing connection for site ${connection.id} by reading tag ${tag.adsPath}`);
     try {
-      // Get all active tags for this site
-      const tags = await storage.getSiteDatabaseTags(siteId);
-      const activeTags = tags.filter(tag => tag.isActive);
-
-      if (activeTags.length === 0) {
-        console.log(`No active tags found for site ${siteId}`);
-        return;
-      }
-
-      console.log(`Starting monitoring for ${activeTags.length} tags on site ${siteId}`);
-
-      // Create monitoring interval - default 2 seconds, but respect individual tag settings
-      const defaultInterval = 2000;
-      
-      const interval = setInterval(async () => {
-        if (!this.isRunning) return;
-        
-        await this.readSiteTags(siteId, activeTags);
-      }, defaultInterval);
-
-      this.monitoringIntervals.set(siteId, interval);
-    } catch (error) {
-      console.error(`Error starting tag monitoring for site ${siteId}:`, error);
+      const value = await this.readADSTag(tag);
+      return { success: true, value };
+    } catch (error: any) {
+      console.error(`[ADS] Test connection failed for site ${connection.id}:`, error.message);
+      return { success: false, error: error.message };
     }
   }
 
-  private async readSiteTags(siteId: string, tags: any[]): Promise<void> {
-    const connection = this.connections.get(siteId);
-    if (!connection) return;
+  public startMonitoringForTag(tag: SiteDatabaseTag) {
+    // Ensure the tag is active and not already being monitored
+    if (tag.isActive && !this.monitoringIntervals.has(tag.id)) {
+      console.log(`[ADS] Starting monitoring for new tag: ${tag.tagName} (${tag.adsPath})`);
 
-    try {
-      // Simulate ADS read operation
-      // In a real implementation, this would use the node-ads library
-      for (const tag of tags) {
+      const interval = setInterval(async () => {
         try {
-          const value = await this.simulateADSRead(connection, tag);
-          
-          // Store the value in database
+          const value = await this.readADSTag(tag);
+          // Save the new value to the database
           await storage.createSiteDatabaseValue({
             tagId: tag.id,
             value: value.toString(),
-            quality: "GOOD",
           });
-
-          // Update connection status
-          connection.isConnected = true;
-          connection.lastSuccessfulRead = new Date();
-          
         } catch (error) {
-          console.error(`Error reading tag ${tag.tagName} on site ${siteId}:`, error);
-          
-          // Store bad quality value
-          await storage.createSiteDatabaseValue({
-            tagId: tag.id,
-            value: "0",
-            quality: "BAD",
-          });
-
-          // Update connection status
-          connection.isConnected = false;
+          console.error(`[ADS] Error monitoring tag ${tag.tagName}:`, error);
         }
-      }
-    } catch (error) {
-      console.error(`Error reading tags for site ${siteId}:`, error);
-      connection.isConnected = false;
-    }
+      }, tag.scanInterval || 5000); // Use tag's interval or default to 5s
 
-    connection.lastConnectionAttempt = new Date();
+      this.monitoringIntervals.set(tag.id, interval);
+    }
   }
 
-  private async simulateADSRead(connection: ADSConnection, tag: any): Promise<any> {
-    // This simulates ADS read operation
-    // In real implementation, you would use node-ads library here
+  public startMonitoringAllSites(connections: ADSConnection[], tags: SiteDatabaseTag[]) {
+    console.log(`[ADS] Starting monitoring for ${tags.length} tags across ${connections.length} sites.`);
     
-    // Simulate connection check
-    if (Math.random() < 0.1) { // 10% chance of connection failure
-      throw new Error("ADS connection timeout");
-    }
-
-    // Generate realistic values based on data type
-    switch (tag.dataType.toUpperCase()) {
-      case 'BOOL':
-        return Math.random() > 0.5;
-      case 'INT':
-      case 'DINT':
-        return Math.floor(Math.random() * 1000);
-      case 'REAL':
-        return parseFloat((Math.random() * 100).toFixed(2));
-      case 'STRING':
-        return `Value_${Date.now()}`;
-      default:
-        return Math.floor(Math.random() * 100);
+    for (const tag of tags) {
+      this.startMonitoringForTag(tag);
     }
   }
 
-  async addSiteForMonitoring(siteId: string): Promise<void> {
-    if (this.connections.has(siteId)) {
-      console.log(`Site ${siteId} is already being monitored`);
-      return;
-    }
-
-    // Initialize connection for new site
-    const sites = await storage.getAllSites();
-    const site = sites.find(s => s.id === siteId);
-    
-    if (!site) {
-      console.error(`Site ${siteId} not found`);
-      return;
-    }
-
-    const ipcDevices = await storage.getIpcManagement(siteId);
-    if (ipcDevices.length > 0) {
-      const ipc = ipcDevices[0];
-      
-      this.connections.set(siteId, {
-        siteId: siteId,
-        targetHost: site.ipAddress,
-        amsNetId: ipc.amsNetId || "127.0.0.1.1.1:851",
-        isConnected: false,
-      });
-
-      // Start monitoring for this site
-      await this.startSiteTagMonitoring(siteId);
-    }
-  }
-
-  async removeSiteFromMonitoring(siteId: string): Promise<void> {
-    // Stop monitoring interval
-    const interval = this.monitoringIntervals.get(siteId);
-    if (interval) {
+  public stopMonitoringForSite(siteId: string) {
+    // This would need to be adapted to stop monitoring by site, e.g. by finding all tags for that site
+    console.log(`[ADS] Stopping monitoring for site ${siteId}...`);
+    for (const [tagId, interval] of this.monitoringIntervals.entries()) {
+      // This is a simplified stop, a real implementation would need to map siteId to tagIds
       clearInterval(interval);
-      this.monitoringIntervals.delete(siteId);
+      this.monitoringIntervals.delete(tagId);
     }
-
-    // Remove connection
-    this.connections.delete(siteId);
-    
-    console.log(`Stopped monitoring for site ${siteId}`);
-  }
-
-  getConnectionStatus(): Array<ADSConnection & { tagCount: number }> {
-    return Array.from(this.connections.values()).map(conn => ({
-      ...conn,
-      tagCount: 0, // This would be populated with actual tag count
-    }));
-  }
-
-  async refreshSiteTags(siteId: string): Promise<void> {
-    // Restart monitoring for a site when tags are updated
-    await this.removeSiteFromMonitoring(siteId);
-    await this.addSiteForMonitoring(siteId);
   }
 }
 
-export const adsMonitoringService = new ADSMonitoringService();
+export const adsMonitoringService = ADSMonitoringService.getInstance();

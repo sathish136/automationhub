@@ -120,6 +120,7 @@ export interface IStorage {
 
   // Site Database Tags
   getSiteDatabaseTags(siteId?: string): Promise<SiteDatabaseTag[]>;
+  getSiteDatabaseTag(id: string): Promise<SiteDatabaseTag | undefined>;
   createSiteDatabaseTag(tag: InsertSiteDatabaseTag): Promise<SiteDatabaseTag>;
   updateSiteDatabaseTag(id: string, tag: Partial<InsertSiteDatabaseTag>): Promise<SiteDatabaseTag | undefined>;
   deleteSiteDatabaseTag(id: string): Promise<boolean>;
@@ -557,6 +558,11 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(siteDatabaseTags).where(eq(siteDatabaseTags.siteId, siteId));
     }
     return await db.select().from(siteDatabaseTags);
+  }
+
+  async getSiteDatabaseTag(id: string): Promise<SiteDatabaseTag | undefined> {
+    const [tag] = await db.select().from(siteDatabaseTags).where(eq(siteDatabaseTags.id, id));
+    return tag;
   }
 
   async createSiteDatabaseTag(tag: InsertSiteDatabaseTag): Promise<SiteDatabaseTag> {

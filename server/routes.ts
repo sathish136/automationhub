@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pingService } from "./services/pingService";
+import { adsMonitoringService } from "./services/adsMonitoringService";
+import { sqlViewerService } from "./services/sqlViewerService";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -699,12 +701,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/site-database-tags", async (req, res) => {
     try {
+      console.log("[API] Received request to create new ADS tag.");
       const tagData = insertSiteDatabaseTagSchema.parse(req.body);
+      console.log("[API] Tag data parsed successfully.", tagData);
+
+      // We don't need to validate here, as the monitoring service will log errors if it can't connect.
+      // This also simplifies the logic and avoids potential double-reads.
+
+      console.log("[API] Creating tag in database...");
       const tag = await storage.createSiteDatabaseTag(tagData);
-      res.status(201).json(tag);
+      console.log("[API] Tag created successfully in DB:", tag);
+
+      // After creating the tag, start monitoring it immediately if it's active
+      if (tag.isActive) {
+        console.log(`[API] Tag '${tag.tagName}' is active. Attempting to start monitoring...`);
+        try {
+          adsMonitoringService.startMonitoringForTag(tag);
+          console.log("[API] Call to start monitoring completed.");
+        } catch (monitorError) {
+          console.error("[API] CRITICAL: Error occurred while trying to start monitoring for the new tag:", monitorError);
+          // Even if monitoring fails to start, we should still return the created tag.
+          // The error will be logged for debugging.
+        }
+      }
+
+      console.log("[API] Sending 201 response.");
+      // Cleanse the object before sending: Drizzle can return BigInts or other non-serializable types.
+      const cleanTag = JSON.parse(JSON.stringify(tag));
+      res.status(201).json(cleanTag);
     } catch (error) {
-      console.error("Error creating site database tag:", error);
-      res.status(400).json({ message: "Invalid tag data" });
+      console.error("[API] CRITICAL: An unexpected error occurred in the create tag route handler:", error);
+      // Check if it's a validation error from Zod
+      if (error instanceof (await import('zod')).ZodError) {
+        return res.status(400).json({ message: "Invalid tag data", errors: error.errors });
+      }
+      res.status(500).json({ message: "An unexpected error occurred while creating the tag." });
     }
   });
 
@@ -834,6 +865,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching latest RO realtime data:", error);
       res.status(500).json({ message: "Failed to fetch latest RO realtime data" });
+    }
+  });
+
+  // SQL Viewer Endpoints
+  app.get("/api/sql-viewer/databases", async (req, res) => {
+    try {
+      const databases = await sqlViewerService.getDatabases();
+      res.json(databases);
+    } catch (error) {
+      console.error("Error fetching SQL databases:", error);
+      res.status(500).json({ message: "Failed to fetch SQL databases" });
+    }
+  });
+
+  app.get("/api/sql-viewer/databases/:database/tables", async (req, res) => {
+    try {
+      const tables = await sqlViewerService.getTables(req.params.database);
+      res.json(tables);
+    } catch (error) {
+      console.error(`Error fetching tables for database ${req.params.database}:`, error);
+      res.status(500).json({ message: "Failed to fetch tables" });
+    }
+  });
+
+  app.get("/api/sql-viewer/databases/:database/tables/:table", async (req, res) => {
+    try {
+      const data = await sqlViewerService.getTableData(req.params.database, req.params.table);
+      res.json(data);
+    } catch (error) {
+      console.error(`Error fetching data for table ${req.params.table}:`, error);
+      res.status(500).json({ message: "Failed to fetch table data" });
     }
   });
 

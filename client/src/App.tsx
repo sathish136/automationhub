@@ -14,6 +14,7 @@ import Reports from "@/pages/reports";
 import ProjectDetails from "@/pages/project-details";
 import Settings from "@/pages/settings";
 import IPCDetails from "@/pages/ipc-details";
+import SqlViewerPage from "@/pages/sql-viewer";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 
@@ -34,6 +35,7 @@ function Router() {
           <Route path="/project-details" component={ProjectDetails} />
           <Route path="/settings" component={Settings} />
           <Route path="/ipc-management" component={IPCDetails} />
+          <Route path="/sql-viewer" component={SqlViewerPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
