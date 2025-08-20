@@ -44,6 +44,9 @@ const SQLViewerPage: React.FC = () => {
   const [filteredData, setFilteredData] = useState<any[]>([]);
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [maxRows, setMaxRows] = useState(100);
+  const [columnFilter, setColumnFilter] = useState<string>('');
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
 
   // Fetch databases on component mount
   useEffect(() => {
@@ -162,12 +165,24 @@ const SQLViewerPage: React.FC = () => {
 
   // Filter and search functionality
   useEffect(() => {
-    let filtered = tableData;
+    let filtered = [...tableData];
+
+    // Limit to max rows first
+    filtered = filtered.slice(0, maxRows);
 
     if (searchTerm) {
-      filtered = tableData.filter(row =>
+      filtered = filtered.filter(row =>
         Object.values(row).some(value =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+
+    if (columnFilter) {
+      filtered = filtered.filter(row =>
+        Object.entries(row).some(([key, value]) =>
+          key.toLowerCase().includes(columnFilter.toLowerCase()) ||
+          String(value).toLowerCase().includes(columnFilter.toLowerCase())
         )
       );
     }
@@ -182,7 +197,7 @@ const SQLViewerPage: React.FC = () => {
     }
 
     setFilteredData(filtered);
-  }, [tableData, searchTerm, sortColumn, sortDirection, columns]);
+  }, [tableData, searchTerm, columnFilter, sortColumn, sortDirection, columns, maxRows]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -226,7 +241,7 @@ const SQLViewerPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4 space-y-4">
+      <div className="w-full p-2 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -414,32 +429,63 @@ const SQLViewerPage: React.FC = () => {
                     {/* Search and Filter Controls */}
                     {tableData.length > 0 && (
                       <div className="mb-3 space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <div className="relative flex-1">
-                            <Search className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+                        <div className="grid grid-cols-12 gap-2 items-center">
+                          <div className="col-span-4 relative">
+                            <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
                             <Input
-                              id="search"
-                              placeholder="Search..."
+                              placeholder="Search all columns..."
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
-                              className="pl-7 h-7 text-xs"
+                              className="pl-7 h-6 text-xs"
                               data-testid="input-search-data"
                             />
                           </div>
-                          <Badge variant="outline" className="text-xs px-2 py-1">
-                            <Filter className="h-3 w-3 mr-1" />
-                            {filteredData.length}/{tableData.length}
-                          </Badge>
-                          {searchTerm && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSearchTerm('')}
-                              className="h-7 px-2 text-xs"
+                          
+                          <div className="col-span-3 relative">
+                            <Filter className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
+                            <Input
+                              placeholder="Filter columns..."
+                              value={columnFilter}
+                              onChange={(e) => setColumnFilter(e.target.value)}
+                              className="pl-7 h-6 text-xs"
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <select
+                              value={maxRows}
+                              onChange={(e) => setMaxRows(Number(e.target.value))}
+                              className="h-6 w-full text-xs border rounded px-2 bg-background"
                             >
-                              Clear
-                            </Button>
-                          )}
+                              <option value={50}>50 rows</option>
+                              <option value={100}>100 rows</option>
+                              <option value={200}>200 rows</option>
+                              <option value={500}>500 rows</option>
+                            </select>
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <Badge variant="outline" className="text-xs px-2 py-1 w-full justify-center">
+                              {filteredData.length}/{tableData.length > maxRows ? maxRows : tableData.length}
+                            </Badge>
+                          </div>
+                          
+                          <div className="col-span-1 flex gap-1">
+                            {(searchTerm || columnFilter) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSearchTerm('');
+                                  setColumnFilter('');
+                                }}
+                                className="h-6 px-1 text-xs"
+                                title="Clear filters"
+                              >
+                                ✕
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <Separator />
                       </div>
@@ -462,44 +508,52 @@ const SQLViewerPage: React.FC = () => {
                         <p className="text-xs">No data</p>
                       </div>
                     ) : (
-                      <div className="border rounded-lg bg-white dark:bg-gray-900">
-                        <ScrollArea className="h-64 w-full">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="h-7">
-                                {columns.map((column) => (
-                                  <TableHead 
-                                    key={column} 
-                                    className="h-7 px-2 py-1 font-medium text-foreground cursor-pointer hover:bg-muted/50 transition-colors text-xs"
-                                    onClick={() => handleSort(column)}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs truncate">{column}</span>
-                                      {sortColumn === column && (
-                                        <span className="text-xs ml-1 flex-shrink-0">
-                                          {sortDirection === 'asc' ? '↑' : '↓'}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </TableHead>
-                                ))}
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filteredData.map((row, index) => (
-                                <TableRow key={index} className="hover:bg-muted/30 h-6">
-                                  {columns.map((column) => (
-                                    <TableCell key={column} className="px-2 py-0 text-xs font-mono">
-                                      <div className="max-w-24 truncate" title={String(row[column] || '')}>
-                                        {String(row[column] || '')}
-                                      </div>
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
+                      <div className="relative border rounded-sm bg-white dark:bg-gray-950 w-full">
+                        {/* Frozen Header */}
+                        <div className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800 border-b">
+                          <div className="grid grid-flow-col auto-cols-fr gap-0">
+                            {columns.map((column) => (
+                              <div 
+                                key={column} 
+                                className="px-1 py-1 text-xs font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 min-w-0"
+                                onClick={() => handleSort(column)}
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="truncate text-xs font-semibold">{column}</span>
+                                  {sortColumn === column && (
+                                    <span className="text-xs ml-1 flex-shrink-0">
+                                      {sortDirection === 'asc' ? '↑' : '↓'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Scrollable Data */}
+                        <div className="max-h-96 overflow-y-auto">
+                          {filteredData.slice(0, 100).map((row, index) => (
+                            <div 
+                              key={index} 
+                              className={`grid grid-flow-col auto-cols-fr gap-0 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+                                index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50/50 dark:bg-gray-900/50'
+                              }`}
+                            >
+                              {columns.map((column) => (
+                                <div 
+                                  key={column} 
+                                  className="px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0"
+                                  title={String(row[column] || '')}
+                                >
+                                  <div className="truncate text-xs">
+                                    {String(row[column] || '')}
+                                  </div>
+                                </div>
                               ))}
-                            </TableBody>
-                          </Table>
-                        </ScrollArea>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </>
