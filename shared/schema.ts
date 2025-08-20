@@ -536,6 +536,70 @@ export const roRealtimeData = pgTable("ro_realtime_data", {
   index("idx_ro_site_timestamp").on(table.siteId, table.timestamp),
 ]);
 
+// Instrumentation devices management
+export const instrumentation = pgTable("instrumentation", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Basic Device Information
+  deviceName: varchar("device_name", { length: 255 }).notNull(),
+  deviceType: varchar("device_type", { length: 100 }).notNull(), // flow_meter, ph_sensor, orp_sensor, analysis_box, valve, pressure_transmitter
+  serialNumber: varchar("serial_number", { length: 100 }).notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  brandName: varchar("brand_name", { length: 100 }).notNull(),
+  
+  // Technical Specifications
+  communicationType: varchar("communication_type", { length: 50 }).notNull(), // 4-20ma, rs485, hart, modbus_tcp, modbus_rtu, profinet, ethercat
+  voltage: varchar("voltage", { length: 50 }), // Operating voltage
+  powerConsumption: varchar("power_consumption", { length: 50 }),
+  operatingRange: varchar("operating_range", { length: 100 }),
+  accuracy: varchar("accuracy", { length: 50 }),
+  
+  // Installation Details
+  installationDate: timestamp("installation_date"),
+  location: varchar("location", { length: 255 }),
+  installationNotes: text("installation_notes"),
+  
+  // Communication Settings
+  ipAddress: varchar("ip_address", { length: 45 }),
+  port: integer("port"),
+  slaveId: integer("slave_id"),
+  baudRate: varchar("baud_rate", { length: 20 }),
+  dataBits: integer("data_bits"),
+  stopBits: integer("stop_bits"),
+  parity: varchar("parity", { length: 10 }),
+  
+  // Maintenance Information
+  lastCalibration: timestamp("last_calibration"),
+  nextCalibration: timestamp("next_calibration"),
+  calibrationInterval: integer("calibration_interval"), // in days
+  maintenanceNotes: text("maintenance_notes"),
+  
+  // Status and Condition
+  status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, maintenance, faulty
+  operationalStatus: varchar("operational_status", { length: 20 }).default("normal"), // normal, warning, alarm, fault
+  
+  // Documentation
+  deviceImage: varchar("device_image", { length: 500 }), // URL or path to device image
+  manualPath: varchar("manual_path", { length: 500 }), // Path to device manual/documentation
+  certificatePath: varchar("certificate_path", { length: 500 }), // Calibration certificates
+  
+  // Additional Information
+  manufacturer: varchar("manufacturer", { length: 100 }),
+  partNumber: varchar("part_number", { length: 100 }),
+  firmwareVersion: varchar("firmware_version", { length: 50 }),
+  comments: text("comments"),
+  tags: varchar("tags", { length: 500 }), // Comma-separated tags for categorization
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_instrumentation_site").on(table.siteId),
+  index("idx_instrumentation_type").on(table.deviceType),
+  index("idx_instrumentation_status").on(table.status),
+  index("idx_instrumentation_communication").on(table.communicationType),
+]);
+
 // Insert schemas for the new tables
 export const insertMbrRealtimeDataSchema = createInsertSchema(mbrRealtimeData).omit({
   id: true,
@@ -547,8 +611,16 @@ export const insertRoRealtimeDataSchema = createInsertSchema(roRealtimeData).omi
   timestamp: true,
 });
 
+export const insertInstrumentationSchema = createInsertSchema(instrumentation).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types for the new tables
 export type MbrRealtimeData = typeof mbrRealtimeData.$inferSelect;
 export type InsertMbrRealtimeData = z.infer<typeof insertMbrRealtimeDataSchema>;
 export type RoRealtimeData = typeof roRealtimeData.$inferSelect;
 export type InsertRoRealtimeData = z.infer<typeof insertRoRealtimeDataSchema>;
+export type Instrumentation = typeof instrumentation.$inferSelect;
+export type InsertInstrumentation = z.infer<typeof insertInstrumentationSchema>;

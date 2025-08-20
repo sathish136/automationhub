@@ -18,7 +18,8 @@ import {
   insertSiteDatabaseTagSchema,
   insertSiteDatabaseValueSchema,
   insertMbrRealtimeDataSchema,
-  insertRoRealtimeDataSchema
+  insertRoRealtimeDataSchema,
+  insertInstrumentationSchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -472,6 +473,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting IPC device:", error);
       res.status(500).json({ message: "Failed to delete IPC device" });
+    }
+  });
+
+  // Instrumentation management
+  app.get("/api/instrumentation", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const devices = await storage.getInstrumentation(siteId);
+      res.json(devices);
+    } catch (error) {
+      console.error("Error fetching instrumentation devices:", error);
+      res.status(500).json({ message: "Failed to fetch instrumentation devices" });
+    }
+  });
+
+  app.post("/api/instrumentation", async (req, res) => {
+    try {
+      const deviceData = insertInstrumentationSchema.parse(req.body);
+      const device = await storage.createInstrumentation(deviceData);
+      res.json(device);
+    } catch (error) {
+      console.error("Error creating instrumentation device:", error);
+      res.status(400).json({ message: "Invalid device data" });
+    }
+  });
+
+  app.put("/api/instrumentation/:id", async (req, res) => {
+    try {
+      const deviceData = insertInstrumentationSchema.partial().parse(req.body);
+      const device = await storage.updateInstrumentation(req.params.id, deviceData);
+      if (!device) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+      res.json(device);
+    } catch (error) {
+      console.error("Error updating instrumentation device:", error);
+      res.status(400).json({ message: "Invalid device data" });
+    }
+  });
+
+  app.delete("/api/instrumentation/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteInstrumentation(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Device not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting instrumentation device:", error);
+      res.status(500).json({ message: "Failed to delete instrumentation device" });
+    }
+  });
+
+  app.get("/api/instrumentation/by-type/:deviceType", async (req, res) => {
+    try {
+      const { deviceType } = req.params;
+      const siteId = req.query.siteId as string;
+      const devices = await storage.getInstrumentationByType(deviceType, siteId);
+      res.json(devices);
+    } catch (error) {
+      console.error("Error fetching instrumentation devices by type:", error);
+      res.status(500).json({ message: "Failed to fetch instrumentation devices" });
     }
   });
 

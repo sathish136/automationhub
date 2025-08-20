@@ -12,6 +12,7 @@ import {
   siteDatabaseValues,
   mbrRealtimeData,
   roRealtimeData,
+  instrumentation,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -38,6 +39,8 @@ import {
   type InsertMbrRealtimeData,
   type RoRealtimeData,
   type InsertRoRealtimeData,
+  type Instrumentation,
+  type InsertInstrumentation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -69,6 +72,13 @@ export interface IStorage {
   createIpcManagement(device: InsertIpcManagement): Promise<IpcManagement>;
   updateIpcManagement(id: string, device: Partial<InsertIpcManagement>): Promise<IpcManagement | undefined>;
   deleteIpcManagement(id: string): Promise<boolean>;
+
+  // Instrumentation
+  getInstrumentation(siteId?: string): Promise<Instrumentation[]>;
+  createInstrumentation(device: InsertInstrumentation): Promise<Instrumentation>;
+  updateInstrumentation(id: string, device: Partial<InsertInstrumentation>): Promise<Instrumentation | undefined>;
+  deleteInstrumentation(id: string): Promise<boolean>;
+  getInstrumentationByType(deviceType: string, siteId?: string): Promise<Instrumentation[]>;
 
   // VFD Parameters
   getVfdParameters(siteId?: string): Promise<VfdParameter[]>;
@@ -262,11 +272,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProgramBackupsByType(type: 'program' | 'hmi', siteId?: string): Promise<ProgramBackup[]> {
-    let query = db.select().from(programBackups).where(eq(programBackups.type, type));
     if (siteId) {
-      query = query.where(and(eq(programBackups.type, type), eq(programBackups.siteId, siteId)));
+      return await db.select().from(programBackups)
+        .where(and(eq(programBackups.type, type), eq(programBackups.siteId, siteId)))
+        .orderBy(desc(programBackups.createdAt));
     }
-    return await query.orderBy(desc(programBackups.createdAt));
+    return await db.select().from(programBackups)
+      .where(eq(programBackups.type, type))
+      .orderBy(desc(programBackups.createdAt));
   }
 
 
@@ -317,6 +330,50 @@ export class DatabaseStorage implements IStorage {
   async deleteIpcManagement(id: string): Promise<boolean> {
     const result = await db.delete(ipcManagement).where(eq(ipcManagement.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Instrumentation
+  async getInstrumentation(siteId?: string): Promise<Instrumentation[]> {
+    const query = db.select().from(instrumentation);
+    if (siteId) {
+      return await query.where(eq(instrumentation.siteId, siteId)).orderBy(desc(instrumentation.createdAt));
+    }
+    return await query.orderBy(desc(instrumentation.createdAt));
+  }
+
+  async createInstrumentation(device: InsertInstrumentation): Promise<Instrumentation> {
+    const [newDevice] = await db
+      .insert(instrumentation)
+      .values(device)
+      .returning();
+    return newDevice;
+  }
+
+  async updateInstrumentation(id: string, device: Partial<InsertInstrumentation>): Promise<Instrumentation | undefined> {
+    const updateData = { ...device, updatedAt: new Date() };
+
+    const [updatedDevice] = await db
+      .update(instrumentation)
+      .set(updateData)
+      .where(eq(instrumentation.id, id))
+      .returning();
+    return updatedDevice;
+  }
+
+  async deleteInstrumentation(id: string): Promise<boolean> {
+    const result = await db.delete(instrumentation).where(eq(instrumentation.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getInstrumentationByType(deviceType: string, siteId?: string): Promise<Instrumentation[]> {
+    if (siteId) {
+      return await db.select().from(instrumentation)
+        .where(and(eq(instrumentation.deviceType, deviceType), eq(instrumentation.siteId, siteId)))
+        .orderBy(desc(instrumentation.createdAt));
+    }
+    return await db.select().from(instrumentation)
+      .where(eq(instrumentation.deviceType, deviceType))
+      .orderBy(desc(instrumentation.createdAt));
   }
 
   // VFD Parameters

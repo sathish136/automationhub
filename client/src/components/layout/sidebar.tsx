@@ -14,6 +14,7 @@ import {
   Bell,
   Activity,
   Database,
+  Gauge,
 } from "lucide-react";
 
 const navigation = [
@@ -25,6 +26,7 @@ const navigation = [
   { name: "SQL Viewer", href: "/sql-viewer", icon: Database },
   { name: "Program & HMI Backups", href: "/backups", icon: Save },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
+  { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings2 },
 ];
