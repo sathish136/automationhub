@@ -263,9 +263,13 @@ const SQLViewerPage: React.FC = () => {
   }, [tableData, searchTerm, columnFilter]);
 
   const handleSort = (column: string) => {
+    console.log(`Sort clicked: column=${column}, currentSortColumn=${sortColumn}, currentDirection=${sortDirection}`);
     if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      console.log(`Toggling direction: ${sortDirection} -> ${newDirection}`);
+      setSortDirection(newDirection);
     } else {
+      console.log(`New column sort: ${column} -> asc`);
       setSortColumn(column);
       setSortDirection('asc');
     }
