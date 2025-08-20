@@ -226,24 +226,21 @@ const SQLViewerPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Database className="h-8 w-8 text-primary" />
+          <div className="flex items-center space-x-2">
+            <Database className="h-5 w-5 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold text-foreground">SQL Database Viewer</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Professional database management and query interface
-              </p>
+              <h1 className="text-xl font-semibold text-foreground">SQL Viewer</h1>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <Badge 
               variant={connectionStatus === 'connected' ? 'default' : 'destructive'}
-              className="text-sm"
+              className="text-xs px-2 py-1"
             >
-              <div className={`w-2 h-2 rounded-full mr-2 ${
+              <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
                 connectionStatus === 'connected' ? 'bg-green-500' : 
                 connectionStatus === 'checking' ? 'bg-yellow-500' : 'bg-red-500'
               }`} />
@@ -251,8 +248,8 @@ const SQLViewerPage: React.FC = () => {
                connectionStatus === 'checking' ? 'Connecting' : 'Disconnected'}
             </Badge>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
+              <Settings className="h-3 w-3 mr-1" />
+              <span className="text-xs">Settings</span>
             </Button>
           </div>
         </div>
@@ -272,61 +269,48 @@ const SQLViewerPage: React.FC = () => {
 
         {/* Database Selection */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center text-xl">
-              <Database className="h-5 w-5 mr-2" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center text-sm">
+              <Database className="h-4 w-4 mr-1" />
               Database Selection
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="database-select" className="text-base font-medium">
-                    Select Database
-                  </Label>
-                  <Select 
-                    value={selectedDatabase} 
-                    onValueChange={setSelectedDatabase}
-                    disabled={loading || databases.length === 0}
-                  >
-                    <SelectTrigger className="mt-2 h-11" data-testid="select-database">
-                      <SelectValue placeholder="-- Select a Database --" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {databases.map((db) => (
-                        <SelectItem key={db.name} value={db.name}>
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-base">{db.name}</span>
-                            <Badge variant="secondary" className="ml-2 text-xs">
-                              {db.tableCount ? `${db.tableCount} tables` : 'Unknown'}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {selectedDatabase && (
-                  <div>
-                    <Label className="text-base font-medium">Database Info</Label>
-                    <div className="mt-2 p-3 bg-muted rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{selectedDatabase}</span>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">
-                            {tables.length} tables
+          <CardContent className="py-3">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Select 
+                  value={selectedDatabase} 
+                  onValueChange={setSelectedDatabase}
+                  disabled={loading || databases.length === 0}
+                >
+                  <SelectTrigger className="h-8 text-sm" data-testid="select-database">
+                    <SelectValue placeholder="Select Database" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {databases.map((db) => (
+                      <SelectItem key={db.name} value={db.name}>
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-sm">{db.name}</span>
+                          <Badge variant="secondary" className="ml-2 text-xs px-1 py-0">
+                            {db.tableCount || 0}
                           </Badge>
-                          <Button variant="ghost" size="sm" onClick={refreshData} disabled={loading}>
-                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                          </Button>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              
+              {selectedDatabase && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs px-2 py-1">
+                    {tables.length} tables
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={refreshData} disabled={loading} className="h-7 w-7 p-0">
+                    <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -336,39 +320,36 @@ const SQLViewerPage: React.FC = () => {
           <div className="grid grid-cols-12 gap-6">
             {/* Tables Sidebar */}
             <Card className="col-span-12 lg:col-span-3">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center text-lg">
-                  <TableIcon className="h-4 w-4 mr-2" />
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-sm">
+                  <TableIcon className="h-3 w-3 mr-1" />
                   Tables ({tables.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-96">
-                  <div className="space-y-1 p-4">
+                <ScrollArea className="h-72">
+                  <div className="space-y-1 p-2">
                     {loading && tables.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                        Loading tables...
+                      <div className="text-center text-muted-foreground py-4">
+                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-1" />
+                        <div className="text-xs">Loading...</div>
                       </div>
                     ) : tables.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        <TableIcon className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                        No tables found
+                      <div className="text-center text-muted-foreground py-4">
+                        <TableIcon className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                        <div className="text-xs">No tables</div>
                       </div>
                     ) : (
                       tables.map((table) => (
                         <Button
                           key={table}
                           variant={selectedTable === table ? 'default' : 'ghost'}
-                          className="w-full justify-between h-auto py-3 px-3 text-left"
+                          className="w-full justify-start h-7 px-2 text-left text-xs"
                           onClick={() => setSelectedTable(table)}
                           data-testid={`button-select-table-${table}`}
                         >
-                          <div className="flex items-center">
-                            <TableIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate text-sm font-medium">{table}</span>
-                          </div>
-                          <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                          <TableIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">{table}</span>
                         </Button>
                       ))
                     )}
@@ -379,44 +360,45 @@ const SQLViewerPage: React.FC = () => {
 
             {/* Data Viewer */}
             <Card className="col-span-12 lg:col-span-9">
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center text-lg">
+                  <CardTitle className="flex items-center text-sm">
                     {selectedTable ? (
                       <>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Table: {selectedTable}
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          {filteredData.length} rows
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        {selectedTable}
+                        <Badge variant="secondary" className="ml-2 text-xs px-1 py-0">
+                          {filteredData.length}
                         </Badge>
                       </>
                     ) : (
                       <>
-                        <Search className="h-4 w-4 mr-2" />
-                        Select a table to view data
+                        <Search className="h-3 w-3 mr-1" />
+                        Select table
                       </>
                     )}
                   </CardTitle>
                   
                   {selectedTable && tableData.length > 0 && (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={exportToCSV}
                         data-testid="button-export-csv"
+                        className="h-7 px-2 text-xs"
                       >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export CSV
+                        <Download className="h-3 w-3 mr-1" />
+                        CSV
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={refreshData}
                         disabled={loading}
+                        className="h-7 w-7 p-0"
                       >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
                       </Button>
                     </div>
                   )}
@@ -428,44 +410,33 @@ const SQLViewerPage: React.FC = () => {
                   <>
                     {/* Search and Filter Controls */}
                     {tableData.length > 0 && (
-                      <div className="mb-6 space-y-4">
-                        <Separator />
-                        <div className="flex items-center space-x-4">
-                          <div className="flex-1">
-                            <Label htmlFor="search" className="text-sm font-medium">
-                              Search Data
-                            </Label>
-                            <div className="relative mt-2">
-                              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                id="search"
-                                placeholder="Search across all columns..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 h-11"
-                                data-testid="input-search-data"
-                              />
-                            </div>
+                      <div className="mb-3 space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="relative flex-1">
+                            <Search className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+                            <Input
+                              id="search"
+                              placeholder="Search..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="pl-7 h-7 text-xs"
+                              data-testid="input-search-data"
+                            />
                           </div>
-                          <div>
-                            <Label className="text-sm font-medium">Filter Results</Label>
-                            <div className="mt-2 flex items-center space-x-2">
-                              <Badge variant="outline">
-                                <Filter className="h-3 w-3 mr-1" />
-                                {filteredData.length} of {tableData.length}
-                              </Badge>
-                              {searchTerm && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setSearchTerm('')}
-                                  className="h-8 px-2"
-                                >
-                                  Clear
-                                </Button>
-                              )}
-                            </div>
-                          </div>
+                          <Badge variant="outline" className="text-xs px-2 py-1">
+                            <Filter className="h-3 w-3 mr-1" />
+                            {filteredData.length}/{tableData.length}
+                          </Badge>
+                          {searchTerm && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSearchTerm('')}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Clear
+                            </Button>
+                          )}
                         </div>
                         <Separator />
                       </div>
@@ -473,36 +444,34 @@ const SQLViewerPage: React.FC = () => {
 
                     {/* Data Table */}
                     {loading && tableData.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-12">
-                        <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-                        <p className="text-lg">Loading table data...</p>
+                      <div className="text-center text-muted-foreground py-8">
+                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
+                        <p className="text-xs">Loading...</p>
                       </div>
                     ) : filteredData.length === 0 && tableData.length > 0 ? (
-                      <div className="text-center text-muted-foreground py-12">
-                        <Search className="h-8 w-8 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg">No data matches your search</p>
-                        <p className="text-sm mt-2">Try adjusting your search terms</p>
+                      <div className="text-center text-muted-foreground py-8">
+                        <Search className="h-4 w-4 mx-auto mb-2 opacity-50" />
+                        <p className="text-xs">No matches</p>
                       </div>
                     ) : filteredData.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-12">
-                        <TableIcon className="h-8 w-8 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg">No data available</p>
-                        <p className="text-sm mt-2">This table appears to be empty</p>
+                      <div className="text-center text-muted-foreground py-8">
+                        <TableIcon className="h-4 w-4 mx-auto mb-2 opacity-50" />
+                        <p className="text-xs">No data</p>
                       </div>
                     ) : (
                       <div className="border rounded-lg bg-white dark:bg-gray-900">
-                        <ScrollArea className="h-80 w-full">
+                        <ScrollArea className="h-64 w-full">
                           <Table>
                             <TableHeader>
-                              <TableRow>
+                              <TableRow className="h-7">
                                 {columns.map((column) => (
                                   <TableHead 
                                     key={column} 
-                                    className="h-8 px-2 py-1 font-semibold text-foreground cursor-pointer hover:bg-muted/50 transition-colors text-xs"
+                                    className="h-7 px-2 py-1 font-medium text-foreground cursor-pointer hover:bg-muted/50 transition-colors text-xs"
                                     onClick={() => handleSort(column)}
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="text-xs font-medium truncate">{column}</span>
+                                      <span className="text-xs truncate">{column}</span>
                                       {sortColumn === column && (
                                         <span className="text-xs ml-1 flex-shrink-0">
                                           {sortDirection === 'asc' ? '↑' : '↓'}
@@ -515,10 +484,10 @@ const SQLViewerPage: React.FC = () => {
                             </TableHeader>
                             <TableBody>
                               {filteredData.map((row, index) => (
-                                <TableRow key={index} className="hover:bg-muted/30 h-8">
+                                <TableRow key={index} className="hover:bg-muted/30 h-6">
                                   {columns.map((column) => (
-                                    <TableCell key={column} className="px-2 py-1 text-xs font-mono">
-                                      <div className="max-w-32 truncate" title={String(row[column] || '')}>
+                                    <TableCell key={column} className="px-2 py-0 text-xs font-mono">
+                                      <div className="max-w-24 truncate" title={String(row[column] || '')}>
                                         {String(row[column] || '')}
                                       </div>
                                     </TableCell>
@@ -532,11 +501,11 @@ const SQLViewerPage: React.FC = () => {
                     )}
                   </>
                 ) : (
-                  <div className="text-center text-muted-foreground py-12">
-                    <TableIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-xl font-medium">Select a table to get started</p>
-                    <p className="text-sm mt-2">
-                      Choose a table from the sidebar to view its data and schema
+                  <div className="text-center text-muted-foreground py-8">
+                    <TableIcon className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Select a table</p>
+                    <p className="text-xs mt-1">
+                      Choose from the sidebar
                     </p>
                   </div>
                 )}
@@ -548,27 +517,27 @@ const SQLViewerPage: React.FC = () => {
         {/* No Database Selected State */}
         {!selectedDatabase && !error && (
           <Card>
-            <CardContent className="text-center py-12">
-              <Database className="h-16 w-16 mx-auto mb-6 opacity-50 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">Welcome to SQL Viewer</h3>
-              <p className="text-muted-foreground mb-6">
-                Select a database from the dropdown above to start exploring your data with professional tools and filtering options.
+            <CardContent className="text-center py-8">
+              <Database className="h-8 w-8 mx-auto mb-3 opacity-50 text-muted-foreground" />
+              <h3 className="text-sm font-medium mb-2">Welcome to SQL Viewer</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Select a database above to explore your data
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <Search className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <h4 className="font-medium mb-1">Advanced Search</h4>
-                  <p className="text-sm text-muted-foreground">Search across all columns with real-time filtering</p>
+              <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+                <div className="text-center p-3 bg-muted/30 rounded">
+                  <Search className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <h4 className="text-xs font-medium mb-1">Search</h4>
+                  <p className="text-xs text-muted-foreground">Filter data</p>
                 </div>
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <Download className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <h4 className="font-medium mb-1">Export Data</h4>
-                  <p className="text-sm text-muted-foreground">Export filtered results to CSV format</p>
+                <div className="text-center p-3 bg-muted/30 rounded">
+                  <Download className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <h4 className="text-xs font-medium mb-1">Export</h4>
+                  <p className="text-xs text-muted-foreground">CSV download</p>
                 </div>
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <Filter className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <h4 className="font-medium mb-1">Smart Filtering</h4>
-                  <p className="text-sm text-muted-foreground">Sort and filter data with professional controls</p>
+                <div className="text-center p-3 bg-muted/30 rounded">
+                  <Filter className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <h4 className="text-xs font-medium mb-1">Filter</h4>
+                  <p className="text-xs text-muted-foreground">Sort columns</p>
                 </div>
               </div>
             </CardContent>
