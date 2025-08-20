@@ -21,7 +21,7 @@ const navigation = [
   { name: "Project Details", href: "/project-details", icon: FolderOpen },
   { name: "Site Monitoring", href: "/sites", icon: Building },
   { name: "Site Events", href: "/site-events", icon: Bell },
-  { name: "Site Database", href: "/site-database", icon: Database },
+  { name: "Sita Database", href: "/site-database", icon: Database },
   { name: "SQL Viewer", href: "/sql-viewer", icon: Database },
   { name: "Program & HMI Backups", href: "/backups", icon: Save },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
