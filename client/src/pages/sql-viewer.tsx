@@ -167,9 +167,7 @@ const SQLViewerPage: React.FC = () => {
   useEffect(() => {
     let filtered = [...tableData];
 
-    // Limit to max rows first
-    filtered = filtered.slice(0, maxRows);
-
+    // Apply search filter first
     if (searchTerm) {
       filtered = filtered.filter(row =>
         Object.values(row).some(value =>
@@ -178,6 +176,7 @@ const SQLViewerPage: React.FC = () => {
       );
     }
 
+    // Apply column filter
     if (columnFilter) {
       filtered = filtered.filter(row =>
         Object.entries(row).some(([key, value]) =>
@@ -187,6 +186,7 @@ const SQLViewerPage: React.FC = () => {
       );
     }
 
+    // Apply sorting
     if (sortColumn && columns.includes(sortColumn)) {
       filtered = [...filtered].sort((a, b) => {
         const aValue = String(a[sortColumn]);
@@ -195,6 +195,9 @@ const SQLViewerPage: React.FC = () => {
         return sortDirection === 'asc' ? comparison : -comparison;
       });
     }
+
+    // Apply row limit last (after all filtering)
+    filtered = filtered.slice(0, maxRows);
 
     setFilteredData(filtered);
   }, [tableData, searchTerm, columnFilter, sortColumn, sortDirection, columns, maxRows]);
@@ -456,17 +459,18 @@ const SQLViewerPage: React.FC = () => {
                               value={maxRows}
                               onChange={(e) => setMaxRows(Number(e.target.value))}
                               className="h-6 w-full text-xs border rounded px-2 bg-background"
+                              title="Rows to display"
                             >
+                              <option value={25}>25 rows</option>
                               <option value={50}>50 rows</option>
                               <option value={100}>100 rows</option>
                               <option value={200}>200 rows</option>
-                              <option value={500}>500 rows</option>
                             </select>
                           </div>
                           
                           <div className="col-span-2">
                             <Badge variant="outline" className="text-xs px-2 py-1 w-full justify-center">
-                              {filteredData.length}/{tableData.length > maxRows ? maxRows : tableData.length}
+                              {filteredData.length}/{Math.min(tableData.length, maxRows)}
                             </Badge>
                           </div>
                           
@@ -508,18 +512,18 @@ const SQLViewerPage: React.FC = () => {
                         <p className="text-xs">No data</p>
                       </div>
                     ) : (
-                      <div className="relative border rounded-sm bg-white dark:bg-gray-950 w-full">
+                      <div className="w-full border rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
                         {/* Frozen Header */}
-                        <div className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800 border-b">
-                          <div className="grid grid-flow-col auto-cols-fr gap-0">
+                        <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+                          <div className="flex w-full">
                             {columns.map((column) => (
                               <div 
                                 key={column} 
-                                className="px-1 py-1 text-xs font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 min-w-0"
+                                className="flex-1 px-1 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 min-w-0"
                                 onClick={() => handleSort(column)}
                               >
-                                <div className="flex items-center justify-between w-full">
-                                  <span className="truncate text-xs font-semibold">{column}</span>
+                                <div className="flex items-center justify-between">
+                                  <span className="truncate text-xs">{column}</span>
                                   {sortColumn === column && (
                                     <span className="text-xs ml-1 flex-shrink-0">
                                       {sortDirection === 'asc' ? '↑' : '↓'}
@@ -531,19 +535,19 @@ const SQLViewerPage: React.FC = () => {
                           </div>
                         </div>
                         
-                        {/* Scrollable Data */}
-                        <div className="max-h-96 overflow-y-auto">
-                          {filteredData.slice(0, 100).map((row, index) => (
+                        {/* Data Rows */}
+                        <div className="w-full">
+                          {filteredData.map((row, index) => (
                             <div 
                               key={index} 
-                              className={`grid grid-flow-col auto-cols-fr gap-0 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-                                index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50/50 dark:bg-gray-900/50'
+                              className={`flex w-full hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
+                                index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
                               }`}
                             >
                               {columns.map((column) => (
                                 <div 
                                   key={column} 
-                                  className="px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0"
+                                  className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 min-w-0"
                                   title={String(row[column] || '')}
                                 >
                                   <div className="truncate text-xs">
@@ -568,6 +572,129 @@ const SQLViewerPage: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+        )}
+
+        {/* Demo Data When Database Not Available */}
+        {!selectedDatabase && error && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-sm">
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Demo Data - kanchan_rej
+                <Badge variant="secondary" className="ml-2 text-xs px-1 py-0">
+                  100
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-3 space-y-2">
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4 relative">
+                    <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
+                    <Input
+                      placeholder="Search all columns..."
+                      className="pl-7 h-6 text-xs"
+                    />
+                  </div>
+                  
+                  <div className="col-span-3 relative">
+                    <Filter className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
+                    <Input
+                      placeholder="Filter columns..."
+                      className="pl-7 h-6 text-xs"
+                    />
+                  </div>
+                  
+                  <div className="col-span-2">
+                    <select className="h-6 w-full text-xs border rounded px-2 bg-background">
+                      <option value={100}>100 rows</option>
+                    </select>
+                  </div>
+                  
+                  <div className="col-span-2">
+                    <Badge variant="outline" className="text-xs px-2 py-1 w-full justify-center">
+                      100/100
+                    </Badge>
+                  </div>
+                  
+                  <div className="col-span-1">
+                    <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+                      <Download className="h-3 w-3 mr-1" />
+                      CSV
+                    </Button>
+                  </div>
+                </div>
+                <Separator />
+              </div>
+
+              <div className="w-full border rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
+                {/* Demo Table Headers */}
+                <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+                  <div className="flex w-full">
+                    {['date_time', 'rej_recovery', 'rej_feed', 'rej_1st_db', 'rej_1st_stg_fm', 'rej_1st_stg_in', 'rej_1st_stg_out', 'rej_2nd_stg_fm', 'rej_2nd_stg_in', 'rej_2nd_stg_out', 'rej_feed_lt', 'rej_ph_out'].map((column) => (
+                      <div 
+                        key={column} 
+                        className="flex-1 px-1 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 min-w-0"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="truncate text-xs">{column}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Demo Data Rows */}
+                <div className="w-full">
+                  {Array.from({ length: 25 }, (_, index) => (
+                    <div 
+                      key={index} 
+                      className={`flex w-full hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
+                        index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
+                      }`}
+                    >
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">2023-03-{String(index + 1).padStart(2, '0')}T11:00:00</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(55 + Math.random() * 10).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(30 + Math.random() * 10).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(0.5 + Math.random() * 0.5).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(42 + Math.random() * 5).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(40 + Math.random() * 5).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(6 + Math.random() * 2).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(59 + Math.random() * 2).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(58 + Math.random() * 2).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(5.5 + Math.random() * 1).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
+                        <div className="truncate text-xs">{(1.5 + Math.random() * 0.5).toFixed(1)}</div>
+                      </div>
+                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 min-w-0">
+                        <div className="truncate text-xs">{(32 + Math.random() * 3).toFixed(1)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* No Database Selected State */}
