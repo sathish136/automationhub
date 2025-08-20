@@ -28,6 +28,8 @@ import {
   Lock,
   FileText,
   Network,
+  Image,
+  Upload,
 } from "lucide-react";
 
 // Using types from shared schema
@@ -516,6 +518,58 @@ export default function IPCDetails() {
                           className="text-sm h-9 mt-1 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                           placeholder="Image version"
                         />
+                      </div>
+                      <div className="col-span-full">
+                        <Label className="text-xs font-semibold text-gray-700">IPC Image</Label>
+                        <div className="mt-1">
+                          <Input
+                            value={newIPCData.ipcImage || ""}
+                            onChange={(e) =>
+                              handleNewIPCChange("ipcImage", e.target.value)
+                            }
+                            className="text-sm h-9 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                            placeholder="Enter image URL or upload image"
+                            data-testid="new-ipc-image"
+                          />
+                          <div className="flex items-center gap-2 mt-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = (e: any) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    // For demo purposes, create a local URL
+                                    const imageUrl = URL.createObjectURL(file);
+                                    handleNewIPCChange("ipcImage", imageUrl);
+                                  }
+                                };
+                                input.click();
+                              }}
+                              data-testid="new-upload-ipc-image"
+                            >
+                              <Upload size={14} className="mr-1" />
+                              Upload Image
+                            </Button>
+                            {newIPCData.ipcImage && (
+                              <div className="flex items-center gap-2">
+                                <img 
+                                  src={newIPCData.ipcImage} 
+                                  alt="IPC Preview" 
+                                  className="w-8 h-8 object-cover rounded border"
+                                  onError={(e: any) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                                <span className="text-xs text-green-600">Image uploaded</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <Label className="text-xs font-semibold text-gray-700">Serial Number of IPC</Label>
@@ -1413,6 +1467,73 @@ export default function IPCDetails() {
                       />
                     ) : (
                       <div className="text-sm text-gray-900 mt-1">{currentData.imageVersion}</div>
+                    )}
+                  </div>
+                  <div className="col-span-full">
+                    <Label className="text-xs font-medium text-gray-700">IPC Image</Label>
+                    {isEditing ? (
+                      <div className="mt-1">
+                        <Input 
+                          value={currentData.ipcImage || ''}
+                          onChange={(e) => handleFieldChange('ipcImage', e.target.value)}
+                          className="text-sm h-8"
+                          placeholder="Enter image URL or upload image"
+                          data-testid="edit-ipc-image"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = (e: any) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                // For demo purposes, create a local URL
+                                const imageUrl = URL.createObjectURL(file);
+                                handleFieldChange('ipcImage', imageUrl);
+                              }
+                            };
+                            input.click();
+                          }}
+                          data-testid="upload-ipc-image"
+                        >
+                          <Upload size={14} className="mr-1" />
+                          Upload Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="mt-1">
+                        {currentData.ipcImage ? (
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={currentData.ipcImage} 
+                              alt="IPC Device" 
+                              className="w-16 h-16 object-cover rounded border"
+                              onError={(e: any) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                            <div 
+                              className="w-16 h-16 bg-gray-100 rounded border flex items-center justify-center hidden"
+                            >
+                              <Image size={20} className="text-gray-400" />
+                            </div>
+                            <div className="text-sm text-gray-900">Image uploaded</div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <div className="w-16 h-16 bg-gray-100 rounded border flex items-center justify-center">
+                              <Image size={20} className="text-gray-400" />
+                            </div>
+                            <div className="text-sm text-gray-500">No image uploaded</div>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div>

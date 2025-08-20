@@ -122,6 +122,7 @@ export const ipcManagement = pgTable("ipc_management", {
   mac2: varchar("mac2", { length: 17 }),
   operatingSystem: varchar("operating_system", { length: 100 }),
   imageVersion: varchar("image_version", { length: 100 }),
+  ipcImage: varchar("ipc_image", { length: 500 }), // URL or path to IPC image
   serialNumberOfIpc: varchar("serial_number_of_ipc", { length: 100 }),
   deviceManagerVersion: varchar("device_manager_version", { length: 100 }),
 
