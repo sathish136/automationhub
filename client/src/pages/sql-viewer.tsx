@@ -44,8 +44,8 @@ const SQLViewerPage: React.FC = () => {
   // Filter and search states
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [sortColumn, setSortColumn] = useState<string>('');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortColumn, setSortColumn] = useState<string>('date_time');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [maxRows, setMaxRows] = useState(100);
   const [columnFilter, setColumnFilter] = useState<string>('');
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
@@ -78,7 +78,10 @@ const SQLViewerPage: React.FC = () => {
     };
     const data = generateDemoData();
     setDemoData(data);
-    setSortedDemoData(data);
+    
+    // Sort by date_time DESC by default (newest first)
+    const sortedData = [...data].sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime());
+    setSortedDemoData(sortedData);
   }, []);
   
   // Sort demo data when sort parameters change
@@ -188,6 +191,14 @@ const SQLViewerPage: React.FC = () => {
     fetchTables();
   }, [selectedDatabase]);
 
+  // Reset sort when table changes
+  useEffect(() => {
+    if (selectedTable) {
+      setSortColumn('date_time');
+      setSortDirection('desc');
+    }
+  }, [selectedTable]);
+
   // Fetch table data when a table is selected or sorting changes
   useEffect(() => {
     if (!selectedDatabase || !selectedTable) {
@@ -202,10 +213,10 @@ const SQLViewerPage: React.FC = () => {
         
         let url = `/api/sql-viewer/databases/${selectedDatabase}/tables/${selectedTable}?limit=${maxRows}`;
         
-        // Add sorting parameters to URL
-        if (sortColumn && sortDirection) {
-          url += `&sortColumn=${encodeURIComponent(sortColumn)}&sortDirection=${sortDirection}`;
-        }
+        // Always add default sorting parameters to URL (date_time DESC by default)
+        const currentSortColumn = sortColumn || 'date_time';
+        const currentSortDirection = sortDirection || 'desc';
+        url += `&sortColumn=${encodeURIComponent(currentSortColumn)}&sortDirection=${currentSortDirection}`;
         
         const response = await fetch(url);
         
@@ -266,17 +277,12 @@ const SQLViewerPage: React.FC = () => {
   }, [tableData, searchTerm, columnFilter]);
 
   const handleSort = (column: string) => {
-    console.log(`Sort clicked: column=${column}, currentSortColumn=${sortColumn}, currentDirection=${sortDirection}`);
     if (sortColumn === column) {
-      const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-      console.log(`Toggling direction: ${sortDirection} -> ${newDirection}`);
-      setSortDirection(newDirection);
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      console.log(`New column sort: ${column}`);
       setSortColumn(column);
       // For date_time column, start with DESC (newest first), for others start with ASC
       const defaultDirection = column === 'date_time' ? 'desc' : 'asc';
-      console.log(`Setting default direction for ${column}: ${defaultDirection}`);
       setSortDirection(defaultDirection);
     }
   };
