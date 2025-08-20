@@ -513,50 +513,57 @@ const SQLViewerPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="w-full border rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
-                        {/* Frozen Header */}
-                        <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
-                          <div className="flex w-full">
-                            {columns.map((column) => (
-                              <div 
-                                key={column} 
-                                className="flex-1 px-1 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 min-w-0"
-                                onClick={() => handleSort(column)}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="truncate text-xs">{column}</span>
-                                  {sortColumn === column && (
-                                    <span className="text-xs ml-1 flex-shrink-0">
-                                      {sortDirection === 'asc' ? '↑' : '↓'}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        {/* Data Rows */}
-                        <div className="w-full">
-                          {filteredData.map((row, index) => (
-                            <div 
-                              key={index} 
-                              className={`flex w-full hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
-                                index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
-                              }`}
-                            >
-                              {columns.map((column) => (
-                                <div 
-                                  key={column} 
-                                  className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 min-w-0"
-                                  title={String(row[column] || '')}
-                                >
-                                  <div className="truncate text-xs">
-                                    {String(row[column] || '')}
+                        {/* Table Container with Horizontal Scroll */}
+                        <div className="overflow-x-auto max-w-full">
+                          <div className="min-w-fit">
+                            {/* Frozen Header */}
+                            <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+                              <div className="flex">
+                                {columns.map((column) => (
+                                  <div 
+                                    key={column} 
+                                    className="px-2 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 whitespace-nowrap"
+                                    style={{ minWidth: '120px', width: 'auto' }}
+                                    onClick={() => handleSort(column)}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs">{column}</span>
+                                      {sortColumn === column && (
+                                        <span className="text-xs ml-1 flex-shrink-0">
+                                          {sortDirection === 'asc' ? '↑' : '↓'}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            {/* Data Rows */}
+                            <div>
+                              {filteredData.map((row, index) => (
+                                <div 
+                                  key={index} 
+                                  className={`flex hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
+                                    index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
+                                  }`}
+                                >
+                                  {columns.map((column) => (
+                                    <div 
+                                      key={column} 
+                                      className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 whitespace-nowrap"
+                                      style={{ minWidth: '120px', width: 'auto' }}
+                                      title={String(row[column] || '')}
+                                    >
+                                      <div className="text-xs">
+                                        {String(row[column] || '')}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               ))}
                             </div>
-                          ))}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -628,69 +635,75 @@ const SQLViewerPage: React.FC = () => {
               </div>
 
               <div className="w-full border rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
-                {/* Demo Table Headers */}
-                <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
-                  <div className="flex w-full">
-                    {['date_time', 'rej_recovery', 'rej_feed', 'rej_1st_db', 'rej_1st_stg_fm', 'rej_1st_stg_in', 'rej_1st_stg_out', 'rej_2nd_stg_fm', 'rej_2nd_stg_in', 'rej_2nd_stg_out', 'rej_feed_lt', 'rej_ph_out'].map((column) => (
-                      <div 
-                        key={column} 
-                        className="flex-1 px-1 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 min-w-0"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="truncate text-xs">{column}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Demo Data Rows */}
-                <div className="w-full">
-                  {Array.from({ length: 25 }, (_, index) => (
-                    <div 
-                      key={index} 
-                      className={`flex w-full hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
-                        index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
-                      }`}
-                    >
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">2023-03-{String(index + 1).padStart(2, '0')}T11:00:00</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(55 + Math.random() * 10).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(30 + Math.random() * 10).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(0.5 + Math.random() * 0.5).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(42 + Math.random() * 5).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(40 + Math.random() * 5).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(6 + Math.random() * 2).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(59 + Math.random() * 2).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(58 + Math.random() * 2).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(5.5 + Math.random() * 1).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 min-w-0">
-                        <div className="truncate text-xs">{(1.5 + Math.random() * 0.5).toFixed(1)}</div>
-                      </div>
-                      <div className="flex-1 px-1 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 min-w-0">
-                        <div className="truncate text-xs">{(32 + Math.random() * 3).toFixed(1)}</div>
+                {/* Table Container with Horizontal Scroll */}
+                <div className="overflow-x-auto max-w-full">
+                  <div className="min-w-fit">
+                    {/* Demo Table Headers */}
+                    <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+                      <div className="flex">
+                        {['date_time', 'rej_recovery', 'rej_feed', 'rej_1st_db', 'rej_1st_stg_fm', 'rej_1st_stg_in', 'rej_1st_stg_out', 'rej_2nd_stg_fm', 'rej_2nd_stg_in', 'rej_2nd_stg_out', 'rej_feed_lt', 'rej_ph_out'].map((column) => (
+                          <div 
+                            key={column} 
+                            className="px-2 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 whitespace-nowrap"
+                            style={{ minWidth: '120px', width: 'auto' }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs">{column}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                    
+                    {/* Demo Data Rows */}
+                    <div>
+                      {Array.from({ length: 25 }, (_, index) => (
+                        <div 
+                          key={index} 
+                          className={`flex hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
+                            index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
+                          }`}
+                        >
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">2023-03-{String(index + 1).padStart(2, '0')}T11:00:00</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(55 + Math.random() * 10).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(30 + Math.random() * 10).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(0.5 + Math.random() * 0.5).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(42 + Math.random() * 5).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(40 + Math.random() * 5).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(6 + Math.random() * 2).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(59 + Math.random() * 2).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(58 + Math.random() * 2).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(5.5 + Math.random() * 1).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(1.5 + Math.random() * 0.5).toFixed(1)}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{(32 + Math.random() * 3).toFixed(1)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
