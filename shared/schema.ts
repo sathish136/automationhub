@@ -46,23 +46,47 @@ export const uptimeHistory = pgTable("uptime_history", {
   index("idx_uptime_site_timestamp").on(table.siteId, table.timestamp),
 ]);
 
-// Program backups (HMI and PLC)
+// Program backups (HMI and PLC) with detailed tracking
 export const programBackups = pgTable("program_backups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  type: varchar("type", { length: 20 }).notNull(), // hmi, plc
+  type: varchar("type", { length: 20 }).notNull(), // program, hmi
   version: varchar("version", { length: 50 }),
   fileName: varchar("file_name", { length: 255 }).notNull(),
   filePath: varchar("file_path", { length: 500 }).notNull(),
   fileSize: integer("file_size"), // in bytes
   checksum: varchar("checksum", { length: 64 }),
-  platform: varchar("platform", { length: 50 }).default("twincat"), // twincat, other
+  platform: varchar("platform", { length: 50 }).default("twincat"), // twincat, codesys, other
+  
+  // Enhanced tracking fields
+  backupType: varchar("backup_type", { length: 20 }).notNull().default("manual"), // manual, scheduled, automatic
+  compileStatus: varchar("compile_status", { length: 20 }).default("unknown"), // success, failed, warning, unknown
+  compileErrors: text("compile_errors"), // Compilation error details
+  compileWarnings: text("compile_warnings"), // Compilation warnings
+  
+  // Who and when details
+  createdBy: varchar("created_by", { length: 255 }).notNull(), // Username or system identifier
+  createdByEmail: varchar("created_by_email", { length: 255 }),
+  uploadedBy: varchar("uploaded_by", { length: 255 }), // Person who uploaded (if different)
+  modifiedBy: varchar("modified_by", { length: 255 }), // Last person to modify
+  
+  // Additional metadata
+  comments: text("comments"), // User comments about the backup
+  tags: varchar("tags", { length: 500 }), // Comma-separated tags for categorization
+  isActive: boolean("is_active").default(true), // Whether this backup is currently active/deployed
+  backupSource: varchar("backup_source", { length: 100 }).default("upload"), // upload, auto_backup, scheduled
+  originalPath: varchar("original_path", { length: 500 }), // Original file path before backup
+  
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_backups_site").on(table.siteId),
   index("idx_backups_type").on(table.type),
+  index("idx_backups_created_by").on(table.createdBy),
+  index("idx_backups_active").on(table.isActive),
+  index("idx_backups_compile_status").on(table.compileStatus),
 ]);
 
 

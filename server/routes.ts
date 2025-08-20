@@ -310,11 +310,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Program backups
+  // Program backups - Enhanced with detailed tracking
   app.get("/api/backups", async (req, res) => {
     try {
       const siteId = req.query.siteId as string;
-      const backups = await storage.getProgramBackups(siteId);
+      const type = req.query.type as 'program' | 'hmi' | undefined;
+      
+      let backups;
+      if (type) {
+        backups = await storage.getProgramBackupsByType(type, siteId);
+      } else {
+        backups = await storage.getProgramBackups(siteId);
+      }
       res.json(backups);
     } catch (error) {
       console.error("Error fetching backups:", error);
@@ -328,17 +335,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      // Parse and validate the backup data with enhanced fields
       const backupData = insertProgramBackupSchema.parse({
         ...req.body,
         fileName: req.file.originalname,
         filePath: req.file.path,
         fileSize: req.file.size,
+        uploadedBy: req.body.createdBy || req.body.uploadedBy || 'Unknown',
+        backupSource: 'upload',
+        // Generate a simple checksum from file size and name (in production, use proper hashing)
+        checksum: `${req.file.size}-${req.file.originalname}`,
       });
 
       const backup = await storage.createProgramBackup(backupData);
       res.status(201).json(backup);
     } catch (error) {
       console.error("Error creating backup:", error);
+      res.status(400).json({ message: "Invalid backup data", error: error.message });
+    }
+  });
+
+  app.put("/api/backups/:id", async (req, res) => {
+    try {
+      const backupData = insertProgramBackupSchema.partial().parse(req.body);
+      const backup = await storage.updateProgramBackup(req.params.id, backupData);
+      if (!backup) {
+        return res.status(404).json({ message: "Backup not found" });
+      }
+      res.json(backup);
+    } catch (error) {
+      console.error("Error updating backup:", error);
       res.status(400).json({ message: "Invalid backup data" });
     }
   });
@@ -449,55 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // VFD parameters
-  app.get("/api/vfd-parameters", async (req, res) => {
-    try {
-      const siteId = req.query.siteId as string;
-      const parameters = await storage.getVfdParameters(siteId);
-      res.json(parameters);
-    } catch (error) {
-      console.error("Error fetching VFD parameters:", error);
-      res.status(500).json({ message: "Failed to fetch VFD parameters" });
-    }
-  });
 
-  app.post("/api/vfd-parameters", async (req, res) => {
-    try {
-      const parameterData = insertVfdParameterSchema.parse(req.body);
-      const parameter = await storage.createVfdParameter(parameterData);
-      res.status(201).json(parameter);
-    } catch (error) {
-      console.error("Error creating VFD parameter:", error);
-      res.status(400).json({ message: "Invalid parameter data" });
-    }
-  });
-
-  app.put("/api/vfd-parameters/:id", async (req, res) => {
-    try {
-      const parameterData = insertVfdParameterSchema.partial().parse(req.body);
-      const parameter = await storage.updateVfdParameter(req.params.id, parameterData);
-      if (!parameter) {
-        return res.status(404).json({ message: "Parameter not found" });
-      }
-      res.json(parameter);
-    } catch (error) {
-      console.error("Error updating VFD parameter:", error);
-      res.status(400).json({ message: "Invalid parameter data" });
-    }
-  });
-
-  app.delete("/api/vfd-parameters/:id", async (req, res) => {
-    try {
-      const success = await storage.deleteVfdParameter(req.params.id);
-      if (!success) {
-        return res.status(404).json({ message: "Parameter not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting VFD parameter:", error);
-      res.status(500).json({ message: "Failed to delete VFD parameter" });
-    }
-  });
 
 
 

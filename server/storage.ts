@@ -57,10 +57,12 @@ export interface IStorage {
   addUptimeRecord(record: InsertUptimeHistory): Promise<UptimeHistory>;
   getUptimeStats(siteId: string, hours: number): Promise<{ uptime: number; avgResponseTime: number }>;
 
-  // Program Backups
+  // Program Backups  
   getProgramBackups(siteId?: string): Promise<ProgramBackup[]>;
   createProgramBackup(backup: InsertProgramBackup): Promise<ProgramBackup>;
+  updateProgramBackup(id: string, backup: Partial<InsertProgramBackup>): Promise<ProgramBackup | undefined>;
   deleteProgramBackup(id: string): Promise<boolean>;
+  getProgramBackupsByType(type: 'program' | 'hmi', siteId?: string): Promise<ProgramBackup[]>;
 
   // IPC Credentials
   getIpcManagement(siteId?: string): Promise<IpcManagement[]>;
@@ -245,9 +247,26 @@ export class DatabaseStorage implements IStorage {
     return newBackup;
   }
 
+  async updateProgramBackup(id: string, backup: Partial<InsertProgramBackup>): Promise<ProgramBackup | undefined> {
+    const [updatedBackup] = await db
+      .update(programBackups)
+      .set({ ...backup, updatedAt: new Date() })
+      .where(eq(programBackups.id, id))
+      .returning();
+    return updatedBackup;
+  }
+
   async deleteProgramBackup(id: string): Promise<boolean> {
     const result = await db.delete(programBackups).where(eq(programBackups.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getProgramBackupsByType(type: 'program' | 'hmi', siteId?: string): Promise<ProgramBackup[]> {
+    let query = db.select().from(programBackups).where(eq(programBackups.type, type));
+    if (siteId) {
+      query = query.where(and(eq(programBackups.type, type), eq(programBackups.siteId, siteId)));
+    }
+    return await query.orderBy(desc(programBackups.createdAt));
   }
 
 

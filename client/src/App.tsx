@@ -7,9 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import Sites from "@/pages/sites";
 import SiteEvents from "@/pages/site-events";
 import SiteDatabase from "@/pages/site-database";
-import PlcTagManagement from "@/pages/plc-tag-management";
 import Backups from "@/pages/backups";
-import VFD from "@/pages/vfd";
 import Reports from "@/pages/reports";
 import ProjectDetails from "@/pages/project-details";
 import Settings from "@/pages/settings";
@@ -28,9 +26,7 @@ function Router() {
           <Route path="/sites" component={Sites} />
           <Route path="/site-events" component={SiteEvents} />
           <Route path="/site-database" component={SiteDatabase} />
-          <Route path="/plc-tag-management" component={PlcTagManagement} />
           <Route path="/backups" component={Backups} />
-          <Route path="/vfd" component={VFD} />
           <Route path="/reports" component={Reports} />
           <Route path="/project-details" component={ProjectDetails} />
           <Route path="/settings" component={Settings} />

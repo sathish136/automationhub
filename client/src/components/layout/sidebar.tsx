@@ -23,10 +23,8 @@ const navigation = [
   { name: "Site Events", href: "/site-events", icon: Bell },
   { name: "Site Database", href: "/site-database", icon: Database },
   { name: "SQL Viewer", href: "/sql-viewer", icon: Database },
-  { name: "PLC Tag Management", href: "/plc-tag-management", icon: Settings2 },
-  { name: "Program Backups", href: "/backups", icon: Save },
+  { name: "Program & HMI Backups", href: "/backups", icon: Save },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
-  { name: "VFD Parameters", href: "/vfd", icon: Sliders },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings2 },
 ];
