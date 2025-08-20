@@ -592,11 +592,22 @@ const SQLViewerPage: React.FC = () => {
                                   >
                                     <div className="flex items-center justify-between">
                                       <span className="text-xs">{column === 'date_time' ? 'Date & Time' : column}</span>
-                                      {sortColumn === column && (
-                                        <span className="text-xs ml-1 flex-shrink-0">
-                                          {sortDirection === 'asc' ? '↑' : '↓'}
-                                        </span>
-                                      )}
+                                      <div className="flex flex-col ml-1">
+                                        <ChevronUp 
+                                          className={`h-2.5 w-2.5 ${
+                                            sortColumn === column && sortDirection === 'asc' 
+                                              ? 'text-blue-600 dark:text-blue-400' 
+                                              : 'text-gray-400 hover:text-gray-600'
+                                          }`} 
+                                        />
+                                        <ChevronDown 
+                                          className={`h-2.5 w-2.5 -mt-0.5 ${
+                                            sortColumn === column && sortDirection === 'desc' 
+                                              ? 'text-blue-600 dark:text-blue-400' 
+                                              : 'text-gray-400 hover:text-gray-600'
+                                          }`} 
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
