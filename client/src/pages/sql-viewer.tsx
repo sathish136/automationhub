@@ -490,21 +490,21 @@ const SQLViewerPage: React.FC = () => {
                         <p className="text-sm mt-2">This table appears to be empty</p>
                       </div>
                     ) : (
-                      <div className="border rounded-lg">
-                        <ScrollArea className="h-96 w-full">
+                      <div className="border rounded-lg bg-white dark:bg-gray-900">
+                        <ScrollArea className="h-80 w-full">
                           <Table>
                             <TableHeader>
                               <TableRow>
                                 {columns.map((column) => (
                                   <TableHead 
                                     key={column} 
-                                    className="font-semibold text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                                    className="h-8 px-2 py-1 font-semibold text-foreground cursor-pointer hover:bg-muted/50 transition-colors text-xs"
                                     onClick={() => handleSort(column)}
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="text-sm">{column}</span>
+                                      <span className="text-xs font-medium truncate">{column}</span>
                                       {sortColumn === column && (
-                                        <span className="text-xs ml-2">
+                                        <span className="text-xs ml-1 flex-shrink-0">
                                           {sortDirection === 'asc' ? '↑' : '↓'}
                                         </span>
                                       )}
@@ -515,10 +515,10 @@ const SQLViewerPage: React.FC = () => {
                             </TableHeader>
                             <TableBody>
                               {filteredData.map((row, index) => (
-                                <TableRow key={index} className="hover:bg-muted/30">
+                                <TableRow key={index} className="hover:bg-muted/30 h-8">
                                   {columns.map((column) => (
-                                    <TableCell key={column} className="text-sm font-mono">
-                                      <div className="max-w-xs truncate">
+                                    <TableCell key={column} className="px-2 py-1 text-xs font-mono">
+                                      <div className="max-w-32 truncate" title={String(row[column] || '')}>
                                         {String(row[column] || '')}
                                       </div>
                                     </TableCell>
