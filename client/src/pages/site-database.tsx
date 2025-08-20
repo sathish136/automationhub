@@ -233,10 +233,10 @@ export default function SiteDatabase() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Database className="h-5 w-5" />
-                  Tag Monitor
+                  ADS Tag Checking
                 </CardTitle>
                 <CardDescription>
-                  Monitor and configure tags for real-time data collection
+                  Check and configure ADS tags for real-time data collection
                 </CardDescription>
               </div>
               <Button onClick={handleAddTag} data-testid="button-add-tag">
