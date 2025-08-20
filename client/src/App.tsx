@@ -8,9 +8,7 @@ import Sites from "@/pages/sites";
 import SiteEvents from "@/pages/site-events";
 import SiteDatabase from "@/pages/site-database";
 import Backups from "@/pages/backups";
-import Reports from "@/pages/reports";
 import ProjectDetails from "@/pages/project-details";
-import Settings from "@/pages/settings";
 import IPCDetails from "@/pages/ipc-details";
 import SqlViewerPage from "@/pages/sql-viewer";
 import InstrumentationPage from "@/pages/instrumentation";
@@ -29,9 +27,7 @@ function Router() {
           <Route path="/site-events" component={SiteEvents} />
           <Route path="/site-database" component={SiteDatabase} />
           <Route path="/backups" component={Backups} />
-          <Route path="/reports" component={Reports} />
           <Route path="/project-details" component={ProjectDetails} />
-          <Route path="/settings" component={Settings} />
           <Route path="/ipc-management" component={IPCDetails} />
           <Route path="/sql-viewer" component={SqlViewerPage} />
           <Route path="/instrumentation" component={InstrumentationPage} />

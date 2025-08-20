@@ -6,10 +6,7 @@ import {
   Save,
   Key,
   Sliders,
-  BarChart3,
-  Settings,
   FolderOpen,
-  Settings2,
   Monitor,
   Bell,
   Activity,
@@ -29,8 +26,6 @@ const navigation = [
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
   { name: "PLC I/O Calculations", href: "/plc-calculations", icon: Calculator },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
-  { name: "Settings", href: "/settings", icon: Settings2 },
 ];
 
 export default function Sidebar() {
@@ -40,7 +35,7 @@ export default function Sidebar() {
     <aside className="w-64 bg-gray-900 text-white flex flex-col fixed left-0 top-0 h-screen z-50">
       <div className="p-6 border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          <Settings className="text-2xl text-primary" />
+          <Monitor className="text-2xl text-primary" />
           <h1 className="text-lg font-bold" data-testid="app-title">
             AutomationHub
           </h1>
