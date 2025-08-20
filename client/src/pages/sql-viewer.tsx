@@ -19,7 +19,9 @@ import {
   AlertCircle, 
   Settings,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 interface DatabaseInfo {
@@ -47,6 +49,66 @@ const SQLViewerPage: React.FC = () => {
   const [maxRows, setMaxRows] = useState(100);
   const [columnFilter, setColumnFilter] = useState<string>('');
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  
+  // Demo data for when database is not available
+  const [demoData, setDemoData] = useState<any[]>([]);
+  const [sortedDemoData, setSortedDemoData] = useState<any[]>([]);
+
+  // Generate demo data once
+  useEffect(() => {
+    const generateDemoData = () => {
+      return Array.from({ length: 100 }, (_, index) => {
+        const date = new Date(2023, 2, (index % 31) + 1, 11, 20 + (index % 24) * 4, 5 + (index % 60));
+        return {
+          id: index + 1,
+          date_time: date,
+          rej_recovery: +(55 + Math.sin(index * 0.1) * 10).toFixed(1),
+          rej_feed: +(30 + Math.cos(index * 0.15) * 10).toFixed(1),
+          rej_1st_db: +(0.5 + Math.sin(index * 0.2) * 0.5).toFixed(1),
+          rej_1st_stg_fm: +(42 + Math.cos(index * 0.12) * 5).toFixed(1),
+          rej_1st_stg_in: +(40 + Math.sin(index * 0.18) * 5).toFixed(1),
+          rej_1st_stg_out: +(6 + Math.cos(index * 0.25) * 2).toFixed(1),
+          rej_2nd_stg_fm: +(59 + Math.sin(index * 0.14) * 2).toFixed(1),
+          rej_2nd_stg_in: +(58 + Math.cos(index * 0.16) * 2).toFixed(1),
+          rej_2nd_stg_out: +(5.5 + Math.sin(index * 0.22) * 1).toFixed(1),
+          rej_feed_lt: +(1.5 + Math.cos(index * 0.28) * 0.5).toFixed(1),
+          rej_ph_out: +(32 + Math.sin(index * 0.13) * 3).toFixed(1)
+        };
+      });
+    };
+    const data = generateDemoData();
+    setDemoData(data);
+    setSortedDemoData(data);
+  }, []);
+  
+  // Sort demo data when sort parameters change
+  useEffect(() => {
+    if (demoData.length === 0) return;
+    
+    let sorted = [...demoData];
+    
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal = a[sortColumn];
+        let bVal = b[sortColumn];
+        
+        // Handle date sorting
+        if (sortColumn === 'date_time') {
+          aVal = new Date(aVal).getTime();
+          bVal = new Date(bVal).getTime();
+        } else {
+          // Convert to numbers for numeric sorting
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
+        }
+        
+        const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+    
+    setSortedDemoData(sorted);
+  }, [demoData, sortColumn, sortDirection]);
 
   // Fetch databases on component mount
   useEffect(() => {
@@ -666,9 +728,26 @@ const SQLViewerPage: React.FC = () => {
                             key={column} 
                             className="px-2 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 whitespace-nowrap"
                             style={{ minWidth: column === 'date_time' ? '150px' : '120px', width: 'auto' }}
+                            onClick={() => handleSort(column)}
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-xs">{column === 'date_time' ? 'Date & Time' : column}</span>
+                              <div className="flex flex-col ml-1">
+                                <ChevronUp 
+                                  className={`h-2.5 w-2.5 ${
+                                    sortColumn === column && sortDirection === 'asc' 
+                                      ? 'text-blue-600 dark:text-blue-400' 
+                                      : 'text-gray-400 hover:text-gray-600'
+                                  }`} 
+                                />
+                                <ChevronDown 
+                                  className={`h-2.5 w-2.5 -mt-0.5 ${
+                                    sortColumn === column && sortDirection === 'desc' 
+                                      ? 'text-blue-600 dark:text-blue-400' 
+                                      : 'text-gray-400 hover:text-gray-600'
+                                  }`} 
+                                />
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -677,66 +756,63 @@ const SQLViewerPage: React.FC = () => {
                     
                     {/* Demo Data Rows */}
                     <div>
-                      {Array.from({ length: 25 }, (_, index) => {
-                        const date = new Date(2023, 2, index + 1, 11, 20 + index * 4, 5 + index * 8);
-                        return (
-                          <div 
-                            key={index} 
-                            className={`flex hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
-                              index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
-                            }`}
-                          >
-                            {/* S.No Column */}
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '60px', width: 'auto' }}>
-                              <div className="text-xs">{index + 1}</div>
-                            </div>
-                            {/* Date & Time Column */}
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '150px', width: 'auto' }}>
-                              <div className="text-xs">{date.toLocaleString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit', 
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit'
-                              })}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(55 + Math.random() * 10).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(30 + Math.random() * 10).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(0.5 + Math.random() * 0.5).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(42 + Math.random() * 5).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(40 + Math.random() * 5).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(6 + Math.random() * 2).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(59 + Math.random() * 2).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(58 + Math.random() * 2).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(5.5 + Math.random() * 1).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(1.5 + Math.random() * 0.5).toFixed(1)}</div>
-                            </div>
-                            <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
-                              <div className="text-xs">{(32 + Math.random() * 3).toFixed(1)}</div>
-                            </div>
+                      {sortedDemoData.slice(0, 25).map((row, index) => (
+                        <div 
+                          key={row.id} 
+                          className={`flex hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
+                            index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
+                          }`}
+                        >
+                          {/* S.No Column */}
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '60px', width: 'auto' }}>
+                            <div className="text-xs">{index + 1}</div>
                           </div>
-                        );
-                      })}
+                          {/* Date & Time Column */}
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '150px', width: 'auto' }}>
+                            <div className="text-xs">{row.date_time.toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: '2-digit', 
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_recovery}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_feed}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_1st_db}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_1st_stg_fm}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_1st_stg_in}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_1st_stg_out}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_2nd_stg_fm}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_2nd_stg_in}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_2nd_stg_out}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_feed_lt}</div>
+                          </div>
+                          <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
+                            <div className="text-xs">{row.rej_ph_out}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
