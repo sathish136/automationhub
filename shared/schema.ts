@@ -600,6 +600,130 @@ export const instrumentation = pgTable("instrumentation", {
   index("idx_instrumentation_communication").on(table.communicationType),
 ]);
 
+// PLC I/O Points table for Beckhoff systems
+export const plcIoPoints = pgTable("plc_io_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Point Identification
+  pointName: varchar("point_name", { length: 100 }).notNull(),
+  pointDescription: text("point_description"),
+  pointType: varchar("point_type", { length: 20 }).notNull(), // digital_input, digital_output, analog_input, analog_output
+  
+  // Physical Configuration
+  moduleAddress: varchar("module_address", { length: 50 }), // e.g., "1001", "1002"
+  channelNumber: integer("channel_number"), // Channel on the I/O module
+  physicalAddress: varchar("physical_address", { length: 100 }), // Full Beckhoff address
+  
+  // Signal Properties
+  signalType: varchar("signal_type", { length: 30 }), // 4-20mA, 0-10V, 24VDC, PT100, etc.
+  engineeringUnit: varchar("engineering_unit", { length: 20 }), // °C, bar, L/min, etc.
+  dataType: varchar("data_type", { length: 20 }).default("REAL"), // BOOL, INT, REAL, DINT
+  
+  // Scaling and Conversion
+  rawMin: decimal("raw_min", { precision: 10, scale: 3 }), // Raw signal minimum (e.g., 0)
+  rawMax: decimal("raw_max", { precision: 10, scale: 3 }), // Raw signal maximum (e.g., 32767)
+  engineeredMin: decimal("engineered_min", { precision: 10, scale: 3 }), // Engineering minimum (e.g., 0)
+  engineeredMax: decimal("engineered_max", { precision: 10, scale: 3 }), // Engineering maximum (e.g., 100)
+  
+  // Status and Configuration
+  isEnabled: boolean("is_enabled").default(true),
+  alarmHigh: decimal("alarm_high", { precision: 10, scale: 3 }),
+  alarmLow: decimal("alarm_low", { precision: 10, scale: 3 }),
+  warningHigh: decimal("warning_high", { precision: 10, scale: 3 }),
+  warningLow: decimal("warning_low", { precision: 10, scale: 3 }),
+  
+  // Documentation
+  comments: text("comments"),
+  tags: varchar("tags", { length: 300 }), // Comma-separated tags
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_plc_io_points_site").on(table.siteId),
+  index("idx_plc_io_points_type").on(table.pointType),
+  index("idx_plc_io_points_module").on(table.moduleAddress),
+]);
+
+// PLC I/O Calculations table for complex calculations
+export const plcIoCalculations = pgTable("plc_io_calculations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Calculation Definition
+  calculationName: varchar("calculation_name", { length: 100 }).notNull(),
+  calculationDescription: text("calculation_description"),
+  calculationType: varchar("calculation_type", { length: 30 }).notNull(), // scaling, flow_compensation, temperature_correction, etc.
+  
+  // Input Parameters
+  inputPoints: jsonb("input_points"), // Array of input point IDs and their roles
+  formula: text("formula"), // Mathematical formula or expression
+  constants: jsonb("constants"), // Named constants used in calculation
+  
+  // Output Configuration
+  outputVariable: varchar("output_variable", { length: 100 }), // PLC variable name for result
+  outputUnit: varchar("output_unit", { length: 20 }),
+  outputDataType: varchar("output_data_type", { length: 20 }).default("REAL"),
+  
+  // Execution Settings
+  executionInterval: integer("execution_interval").default(1000), // milliseconds
+  isActive: boolean("is_active").default(true),
+  priority: integer("priority").default(5), // 1-10, higher number = higher priority
+  
+  // Validation and Limits
+  resultMin: decimal("result_min", { precision: 12, scale: 4 }),
+  resultMax: decimal("result_max", { precision: 12, scale: 4 }),
+  validationRules: jsonb("validation_rules"),
+  
+  // Documentation
+  exampleCalculation: text("example_calculation"),
+  notes: text("notes"),
+  version: varchar("version", { length: 10 }).default("1.0"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_plc_calculations_site").on(table.siteId),
+  index("idx_plc_calculations_type").on(table.calculationType),
+  index("idx_plc_calculations_active").on(table.isActive),
+]);
+
+// PLC I/O Mappings for logical-to-physical address mapping
+export const plcIoMappings = pgTable("plc_io_mappings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  pointId: varchar("point_id").references(() => plcIoPoints.id, { onDelete: "cascade" }),
+  
+  // Logical Address Information
+  logicalAddress: varchar("logical_address", { length: 100 }).notNull(), // e.g., "%IW100", "%QX0.1"
+  variableName: varchar("variable_name", { length: 100 }), // PLC variable name
+  symbolName: varchar("symbol_name", { length: 100 }), // Symbolic name in TwinCAT
+  
+  // Hardware Configuration
+  deviceType: varchar("device_type", { length: 50 }), // EK1100, EL2004, EL3004, etc.
+  terminalPosition: integer("terminal_position"), // Position in EtherCAT network
+  
+  // Network Configuration
+  etherCatAddress: varchar("ethercat_address", { length: 20 }), // EtherCAT slave address
+  coupler: varchar("coupler", { length: 50 }), // Coupler device name
+  
+  // Status
+  isConfigured: boolean("is_configured").default(false),
+  isVerified: boolean("is_verified").default(false),
+  lastVerification: timestamp("last_verification"),
+  
+  // Documentation
+  configNotes: text("config_notes"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_plc_mappings_site").on(table.siteId),
+  index("idx_plc_mappings_point").on(table.pointId),
+  index("idx_plc_mappings_logical").on(table.logicalAddress),
+  index("idx_plc_mappings_ethercat").on(table.etherCatAddress),
+]);
+
 // Insert schemas for the new tables
 export const insertMbrRealtimeDataSchema = createInsertSchema(mbrRealtimeData).omit({
   id: true,
