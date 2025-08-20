@@ -123,7 +123,7 @@ const SQLViewerPage: React.FC = () => {
     fetchTables();
   }, [selectedDatabase]);
 
-  // Fetch table data when a table is selected
+  // Fetch table data when a table is selected or sorting changes
   useEffect(() => {
     if (!selectedDatabase || !selectedTable) {
       setTableData([]);
@@ -134,7 +134,15 @@ const SQLViewerPage: React.FC = () => {
     const fetchTableData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/sql-viewer/databases/${selectedDatabase}/tables/${selectedTable}`);
+        
+        let url = `/api/sql-viewer/databases/${selectedDatabase}/tables/${selectedTable}?limit=${maxRows}`;
+        
+        // Add sorting parameters to URL
+        if (sortColumn && sortDirection) {
+          url += `&sortColumn=${encodeURIComponent(sortColumn)}&sortDirection=${sortDirection}`;
+        }
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Failed to fetch table data' }));
@@ -161,9 +169,9 @@ const SQLViewerPage: React.FC = () => {
       }
     };
     fetchTableData();
-  }, [selectedDatabase, selectedTable]);
+  }, [selectedDatabase, selectedTable, sortColumn, sortDirection, maxRows]);
 
-  // Filter and search functionality
+  // Filter and search functionality (without sorting since it's done server-side)
   useEffect(() => {
     let filtered = [...tableData];
 
@@ -186,21 +194,11 @@ const SQLViewerPage: React.FC = () => {
       );
     }
 
-    // Apply sorting
-    if (sortColumn && columns.includes(sortColumn)) {
-      filtered = [...filtered].sort((a, b) => {
-        const aValue = String(a[sortColumn]);
-        const bValue = String(b[sortColumn]);
-        const comparison = aValue.localeCompare(bValue);
-        return sortDirection === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    // Apply row limit last (after all filtering)
-    filtered = filtered.slice(0, maxRows);
+    // Note: Sorting is now handled server-side via database ORDER BY
+    // Row limit is also handled server-side via TOP clause
 
     setFilteredData(filtered);
-  }, [tableData, searchTerm, columnFilter, sortColumn, sortDirection, columns, maxRows]);
+  }, [tableData, searchTerm, columnFilter]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {

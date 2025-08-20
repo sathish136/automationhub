@@ -55,13 +55,31 @@ class SQLViewerService {
     return result.recordset.map((row) => row.TABLE_NAME);
   }
 
-  public async getTableData(database: string, table: string): Promise<any[]> {
+  public async getTableData(database: string, table: string, options?: {
+    limit?: number;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc';
+  }): Promise<any[]> {
     await this.connect();
     // Basic protection against SQL injection, but a more robust solution is recommended for production
     if (!/^[a-zA-Z0-9_]+$/.test(database) || !/^[a-zA-Z0-9_]+$/.test(table)) {
       throw new Error('Invalid database or table name.');
     }
-    const result = await this.pool.request().query(`USE [${database}]; SELECT TOP 100 * FROM [${table}];`); // Limit to 100 rows for performance
+    
+    const limit = options?.limit || 100;
+    let query = `USE [${database}]; SELECT TOP ${limit} * FROM [${table}]`;
+    
+    // Add ORDER BY clause if sorting is specified
+    if (options?.sortColumn && options?.sortDirection) {
+      // Validate column name to prevent SQL injection
+      if (!/^[a-zA-Z0-9_]+$/.test(options.sortColumn)) {
+        throw new Error('Invalid column name.');
+      }
+      query += ` ORDER BY [${options.sortColumn}] ${options.sortDirection.toUpperCase()}`;
+    }
+    
+    query += ';';
+    const result = await this.pool.request().query(query);
     return result.recordset;
   }
 }

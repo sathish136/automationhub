@@ -891,7 +891,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/sql-viewer/databases/:database/tables/:table", async (req, res) => {
     try {
-      const data = await sqlViewerService.getTableData(req.params.database, req.params.table);
+      const options = {
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+        sortColumn: req.query.sortColumn as string,
+        sortDirection: req.query.sortDirection as 'asc' | 'desc'
+      };
+      
+      const data = await sqlViewerService.getTableData(req.params.database, req.params.table, options);
       res.json(data);
     } catch (error) {
       console.error(`Error fetching data for table ${req.params.table}:`, error);
