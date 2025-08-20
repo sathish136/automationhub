@@ -105,6 +105,9 @@ const SQLViewerPage: React.FC = () => {
         const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
         return sortDirection === 'asc' ? comparison : -comparison;
       });
+    } else {
+      // Default sort: show newest dates first when no sort is applied
+      sorted.sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime());
     }
     
     setSortedDemoData(sorted);
@@ -269,9 +272,12 @@ const SQLViewerPage: React.FC = () => {
       console.log(`Toggling direction: ${sortDirection} -> ${newDirection}`);
       setSortDirection(newDirection);
     } else {
-      console.log(`New column sort: ${column} -> asc`);
+      console.log(`New column sort: ${column}`);
       setSortColumn(column);
-      setSortDirection('asc');
+      // For date_time column, start with DESC (newest first), for others start with ASC
+      const defaultDirection = column === 'date_time' ? 'desc' : 'asc';
+      console.log(`Setting default direction for ${column}: ${defaultDirection}`);
+      setSortDirection(defaultDirection);
     }
   };
 
