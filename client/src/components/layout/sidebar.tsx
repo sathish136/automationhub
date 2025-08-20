@@ -15,6 +15,7 @@ import {
   Activity,
   Database,
   Gauge,
+  Calculator,
 } from "lucide-react";
 
 const navigation = [
@@ -27,6 +28,7 @@ const navigation = [
   { name: "Program & HMI Backups", href: "/backups", icon: Save },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
+  { name: "PLC I/O Calculations", href: "/plc-calculations", icon: Calculator },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings2 },
 ];

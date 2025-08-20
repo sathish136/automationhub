@@ -41,6 +41,9 @@ import {
   type InsertRoRealtimeData,
   type Instrumentation,
   type InsertInstrumentation,
+  plcIoCalculations,
+  type PlcIoCalculation,
+  type InsertPlcIoCalculation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -79,6 +82,12 @@ export interface IStorage {
   updateInstrumentation(id: string, device: Partial<InsertInstrumentation>): Promise<Instrumentation | undefined>;
   deleteInstrumentation(id: string): Promise<boolean>;
   getInstrumentationByType(deviceType: string, siteId?: string): Promise<Instrumentation[]>;
+
+  // PLC I/O Calculations
+  getPlcIoCalculations(siteId?: string): Promise<PlcIoCalculation[]>;
+  createPlcIoCalculation(calculation: InsertPlcIoCalculation): Promise<PlcIoCalculation>;
+  updatePlcIoCalculation(id: string, calculation: Partial<InsertPlcIoCalculation>): Promise<PlcIoCalculation | undefined>;
+  deletePlcIoCalculation(id: string): Promise<boolean>;
 
   // VFD Parameters
   getVfdParameters(siteId?: string): Promise<VfdParameter[]>;
@@ -762,6 +771,43 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(roRealtimeData.timestamp))
       .limit(1);
     return latest;
+  }
+
+  // PLC I/O Calculations methods
+  async getPlcIoCalculations(siteId?: string): Promise<PlcIoCalculation[]> {
+    const query = db.select().from(plcIoCalculations);
+    
+    if (siteId && siteId !== "all") {
+      return await query
+        .where(eq(plcIoCalculations.siteId, siteId))
+        .orderBy(desc(plcIoCalculations.createdAt));
+    }
+    
+    return await query.orderBy(desc(plcIoCalculations.createdAt));
+  }
+
+  async createPlcIoCalculation(calculation: InsertPlcIoCalculation): Promise<PlcIoCalculation> {
+    const [newCalculation] = await db
+      .insert(plcIoCalculations)
+      .values(calculation)
+      .returning();
+    return newCalculation;
+  }
+
+  async updatePlcIoCalculation(id: string, calculation: Partial<InsertPlcIoCalculation>): Promise<PlcIoCalculation | undefined> {
+    const [updated] = await db
+      .update(plcIoCalculations)
+      .set({ ...calculation, updatedAt: new Date() })
+      .where(eq(plcIoCalculations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePlcIoCalculation(id: string): Promise<boolean> {
+    const result = await db
+      .delete(plcIoCalculations)
+      .where(eq(plcIoCalculations.id, id));
+    return result.rowCount > 0;
   }
 }
 

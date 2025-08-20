@@ -19,7 +19,8 @@ import {
   insertSiteDatabaseValueSchema,
   insertMbrRealtimeDataSchema,
   insertRoRealtimeDataSchema,
-  insertInstrumentationSchema
+  insertInstrumentationSchema,
+  insertPlcIoCalculationSchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -906,6 +907,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching latest RO realtime data:", error);
       res.status(500).json({ message: "Failed to fetch latest RO realtime data" });
+    }
+  });
+
+  // PLC I/O Calculations endpoints
+  app.get("/api/plc-calculations", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const calculations = await storage.getPlcIoCalculations(siteId);
+      res.json(calculations);
+    } catch (error) {
+      console.error("Error fetching PLC calculations:", error);
+      res.status(500).json({ message: "Failed to fetch PLC calculations" });
+    }
+  });
+
+  app.post("/api/plc-calculations", async (req, res) => {
+    try {
+      const calculationData = insertPlcIoCalculationSchema.parse(req.body);
+      const calculation = await storage.createPlcIoCalculation(calculationData);
+      res.status(201).json(calculation);
+    } catch (error) {
+      console.error("Error creating PLC calculation:", error);
+      res.status(400).json({ message: "Invalid calculation data" });
+    }
+  });
+
+  app.patch("/api/plc-calculations/:id", async (req, res) => {
+    try {
+      const calculation = await storage.updatePlcIoCalculation(req.params.id, req.body);
+      if (!calculation) {
+        return res.status(404).json({ message: "Calculation not found" });
+      }
+      res.json(calculation);
+    } catch (error) {
+      console.error("Error updating PLC calculation:", error);
+      res.status(500).json({ message: "Failed to update calculation" });
+    }
+  });
+
+  app.delete("/api/plc-calculations/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePlcIoCalculation(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Calculation not found" });
+      }
+      res.json({ message: "Calculation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting PLC calculation:", error);
+      res.status(500).json({ message: "Failed to delete calculation" });
     }
   });
 

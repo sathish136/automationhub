@@ -741,6 +741,24 @@ export const insertInstrumentationSchema = createInsertSchema(instrumentation).o
   updatedAt: true,
 });
 
+export const insertPlcIoPointSchema = createInsertSchema(plcIoPoints).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPlcIoCalculationSchema = createInsertSchema(plcIoCalculations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPlcIoMappingSchema = createInsertSchema(plcIoMappings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types for the new tables
 export type MbrRealtimeData = typeof mbrRealtimeData.$inferSelect;
 export type InsertMbrRealtimeData = z.infer<typeof insertMbrRealtimeDataSchema>;
@@ -748,3 +766,11 @@ export type RoRealtimeData = typeof roRealtimeData.$inferSelect;
 export type InsertRoRealtimeData = z.infer<typeof insertRoRealtimeDataSchema>;
 export type Instrumentation = typeof instrumentation.$inferSelect;
 export type InsertInstrumentation = z.infer<typeof insertInstrumentationSchema>;
+
+// PLC I/O Types
+export type PlcIoPoint = typeof plcIoPoints.$inferSelect;
+export type InsertPlcIoPoint = z.infer<typeof insertPlcIoPointSchema>;
+export type PlcIoCalculation = typeof plcIoCalculations.$inferSelect;
+export type InsertPlcIoCalculation = z.infer<typeof insertPlcIoCalculationSchema>;
+export type PlcIoMapping = typeof plcIoMappings.$inferSelect;
+export type InsertPlcIoMapping = z.infer<typeof insertPlcIoMappingSchema>;
