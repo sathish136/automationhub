@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 
 interface HeaderProps {
   title: string;
@@ -47,17 +48,20 @@ export default function Header({ title, subtitle }: HeaderProps) {
             size="icon"
             className="relative"
             data-testid="notifications-button"
+            asChild
           >
-            <Bell className="h-5 w-5" />
-            {unreadCount && unreadCount.count > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                data-testid="notification-count"
-              >
-                {unreadCount.count}
-              </Badge>
-            )}
+            <Link href="/site-events">
+              <Bell className="h-5 w-5" />
+              {unreadCount && unreadCount.count > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  data-testid="notification-count"
+                >
+                  {unreadCount.count}
+                </Badge>
+              )}
+            </Link>
           </Button>
           
           {/* Settings */}
