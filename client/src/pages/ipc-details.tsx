@@ -88,7 +88,7 @@ function DatabaseSelector({ value, onChange, onDatabaseChange, className, placeh
             <SelectItem key={db} value={db}>{db}</SelectItem>
           ))
         ) : (
-          <SelectItem value="" disabled>No databases available</SelectItem>
+          <div className="px-2 py-1.5 text-sm text-gray-500">No databases available</div>
         )}
       </SelectContent>
     </Select>
@@ -147,7 +147,7 @@ function TableSelector({ databaseName, value, onChange, className, placeholder, 
             <SelectItem key={table} value={table}>{table}</SelectItem>
           ))
         ) : (
-          <SelectItem value="" disabled>No tables available</SelectItem>
+          <div className="px-2 py-1.5 text-sm text-gray-500">No tables available</div>
         )}
       </SelectContent>
     </Select>
