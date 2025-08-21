@@ -351,13 +351,12 @@ const SQLViewerPage: React.FC = () => {
   const getChartData = () => {
     let dataToChart = filteredData;
     
-    // Apply date range filter if dates are selected
-    if (startDate && endDate) {
-      const startDateTime = new Date(startDate);
-      const endDateTime = new Date(endDate);
+    // Apply date filter if date is selected
+    if (startDate) {
+      const selectedDate = new Date(startDate);
       dataToChart = dataToChart.filter(row => {
         const rowDate = new Date(row.date_time);
-        return rowDate >= startDateTime && rowDate <= endDateTime;
+        return rowDate.toDateString() === selectedDate.toDateString();
       });
     }
     
@@ -415,7 +414,7 @@ const SQLViewerPage: React.FC = () => {
       // Draw subtitle with date range
       ctx.font = '16px Arial';
       ctx.fillStyle = '#6b7280';
-      const dateRange = startDate && endDate ? `${startDate} to ${endDate}` : 'All Data';
+      const dateRange = startDate ? `Date: ${startDate}` : 'All Data';
       ctx.fillText(dateRange, canvas.width / 2, 65);
 
       // Simple chart drawing (basic implementation)
@@ -812,29 +811,18 @@ const SQLViewerPage: React.FC = () => {
                             </div>
                             
                             <div className="col-span-6">
-                              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Range Filter</Label>
+                              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Filter</Label>
                               <div className="flex gap-2 mt-2">
                                 <div className="flex-1">
-                                  <Label className="text-xs text-muted-foreground">From</Label>
                                   <Input
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="mt-1 h-8 text-xs"
-                                    placeholder="dd-mm-yyyy"
+                                    className="h-8 text-xs"
+                                    placeholder="Select date"
                                   />
                                 </div>
-                                <div className="flex-1">
-                                  <Label className="text-xs text-muted-foreground">To</Label>
-                                  <Input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="mt-1 h-8 text-xs"
-                                    placeholder="dd-mm-yyyy"
-                                  />
-                                </div>
-                                <div className="flex items-end">
+                                <div className="flex items-center">
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -857,26 +845,26 @@ const SQLViewerPage: React.FC = () => {
                                 <Select onValueChange={(value) => exportChart(value as 'pdf' | 'jpeg' | 'png')}>
                                   <SelectTrigger className="h-8 text-xs">
                                     <div className="flex items-center">
-                                      <Download className="h-3 w-3 mr-2" />
-                                      <SelectValue placeholder="Export Chart" />
+                                      <Download className="h-2 w-2 mr-1" />
+                                      <SelectValue placeholder="Export" />
                                     </div>
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="pdf" className="text-xs">
                                       <div className="flex items-center">
-                                        <Download className="h-3 w-3 mr-2" />
+                                        <Download className="h-2 w-2 mr-1" />
                                         PDF
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="jpeg" className="text-xs">
                                       <div className="flex items-center">
-                                        <Download className="h-3 w-3 mr-2" />
+                                        <Download className="h-2 w-2 mr-1" />
                                         JPEG
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="png" className="text-xs">
                                       <div className="flex items-center">
-                                        <Download className="h-3 w-3 mr-2" />
+                                        <Download className="h-2 w-2 mr-1" />
                                         PNG
                                       </div>
                                     </SelectItem>
@@ -1082,12 +1070,12 @@ const SQLViewerPage: React.FC = () => {
                                     </div>
                                   </div>
                                   
-                                  {/* Date Range Info */}
-                                  {startDate && endDate && (
+                                  {/* Date Filter Info */}
+                                  {startDate && (
                                     <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                       <Calendar className="h-3 w-3 text-blue-600" />
                                       <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
-                                        Filtered: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+                                        Filtered: {new Date(startDate).toLocaleDateString()}
                                       </span>
                                     </div>
                                   )}
