@@ -32,7 +32,7 @@ class ADSMonitoringService {
     return new Promise((resolve, reject) => {
       // Path to the Python script, using the correct __dirname for ES modules
       const scriptPath = path.join(__dirname, '..', '..', 'ads.py');
-      const pythonProcess = spawn('python', [scriptPath, tag.adsPath]);
+      const pythonProcess = spawn('.pythonlibs/bin/python', [scriptPath, tag.adsPath]);
 
       let dataString = '';
       let errorString = '';

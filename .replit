@@ -1,10 +1,10 @@
-modules = ["nodejs-20", "web", "python-3.12", "postgresql-16"]
+modules = ["nodejs-20", "web", "python-3.11"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["iputils", "inetutils"]
+packages = ["adslib", "inetutils", "iputils", "unixODBC"]
 
 [deployment]
 deploymentTarget = "autoscale"
