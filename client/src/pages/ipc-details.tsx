@@ -834,6 +834,46 @@ export default function IPCDetails() {
                     </div>
                   </div>
 
+                  {/* Site Events Database Configuration Section */}
+                  <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
+                      <Database size={16} className="text-green-600" />
+                      Site Events Database Configuration
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Events Database Name</Label>
+                        <Input
+                          value={newIPCData.eventsDatabaseName || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("eventsDatabaseName", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                          placeholder="e.g., bhilwara_db"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">External SQL database name for site-specific events</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-gray-700">Events Table Name</Label>
+                        <Input
+                          value={newIPCData.eventsTableName || ""}
+                          onChange={(e) =>
+                            handleNewIPCChange("eventsTableName", e.target.value)
+                          }
+                          className="text-sm h-9 mt-1 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                          placeholder="e.g., site_alerts"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Table name containing site events and alerts</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                      <p className="text-xs text-blue-700">
+                        <strong>Info:</strong> Configure external database connection to display custom site events in the Site Events page. 
+                        These settings allow viewing site-specific alerts from dedicated database tables.
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Comments Section */}
                   <div className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
                     <h4 className="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
@@ -1104,7 +1144,7 @@ export default function IPCDetails() {
         </div>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="details" className="flex items-center gap-2">
               <Monitor size={16} />
               Details
@@ -1124,6 +1164,10 @@ export default function IPCDetails() {
             <TabsTrigger value="passwords" className="flex items-center gap-2">
               <Key size={16} />
               Passwords
+            </TabsTrigger>
+            <TabsTrigger value="site-events" className="flex items-center gap-2">
+              <Database size={16} />
+              Site Events
             </TabsTrigger>
           </TabsList>
 
@@ -2017,6 +2061,65 @@ export default function IPCDetails() {
                         {showPasswords[`anydesk_${selectedIPC.id}`] ? <EyeOff size={14} /> : <Eye size={14} />}
                       </Button>
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Site Events Database Configuration Tab */}
+          <TabsContent value="site-events" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Database size={18} />
+                  Site Events Database Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Events Database Name</Label>
+                    {isEditing ? (
+                      <Input 
+                        value={currentData.eventsDatabaseName || ''}
+                        onChange={(e) => handleFieldChange('eventsDatabaseName', e.target.value)}
+                        className="text-sm h-8 mt-1"
+                        placeholder="e.g., bhilwara_db"
+                        data-testid="edit-events-database-name"
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-900 mt-1">{currentData.eventsDatabaseName || 'Not configured'}</div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">External SQL database name for site-specific events</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Events Table Name</Label>
+                    {isEditing ? (
+                      <Input 
+                        value={currentData.eventsTableName || ''}
+                        onChange={(e) => handleFieldChange('eventsTableName', e.target.value)}
+                        className="text-sm h-8 mt-1"
+                        placeholder="e.g., site_alerts"
+                        data-testid="edit-events-table-name"
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-900 mt-1">{currentData.eventsTableName || 'Not configured'}</div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">Table name containing site events and alerts</p>
+                  </div>
+                </div>
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">Site Events Configuration</h4>
+                  <p className="text-sm text-blue-800 mb-3">
+                    Configure external database connection to display custom site events in the Site Events page. 
+                    These settings allow viewing site-specific alerts from dedicated database tables.
+                  </p>
+                  <div className="text-xs text-blue-700">
+                    <strong>Example Usage:</strong><br />
+                    • Database Name: bhilwara_db<br />
+                    • Table Name: site_alerts<br />
+                    • This will query site-specific events from the configured external database
                   </div>
                 </div>
               </CardContent>
