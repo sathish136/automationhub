@@ -256,12 +256,12 @@ export default function SiteEventsEnhanced() {
 
   // Custom events summary
   const getCustomEventsSummary = () => {
-    if (!customEvents) return { critical: 0, warning: 0, active: 0 };
+    if (!customEvents) return { critical: 0, warning: 0, total: 0 };
     
     const critical = customEvents.filter(event => event.severity?.toLowerCase() === "critical").length;
     const warning = customEvents.filter(event => event.severity?.toLowerCase() === "warning").length;
-    const active = customEvents.filter(event => event.status?.toLowerCase() === "active").length;
-    return { critical, warning, active };
+    const total = customEvents.length;
+    return { critical, warning, total };
   };
 
   const customEventsSummary = getCustomEventsSummary();
@@ -362,7 +362,6 @@ export default function SiteEventsEnhanced() {
                         <SelectContent>
                           <SelectItem value="all">All</SelectItem>
                           <SelectItem value="unread">Unread</SelectItem>
-                          <SelectItem value="unresolved">Active</SelectItem>
                           <SelectItem value="resolved">Resolved</SelectItem>
                         </SelectContent>
                       </Select>
@@ -526,7 +525,7 @@ export default function SiteEventsEnhanced() {
 
                 {/* Custom Events Summary */}
                 {selectedSiteConfig !== "all" && (
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-xl font-bold text-red-600 dark:text-red-400">{customEventsSummary.critical}</div>
                       <div className="text-xs text-gray-500">Critical</div>
@@ -536,11 +535,7 @@ export default function SiteEventsEnhanced() {
                       <div className="text-xs text-gray-500">Warning</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xl font-bold text-green-600 dark:text-green-400">{customEventsSummary.active}</div>
-                      <div className="text-xs text-gray-500">Active</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{customEvents?.length || 0}</div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{customEventsSummary.total}</div>
                       <div className="text-xs text-gray-500">Total</div>
                     </div>
                   </div>
@@ -574,22 +569,29 @@ export default function SiteEventsEnhanced() {
                       ))}
                     </div>
                   ) : customEvents && customEvents.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {customEvents.map((event, index) => (
                         <div key={event.id || `${event.date_time}-${index}`} 
-                             className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                             className="bg-white border border-gray-100 rounded p-2 hover:bg-gray-50 transition-colors">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-1 h-8 bg-blue-500 rounded-full"></div>
-                              <Badge variant="outline" className="text-xs px-2 py-0.5 text-blue-600 border-blue-200">
-                                <AlertCircle className="h-3 w-3 mr-1" />
+                            <div className="flex items-center gap-2 flex-1">
+                              <div className="w-1 h-6 bg-blue-500 rounded-full flex-shrink-0"></div>
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
                                 Info
                               </Badge>
-                              <span className="text-sm text-gray-800 font-medium">{event.description || event.message}</span>
+                              <span className="text-xs text-gray-700 flex-1">{event.description || event.message}</span>
                             </div>
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                              <Clock className="h-3 w-3" />
-                              {formatDate(event.date_time)}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="flex items-center gap-1 text-xs text-gray-400">
+                                <Clock className="h-3 w-3" />
+                                {formatDate(event.date_time)}
+                              </div>
+                              <button 
+                                className="text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100 transition-colors"
+                                onClick={() => {/* TODO: Add ACK functionality */}}
+                              >
+                                ACK
+                              </button>
                             </div>
                           </div>
                         </div>
