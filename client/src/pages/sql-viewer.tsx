@@ -835,41 +835,57 @@ const SQLViewerPage: React.FC = () => {
                             </div>
                             
                             <div className="col-span-6">
-                              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Filter</Label>
-                              <div className="flex gap-2 mt-2">
-                                <div className="flex-1">
-                                  <Label className="text-xs text-muted-foreground">From</Label>
-                                  <Input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="h-8 text-xs"
-                                    placeholder="dd-mm-yyyy"
-                                  />
+                              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Range</Label>
+                              <div className="mt-2">
+                                {/* Date Range Display */}
+                                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-3 mb-2">
+                                  <div className="text-xs font-medium opacity-90 mb-1">DATE RANGE</div>
+                                  <div className="text-sm font-bold">
+                                    {startDate && endDate 
+                                      ? `${new Date(startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} — ${new Date(endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                      : startDate 
+                                        ? `From ${new Date(startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                        : endDate 
+                                          ? `Until ${new Date(endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                          : 'Select Date Range'
+                                    }
+                                  </div>
                                 </div>
-                                <div className="flex-1">
-                                  <Label className="text-xs text-muted-foreground">To</Label>
-                                  <Input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="h-8 text-xs"
-                                    placeholder="dd-mm-yyyy"
-                                  />
-                                </div>
-                                <div className="flex items-end">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setStartDate('');
-                                      setEndDate('');
-                                    }}
-                                    className="h-8 w-8 p-0 text-xs"
-                                    title="Clear date filter"
-                                  >
-                                    ✕
-                                  </Button>
+                                
+                                {/* Date Inputs */}
+                                <div className="flex gap-2">
+                                  <div className="flex-1">
+                                    <Label className="text-xs text-muted-foreground">From</Label>
+                                    <Input
+                                      type="date"
+                                      value={startDate}
+                                      onChange={(e) => setStartDate(e.target.value)}
+                                      className="h-8 text-xs"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <Label className="text-xs text-muted-foreground">To</Label>
+                                    <Input
+                                      type="date"
+                                      value={endDate}
+                                      onChange={(e) => setEndDate(e.target.value)}
+                                      className="h-8 text-xs"
+                                    />
+                                  </div>
+                                  <div className="flex items-end">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setStartDate('');
+                                        setEndDate('');
+                                      }}
+                                      className="h-8 w-8 p-0 text-xs"
+                                      title="Clear date filter"
+                                    >
+                                      ✕
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
