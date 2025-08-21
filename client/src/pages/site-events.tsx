@@ -252,7 +252,10 @@ export default function SiteEvents() {
         ) : (
           <Card>
             <CardContent className="p-6 text-center text-gray-500">
-              <p>No events found for the selected site database.</p>
+              <div className="space-y-2">
+                <p>No events found for the selected site database.</p>
+                <p className="text-sm">Configure the external database connection to view live data from your industrial systems.</p>
+              </div>
             </CardContent>
           </Card>
         )}

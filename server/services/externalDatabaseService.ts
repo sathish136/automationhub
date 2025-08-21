@@ -75,57 +75,12 @@ class ExternalDatabaseService {
       return result.recordset;
     } catch (error) {
       console.error(`Error querying custom site events from ${databaseName}.${tableName}:`, error);
-      return this.generateDemoSiteEvents(databaseName, tableName, limit);
+      // Return empty array instead of demo data when database connection fails
+      return [];
     }
   }
 
-  // Generate demo site events when external database is not available
-  private generateDemoSiteEvents(databaseName: string, tableName: string, limit: number): any[] {
-    const demoEvents = [];
-    const severities = ['Critical', 'Warning', 'Info'];
-    const types = ['Equipment Fault', 'Process Alarm', 'System Alert', 'Maintenance Due'];
-    
-    for (let i = 0; i < Math.min(limit, 20); i++) {
-      const timestamp = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000);
-      const severity = severities[Math.floor(Math.random() * severities.length)];
-      const type = types[Math.floor(Math.random() * types.length)];
-      
-      demoEvents.push({
-        id: `demo_${i + 1}`,
-        date_time: timestamp.toISOString().slice(0, 19).replace('T', ' '),
-        severity: severity,
-        type: type,
-        message: `${type} detected in ${databaseName} system - ${this.generateAlertMessage(type)}`,
-        source: tableName,
-        status: Math.random() > 0.7 ? 'Resolved' : 'Active',
-        site: databaseName.charAt(0).toUpperCase() + databaseName.slice(1),
-        equipment: this.generateEquipmentName(),
-        tag_value: Math.floor(Math.random() * 100),
-        setpoint: Math.floor(Math.random() * 100),
-        note: '(Demo data - Configure external database connection for live data)'
-      });
-    }
-    
-    return demoEvents.sort((a, b) => b.date_time.localeCompare(a.date_time));
-  }
 
-  private generateAlertMessage(type: string): string {
-    const messages = {
-      'Equipment Fault': ['Motor overload detected', 'Pump failure', 'Valve malfunction', 'Sensor disconnected'],
-      'Process Alarm': ['High temperature', 'Low pressure', 'Flow rate exceeded', 'pH out of range'],
-      'System Alert': ['Communication lost', 'Database error', 'Memory usage high', 'Backup failed'],
-      'Maintenance Due': ['Filter replacement needed', 'Calibration required', 'Service interval reached', 'Inspection overdue']
-    };
-    
-    const typeMessages = messages[type as keyof typeof messages] || ['System event occurred'];
-    return typeMessages[Math.floor(Math.random() * typeMessages.length)];
-  }
-
-  private generateEquipmentName(): string {
-    const prefixes = ['PMP', 'VLV', 'TNK', 'HX', 'FLT', 'MOT'];
-    const numbers = ['001', '002', '003', '101', '102', '201'];
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]}-${numbers[Math.floor(Math.random() * numbers.length)]}`;
-  }
 
   // Get available tables in external database
   async getDatabaseTables(databaseName: string): Promise<string[]> {
@@ -145,7 +100,8 @@ class ExternalDatabaseService {
       return result.recordset.map((row: any) => row.TABLE_NAME);
     } catch (error) {
       console.error(`Error getting tables from ${databaseName}:`, error);
-      return [`${databaseName}_alerts`, `${databaseName}_events`]; // Demo table names
+      // Return empty array instead of demo table names when database connection fails
+      return [];
     }
   }
 
