@@ -24,53 +24,50 @@ export function CompactDateRange({
   };
 
   return (
-    <div className={`w-full max-w-md ${className}`}>
-      {/* Purple Gradient Header */}
-      <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 text-white px-4 py-3 rounded-t-xl">
-        <div className="text-xs font-medium opacity-90">DATE RANGE</div>
-        <div className="text-sm font-semibold">Select Date Range</div>
-      </div>
+    <div className={`w-full max-w-sm ${className}`}>
+      {/* Compact Purple Gradient Header */}
+      <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 rounded-t-lg h-2"></div>
       
-      {/* Date Inputs */}
-      <div className="bg-white p-4 rounded-b-xl border border-t-0 border-gray-200">
-        <div className="flex items-end gap-3">
+      {/* Compact Date Inputs */}
+      <div className="bg-white p-2 rounded-b-lg border border-t-0 border-gray-200">
+        <div className="flex items-center gap-2">
           <div className="flex-1">
-            <label className="text-sm text-gray-700 block mb-2">From</label>
+            <label className="text-xs text-gray-600 block mb-1">From</label>
             <div className="relative">
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => onFromDateChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10"
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none pr-6"
                 placeholder="dd-mm-yyyy"
                 data-testid="date-range-from"
               />
-              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Calendar className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
             </div>
           </div>
           
           <div className="flex-1">
-            <label className="text-sm text-gray-700 block mb-2">To</label>
+            <label className="text-xs text-gray-600 block mb-1">To</label>
             <div className="relative">
               <input
                 type="date"
                 value={toDate}
                 onChange={(e) => onToDateChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm pr-10"
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none pr-6"
                 placeholder="dd-mm-yyyy"
                 data-testid="date-range-to"
               />
-              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Calendar className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
             </div>
           </div>
           
           {(fromDate || toDate) && (
             <button 
               onClick={handleClear}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors mb-1"
+              className="p-1 text-gray-400 hover:text-gray-600 transition-colors mt-4"
               data-testid="date-range-clear"
             >
-              <X className="w-5 h-5" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
