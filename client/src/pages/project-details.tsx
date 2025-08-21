@@ -303,14 +303,10 @@ export default function ProjectDetails() {
         />
 
         <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
               All Projects ({projects.length})
             </h3>
-            <Button onClick={handleNewProject} data-testid="button-new-project">
-              <Plus size={16} className="mr-2" />
-              New Project
-            </Button>
           </div>
 
           {/* New Project Form */}
