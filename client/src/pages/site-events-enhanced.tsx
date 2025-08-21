@@ -571,19 +571,17 @@ export default function SiteEventsEnhanced() {
                         onFromDateChange={(date) => {
                           setFromDate(date);
                           if (date && toDate) setDateRange("custom");
+                          else if (!date && !toDate) setDateRange("all");
                         }}
                         onToDateChange={(date) => {
                           setToDate(date);
                           if (fromDate && date) setDateRange("custom");
+                          else if (!fromDate && !date) setDateRange("all");
                         }}
-                        onRangeApply={() => {
-                          if (fromDate || toDate) {
-                            setDateRange("custom");
-                          } else {
-                            setDateRange("all");
-                          }
+                        onClear={() => {
+                          setDateRange("all");
                         }}
-                        className="w-64"
+                        className="w-80"
                       />
 
                       <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { const csvData = customEvents?.map(event => ({ 'Date & Time': new Date(event.date_time).toLocaleString('en-GB'), 'Description': event.description || event.message, 'Site': event.siteName || event.deviceName || 'Site', 'Type': event.type || 'Alert', 'Severity': event.severity || 'Unknown' })) || []; const csvContent = [ Object.keys(csvData[0] || {}).join(','), ...csvData.map(row => Object.values(row).join(',')) ].join('\n'); const blob = new Blob([csvContent], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `site-events-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url); }}>
