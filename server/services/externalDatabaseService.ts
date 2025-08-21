@@ -25,13 +25,12 @@ class ExternalDatabaseService {
       }
     }
 
-    // For demonstration purposes, using environment variables or default config
-    // In production, this should be configurable per site/database
+    // Use the same configuration as SQL Viewer for external database connections
     const config: DatabaseConfig = {
-      server: process.env.EXTERNAL_DB_SERVER || 'localhost',
+      server: process.env.SQL_SERVER_HOST || '10.15.5.51',
       database: databaseName,
-      user: process.env.EXTERNAL_DB_USER || 'sa',
-      password: process.env.EXTERNAL_DB_PASSWORD || 'password',
+      user: process.env.SQL_SERVER_USER || 'sa',
+      password: process.env.SQL_SERVER_PASSWORD || 'admin',
       options: {
         encrypt: false,
         trustServerCertificate: true,
