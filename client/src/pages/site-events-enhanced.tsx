@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,8 +67,27 @@ export default function SiteEventsEnhanced() {
   const [selectedSiteConfig, setSelectedSiteConfig] = useState<string>("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [dateRange, setDateRange] = useState<string>("all");
+  const [showCalendar, setShowCalendar] = useState(false);
   const [acknowledgedEvents, setAcknowledgedEvents] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Close calendar when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setShowCalendar(false);
+      }
+    }
+
+    if (showCalendar) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showCalendar]);
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
     queryKey: ["/api/alerts"],
@@ -571,31 +590,166 @@ export default function SiteEventsEnhanced() {
                             />
                           </div>
                           
-                          <div className={`border border-blue-200 rounded-lg p-2 flex items-center gap-2 shadow-sm ${(fromDate || toDate) ? 'bg-blue-100' : 'bg-blue-50'}`}>
-                            <span className="text-xs font-medium text-blue-700">📅 From:</span>
-                            <Input
-                              type="date"
-                              className="h-7 w-32 text-xs border border-blue-300 bg-white rounded"
-                              value={fromDate}
-                              onChange={(e) => {
-                                console.log('From date changed:', e.target.value);
-                                setFromDate(e.target.value);
-                              }}
-                            />
-                            <span className="text-xs font-medium text-blue-700">To:</span>
-                            <Input
-                              type="date"
-                              className="h-7 w-32 text-xs border border-blue-300 bg-white rounded"
-                              value={toDate}
-                              onChange={(e) => {
-                                console.log('To date changed:', e.target.value);
-                                setToDate(e.target.value);
-                              }}
-                            />
-                            {(fromDate || toDate) && (
-                              <Badge className="bg-blue-600 text-white text-xs">
-                                Active Filter
-                              </Badge>
+                          <div className="relative" ref={calendarRef}>
+                            <button
+                              className={`flex items-center gap-2 px-3 py-2 text-xs border rounded-lg transition-colors ${
+                                dateRange === "all" 
+                                  ? "bg-gray-50 border-gray-200 text-gray-600" 
+                                  : "bg-blue-50 border-blue-200 text-blue-700"
+                              }`}
+                              onClick={() => setShowCalendar(!showCalendar)}
+                            >
+                              📅
+                              <span className="font-medium">
+                                {dateRange === "all" ? "All dates" : 
+                                 dateRange === "today" ? "Today" :
+                                 dateRange === "yesterday" ? "Yesterday" :
+                                 dateRange === "last7" ? "Last 7 days" :
+                                 dateRange === "last30" ? "Last 30 days" :
+                                 dateRange === "custom" && fromDate && toDate ? 
+                                   `${fromDate.split('-').reverse().join('/')} - ${toDate.split('-').reverse().join('/')}` :
+                                 "Select dates"
+                                }
+                              </span>
+                              <svg className={`w-4 h-4 transition-transform ${showCalendar ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            
+                            {showCalendar && (
+                              <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80">
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-1 gap-2">
+                                    <button
+                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "all" ? "bg-blue-100 text-blue-700" : ""}`}
+                                      onClick={() => {
+                                        setDateRange("all");
+                                        setFromDate("");
+                                        setToDate("");
+                                        setShowCalendar(false);
+                                      }}
+                                    >
+                                      All dates
+                                    </button>
+                                    <button
+                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "today" ? "bg-blue-100 text-blue-700" : ""}`}
+                                      onClick={() => {
+                                        const today = new Date().toISOString().split('T')[0];
+                                        setDateRange("today");
+                                        setFromDate(today);
+                                        setToDate(today);
+                                        setShowCalendar(false);
+                                      }}
+                                    >
+                                      Today
+                                    </button>
+                                    <button
+                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "yesterday" ? "bg-blue-100 text-blue-700" : ""}`}
+                                      onClick={() => {
+                                        const yesterday = new Date();
+                                        yesterday.setDate(yesterday.getDate() - 1);
+                                        const yesterdayStr = yesterday.toISOString().split('T')[0];
+                                        setDateRange("yesterday");
+                                        setFromDate(yesterdayStr);
+                                        setToDate(yesterdayStr);
+                                        setShowCalendar(false);
+                                      }}
+                                    >
+                                      Yesterday
+                                    </button>
+                                    <button
+                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "last7" ? "bg-blue-100 text-blue-700" : ""}`}
+                                      onClick={() => {
+                                        const today = new Date();
+                                        const weekAgo = new Date();
+                                        weekAgo.setDate(weekAgo.getDate() - 7);
+                                        setDateRange("last7");
+                                        setFromDate(weekAgo.toISOString().split('T')[0]);
+                                        setToDate(today.toISOString().split('T')[0]);
+                                        setShowCalendar(false);
+                                      }}
+                                    >
+                                      Last 7 days
+                                    </button>
+                                    <button
+                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "last30" ? "bg-blue-100 text-blue-700" : ""}`}
+                                      onClick={() => {
+                                        const today = new Date();
+                                        const monthAgo = new Date();
+                                        monthAgo.setDate(monthAgo.getDate() - 30);
+                                        setDateRange("last30");
+                                        setFromDate(monthAgo.toISOString().split('T')[0]);
+                                        setToDate(today.toISOString().split('T')[0]);
+                                        setShowCalendar(false);
+                                      }}
+                                    >
+                                      Last 30 days
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="border-t pt-3">
+                                    <div className="text-xs font-medium text-gray-700 mb-2">Custom Range</div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="text-xs text-gray-500">From</label>
+                                        <Input
+                                          type="date"
+                                          className="h-8 text-xs"
+                                          value={fromDate}
+                                          onChange={(e) => {
+                                            setFromDate(e.target.value);
+                                            if (e.target.value && toDate) {
+                                              setDateRange("custom");
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-500">To</label>
+                                        <Input
+                                          type="date"
+                                          className="h-8 text-xs"
+                                          value={toDate}
+                                          onChange={(e) => {
+                                            setToDate(e.target.value);
+                                            if (fromDate && e.target.value) {
+                                              setDateRange("custom");
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2 mt-3">
+                                      <Button
+                                        size="sm"
+                                        className="flex-1 h-8 text-xs"
+                                        onClick={() => {
+                                          if (fromDate && toDate) {
+                                            setDateRange("custom");
+                                            setShowCalendar(false);
+                                          }
+                                        }}
+                                        disabled={!fromDate || !toDate}
+                                      >
+                                        Apply
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 text-xs"
+                                        onClick={() => {
+                                          setDateRange("all");
+                                          setFromDate("");
+                                          setToDate("");
+                                          setShowCalendar(false);
+                                        }}
+                                      >
+                                        Clear
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             )}
                           </div>
 
