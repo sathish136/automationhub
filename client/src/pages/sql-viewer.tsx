@@ -783,44 +783,45 @@ const SQLViewerPage: React.FC = () => {
 
                     {/* View-specific Controls */}
                     {viewMode === 'chart' && tableData.length > 0 && (
-                      <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-xl border shadow-sm">
-                        <div className="space-y-6">
+                      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border shadow-sm">
+                        <div className="space-y-4">
                           {/* Chart Configuration Row */}
-                          <div className="grid grid-cols-12 gap-6 items-start">
-                            <div className="col-span-3">
-                              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Chart Type</Label>
-                              <div className="flex mt-3 gap-2">
+                          <div className="grid grid-cols-12 gap-4 items-start">
+                            <div className="col-span-2">
+                              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Chart Type</Label>
+                              <div className="flex mt-2 gap-1">
                                 <Button
                                   variant={chartType === 'line' ? 'default' : 'outline'}
                                   size="sm"
                                   onClick={() => setChartType('line')}
-                                  className="flex-1"
+                                  className="flex-1 h-7 text-xs"
                                 >
-                                  <LineChart className="h-4 w-4 mr-2" />
+                                  <LineChart className="h-3 w-3 mr-1" />
                                   Line
                                 </Button>
                                 <Button
                                   variant={chartType === 'bar' ? 'default' : 'outline'}
                                   size="sm"
                                   onClick={() => setChartType('bar')}
-                                  className="flex-1"
+                                  className="flex-1 h-7 text-xs"
                                 >
-                                  <BarChart3 className="h-4 w-4 mr-2" />
+                                  <BarChart3 className="h-3 w-3 mr-1" />
                                   Bar
                                 </Button>
                               </div>
                             </div>
                             
-                            <div className="col-span-5">
-                              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Date Range Filter</Label>
-                              <div className="flex gap-3 mt-3">
+                            <div className="col-span-6">
+                              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Range Filter</Label>
+                              <div className="flex gap-2 mt-2">
                                 <div className="flex-1">
                                   <Label className="text-xs text-muted-foreground">From</Label>
                                   <Input
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="mt-1"
+                                    className="mt-1 h-8 text-xs"
+                                    placeholder="dd-mm-yyyy"
                                   />
                                 </div>
                                 <div className="flex-1">
@@ -829,7 +830,8 @@ const SQLViewerPage: React.FC = () => {
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="mt-1"
+                                    className="mt-1 h-8 text-xs"
+                                    placeholder="dd-mm-yyyy"
                                   />
                                 </div>
                                 <div className="flex items-end">
@@ -840,7 +842,7 @@ const SQLViewerPage: React.FC = () => {
                                       setStartDate('');
                                       setEndDate('');
                                     }}
-                                    className="px-3"
+                                    className="h-8 w-8 p-0 text-xs"
                                     title="Clear date filter"
                                   >
                                     ✕
@@ -850,51 +852,49 @@ const SQLViewerPage: React.FC = () => {
                             </div>
                             
                             <div className="col-span-4">
-                              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Export Options</Label>
-                              <div className="flex gap-2 mt-3">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => exportChart('pdf')}
-                                  className="flex-1"
-                                  data-testid="export-pdf"
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  PDF
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => exportChart('jpeg')}
-                                  className="flex-1"
-                                  data-testid="export-jpeg"
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  JPEG
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => exportChart('png')}
-                                  className="flex-1"
-                                  data-testid="export-png"
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  PNG
-                                </Button>
+                              <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Export Options</Label>
+                              <div className="mt-2">
+                                <Select onValueChange={(value) => exportChart(value as 'pdf' | 'jpeg' | 'png')}>
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <div className="flex items-center">
+                                      <Download className="h-3 w-3 mr-2" />
+                                      <SelectValue placeholder="Export Chart" />
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pdf" className="text-xs">
+                                      <div className="flex items-center">
+                                        <Download className="h-3 w-3 mr-2" />
+                                        PDF
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="jpeg" className="text-xs">
+                                      <div className="flex items-center">
+                                        <Download className="h-3 w-3 mr-2" />
+                                        JPEG
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="png" className="text-xs">
+                                      <div className="flex items-center">
+                                        <Download className="h-3 w-3 mr-2" />
+                                        PNG
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </div>
                           </div>
                           
                           {/* Metrics Selection Row */}
                           <div>
-                            <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 block">Select Metrics to Display</Label>
-                            <div className="flex flex-wrap gap-2">
+                            <Label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Select Metrics to Display</Label>
+                            <div className="flex flex-wrap gap-1">
                               {getNumericColumns().map(column => (
                                 <Badge
                                   key={column}
                                   variant={selectedMetrics.includes(column) ? 'default' : 'outline'}
-                                  className="cursor-pointer px-3 py-2 text-sm hover:scale-105 transition-transform"
+                                  className="cursor-pointer px-2 py-1 text-xs hover:scale-105 transition-transform"
                                   onClick={() => {
                                     setSelectedMetrics(prev => 
                                       prev.includes(column) 
@@ -1063,44 +1063,44 @@ const SQLViewerPage: React.FC = () => {
                           <div className="space-y-6">
                             {selectedMetrics.length > 0 ? (
                               <div 
-                                className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg"
+                                className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-lg"
                                 data-chart-container
                               >
-                                <div className="mb-6">
-                                  <div className="flex items-center justify-between mb-4">
+                                <div className="mb-4">
+                                  <div className="flex items-center justify-between mb-3">
                                     <div>
-                                      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">
                                         Industrial Data Visualization
                                       </h3>
-                                      <p className="text-lg text-gray-600 dark:text-gray-400">
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">
                                         {selectedMetrics.map(m => m.replace(/_/g, ' ').toUpperCase()).join(' • ')}
                                       </p>
                                     </div>
                                     <div className="text-right">
-                                      <div className="text-sm text-muted-foreground">Data Points</div>
-                                      <div className="text-2xl font-bold text-blue-600">{getChartData().length}</div>
+                                      <div className="text-xs text-muted-foreground">Data Points</div>
+                                      <div className="text-lg font-bold text-blue-600">{getChartData().length}</div>
                                     </div>
                                   </div>
                                   
                                   {/* Date Range Info */}
                                   {startDate && endDate && (
-                                    <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                      <Calendar className="h-4 w-4 text-blue-600" />
-                                      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                    <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                      <Calendar className="h-3 w-3 text-blue-600" />
+                                      <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
                                         Filtered: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
                                       </span>
                                     </div>
                                   )}
                                   
                                   {/* Metrics Info */}
-                                  <div className="flex flex-wrap gap-2 mb-4">
+                                  <div className="flex flex-wrap gap-1 mb-3">
                                     {selectedMetrics.map((metric, index) => (
                                       <div 
                                         key={metric}
-                                        className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full border shadow-sm"
+                                        className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 rounded-full border shadow-sm"
                                       >
                                         <div 
-                                          className="w-3 h-3 rounded-full" 
+                                          className="w-2 h-2 rounded-full" 
                                           style={{ backgroundColor: `hsl(${(index * 137.5) % 360}, 70%, 50%)` }}
                                         />
                                         <span className="text-xs font-medium">{metric.replace(/_/g, ' ').toUpperCase()}</span>
@@ -1109,36 +1109,36 @@ const SQLViewerPage: React.FC = () => {
                                   </div>
                                 </div>
                                 
-                                <div className="bg-white dark:bg-gray-950 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-                                  <div className="h-[500px]">
+                                <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                                  <div className="h-[400px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                       {chartType === 'line' ? (
-                                        <RechartsLineChart data={getChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                                        <RechartsLineChart data={getChartData()} margin={{ top: 15, right: 20, left: 15, bottom: 60 }}>
                                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
                                           <XAxis 
                                             dataKey="timestamp" 
-                                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                                            tick={{ fontSize: 9, fill: '#6b7280' }}
                                             angle={-45}
                                             textAnchor="end"
-                                            height={80}
+                                            height={60}
                                             stroke="#9ca3af"
                                           />
                                           <YAxis 
-                                            tick={{ fontSize: 11, fill: '#6b7280' }} 
+                                            tick={{ fontSize: 9, fill: '#6b7280' }} 
                                             stroke="#9ca3af"
                                           />
                                           <Tooltip 
                                             contentStyle={{ 
                                               backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                                              border: '2px solid #e5e7eb',
-                                              borderRadius: '12px',
-                                              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-                                              fontSize: '14px'
+                                              border: '1px solid #e5e7eb',
+                                              borderRadius: '8px',
+                                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                              fontSize: '11px'
                                             }}
-                                            labelStyle={{ fontWeight: 'bold', color: '#374151' }}
+                                            labelStyle={{ fontWeight: 'bold', color: '#374151', fontSize: '11px' }}
                                           />
                                           <Legend 
-                                            wrapperStyle={{ paddingTop: '20px' }}
+                                            wrapperStyle={{ paddingTop: '15px', fontSize: '10px' }}
                                             iconType="line"
                                           />
                                           {selectedMetrics.map((metric, index) => (
@@ -1147,40 +1147,40 @@ const SQLViewerPage: React.FC = () => {
                                               type="monotone" 
                                               dataKey={metric} 
                                               stroke={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
-                                              strokeWidth={3}
-                                              dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                              activeDot={{ r: 6, strokeWidth: 2 }}
+                                              strokeWidth={2}
+                                              dot={{ r: 3, strokeWidth: 1, fill: '#fff' }}
+                                              activeDot={{ r: 4, strokeWidth: 1 }}
                                               name={metric.replace(/_/g, ' ').toUpperCase()}
                                             />
                                           ))}
                                         </RechartsLineChart>
                                       ) : (
-                                        <BarChart data={getChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                                        <BarChart data={getChartData()} margin={{ top: 15, right: 20, left: 15, bottom: 60 }}>
                                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
                                           <XAxis 
                                             dataKey="timestamp" 
-                                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                                            tick={{ fontSize: 9, fill: '#6b7280' }}
                                             angle={-45}
                                             textAnchor="end"
-                                            height={80}
+                                            height={60}
                                             stroke="#9ca3af"
                                           />
                                           <YAxis 
-                                            tick={{ fontSize: 11, fill: '#6b7280' }} 
+                                            tick={{ fontSize: 9, fill: '#6b7280' }} 
                                             stroke="#9ca3af"
                                           />
                                           <Tooltip 
                                             contentStyle={{ 
                                               backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                                              border: '2px solid #e5e7eb',
-                                              borderRadius: '12px',
-                                              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-                                              fontSize: '14px'
+                                              border: '1px solid #e5e7eb',
+                                              borderRadius: '8px',
+                                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                              fontSize: '11px'
                                             }}
-                                            labelStyle={{ fontWeight: 'bold', color: '#374151' }}
+                                            labelStyle={{ fontWeight: 'bold', color: '#374151', fontSize: '11px' }}
                                           />
                                           <Legend 
-                                            wrapperStyle={{ paddingTop: '20px' }}
+                                            wrapperStyle={{ paddingTop: '15px', fontSize: '10px' }}
                                           />
                                           {selectedMetrics.map((metric, index) => (
                                             <Bar 
