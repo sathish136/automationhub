@@ -183,8 +183,8 @@ export default function SiteEvents() {
   return (
     <div className="p-4 space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Site Events</h1>
-        <p className="text-sm text-gray-500">Live events from the selected site database.</p>
+        <h1 className="text-2xl font-bold">Site Events - UPDATED</h1>
+        <p className="text-sm text-gray-500">Live events from the selected site database - Showing real data</p>
       </div>
 
       {/* Compact Filters */}

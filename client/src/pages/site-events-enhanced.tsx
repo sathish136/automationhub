@@ -46,6 +46,7 @@ interface CustomSiteEvent {
   severity: string;
   type: string;
   message: string;
+  description: string;
   source: string;
   status: string;
   site: string;
@@ -579,52 +580,18 @@ export default function SiteEventsEnhanced() {
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-3">
-                                <Badge className={`${getSeverityColor(event.severity || 'info')} text-white`}>
+                                <Badge className="bg-blue-500 hover:bg-blue-600 text-white">
                                   <div className="flex items-center gap-1">
-                                    {getSeverityIcon(event.severity || 'info')}
-                                    <span className="text-xs font-medium capitalize">{event.severity || 'Info'}</span>
+                                    <AlertCircle className="h-3 w-3" />
+                                    <span className="text-xs font-medium">Info</span>
                                   </div>
                                 </Badge>
-                                
-                                <Badge variant="outline" className="text-xs">
-                                  {event.type}
-                                </Badge>
-                                
-                                <Badge variant="secondary" className="text-xs">
-                                  {event.site}
-                                </Badge>
-                                
-                                {event.status && (
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs ${event.status.toLowerCase() === 'active' ? 'border-red-500 text-red-700' : 'border-green-500 text-green-700'}`}
-                                  >
-                                    {event.status}
-                                  </Badge>
-                                )}
                               </div>
 
-                              <h3 className="text-base font-semibold text-gray-900 mb-2">{event.message}</h3>
+                              <h3 className="text-base font-semibold text-gray-900 mb-2">{event.description || event.message}</h3>
                               
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
-                                {event.equipment && (
-                                  <div>
-                                    <span className="font-medium">Equipment:</span> {event.equipment}
-                                  </div>
-                                )}
-                                {event.tag_value !== undefined && (
-                                  <div>
-                                    <span className="font-medium">Value:</span> {event.tag_value}
-                                  </div>
-                                )}
-                                {event.setpoint !== undefined && (
-                                  <div>
-                                    <span className="font-medium">Setpoint:</span> {event.setpoint}
-                                  </div>
-                                )}
-                                <div>
-                                  <span className="font-medium">Source:</span> {event.source}
-                                </div>
+                              <div className="text-sm text-gray-600 mb-3">
+                                <span className="font-medium">Source:</span> 
                               </div>
                               
                               {event.note && (
