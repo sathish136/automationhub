@@ -50,6 +50,8 @@ interface CustomSiteEvent {
   source: string;
   status: string;
   site: string;
+  siteName?: string;
+  deviceName?: string;
   equipment?: string;
   tag_value?: number;
   setpoint?: number;
@@ -90,23 +92,47 @@ export default function SiteEventsEnhanced() {
       
       if (selectedSiteConfig === "all") {
         // Fetch from all configurations
-        const allEvents = await Promise.all(
-          siteConfigs.map(config => 
-            fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=50`)
-              .then(res => res.json())
-              .then(events => events.map((event: any) => ({...event, siteName: config.siteName})))
-          )
-        );
-        return allEvents.flat();
+        try {
+          const allEvents = await Promise.all(
+            siteConfigs.map(async (config) => {
+              try {
+                const response = await fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=50`);
+                const events = await response.json();
+                return events.map((event: any) => ({
+                  ...event, 
+                  siteName: config.siteName || config.deviceName,
+                  deviceName: config.deviceName
+                }));
+              } catch (error) {
+                console.error(`Failed to fetch events for ${config.siteName}:`, error);
+                return [];
+              }
+            })
+          );
+          return allEvents.flat();
+        } catch (error) {
+          console.error('Failed to fetch all site events:', error);
+          return [];
+        }
       } else {
         // Fetch from selected configuration
         const config = siteConfigs.find(c => c.id === selectedSiteConfig);
         if (!config) return [];
-        return fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=100`)
-          .then(res => res.json());
+        try {
+          const response = await fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=100`);
+          const events = await response.json();
+          return events.map((event: any) => ({
+            ...event, 
+            siteName: config.siteName || config.deviceName,
+            deviceName: config.deviceName
+          }));
+        } catch (error) {
+          console.error(`Failed to fetch events for ${config.siteName}:`, error);
+          return [];
+        }
       }
     },
-    enabled: !!siteConfigs,
+    enabled: !!siteConfigs && siteConfigs.length > 0,
     refetchInterval: 30000,
   });
 
@@ -525,7 +551,7 @@ export default function SiteEventsEnhanced() {
                             <SelectItem value="all">All Sites</SelectItem>
                             {siteConfigs?.map(config => (
                               <SelectItem key={config.id} value={config.id}>
-                                {config.siteName}
+                                {config.siteName || config.deviceName || 'Unnamed Site'}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -545,18 +571,18 @@ export default function SiteEventsEnhanced() {
                             />
                           </div>
                           
-                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center gap-2">
-                            <span className="text-xs text-gray-600">From:</span>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-center gap-2 shadow-sm">
+                            <span className="text-xs font-medium text-blue-700">📅 From:</span>
                             <Input
                               type="date"
-                              className="h-7 w-28 text-xs border-0 bg-white"
+                              className="h-7 w-32 text-xs border border-blue-300 bg-white rounded"
                               value={fromDate}
                               onChange={(e) => setFromDate(e.target.value)}
                             />
-                            <span className="text-xs text-gray-600">To:</span>
+                            <span className="text-xs font-medium text-blue-700">To:</span>
                             <Input
                               type="date"
-                              className="h-7 w-28 text-xs border-0 bg-white"
+                              className="h-7 w-32 text-xs border border-blue-300 bg-white rounded"
                               value={toDate}
                               onChange={(e) => setToDate(e.target.value)}
                             />
@@ -644,10 +670,17 @@ export default function SiteEventsEnhanced() {
                         {customEvents
                           .filter(event => {
                             const matchesSearch = !searchTerm || 
-                              (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase());
-                            const matchesDateRange = (!fromDate && !toDate) || 
-                              (new Date(event.date_time) >= new Date(fromDate || '1900-01-01') && 
-                               new Date(event.date_time) <= new Date(toDate || '2100-12-31'));
+                              (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
+                            
+                            let matchesDateRange = true;
+                            if (fromDate || toDate) {
+                              const eventDate = new Date(event.date_time);
+                              const startDate = fromDate ? new Date(fromDate) : new Date('1900-01-01');
+                              const endDate = toDate ? new Date(toDate + ' 23:59:59') : new Date('2100-12-31');
+                              matchesDateRange = eventDate >= startDate && eventDate <= endDate;
+                            }
+                            
                             return matchesSearch && matchesDateRange;
                           })
                           .map((event, index) => {
@@ -670,11 +703,9 @@ export default function SiteEventsEnhanced() {
                                   <span className="text-xs font-medium text-gray-900 flex-1">
                                     {event.description || event.message}
                                   </span>
-                                  {event.siteName && (
-                                    <span className="text-xs text-gray-500 bg-gray-100 px-1 rounded">
-                                      {event.siteName}
-                                    </span>
-                                  )}
+                                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded font-medium">
+                                    {event.siteName || event.deviceName || 'Site'}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   <div className="text-xs text-gray-500 flex items-center gap-1">
@@ -697,7 +728,7 @@ export default function SiteEventsEnhanced() {
                                         
                                         toast({
                                           title: "Alert Acknowledged",
-                                          description: `${event.description || event.message} acknowledged by User at ${new Date().toLocaleTimeString()}`,
+                                          description: `${event.description || event.message} acknowledged by User at ${event.siteName || event.deviceName || 'Site'} - ${new Date().toLocaleTimeString()}`,
                                         });
                                       }}
                                     >
@@ -706,7 +737,7 @@ export default function SiteEventsEnhanced() {
                                   )}
                                   {isAcknowledged && (
                                     <span className="text-xs text-green-600 font-medium">
-                                      ✓ User
+                                      ✓ User@{event.siteName || event.deviceName || 'Site'}
                                     </span>
                                   )}
                                 </div>
