@@ -571,21 +571,32 @@ export default function SiteEventsEnhanced() {
                             />
                           </div>
                           
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-center gap-2 shadow-sm">
+                          <div className={`border border-blue-200 rounded-lg p-2 flex items-center gap-2 shadow-sm ${(fromDate || toDate) ? 'bg-blue-100' : 'bg-blue-50'}`}>
                             <span className="text-xs font-medium text-blue-700">📅 From:</span>
                             <Input
                               type="date"
                               className="h-7 w-32 text-xs border border-blue-300 bg-white rounded"
                               value={fromDate}
-                              onChange={(e) => setFromDate(e.target.value)}
+                              onChange={(e) => {
+                                console.log('From date changed:', e.target.value);
+                                setFromDate(e.target.value);
+                              }}
                             />
                             <span className="text-xs font-medium text-blue-700">To:</span>
                             <Input
                               type="date"
                               className="h-7 w-32 text-xs border border-blue-300 bg-white rounded"
                               value={toDate}
-                              onChange={(e) => setToDate(e.target.value)}
+                              onChange={(e) => {
+                                console.log('To date changed:', e.target.value);
+                                setToDate(e.target.value);
+                              }}
                             />
+                            {(fromDate || toDate) && (
+                              <Badge className="bg-blue-600 text-white text-xs">
+                                Active Filter
+                              </Badge>
+                            )}
                           </div>
 
                           <Button 
@@ -638,16 +649,46 @@ export default function SiteEventsEnhanced() {
                 {/* Alert Summary */}
                 <div className="grid grid-cols-3 gap-4 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg border">
                   <div className="text-center">
-                    <div className="text-lg font-bold text-red-600">{customEventsSummary.total}</div>
-                    <div className="text-xs text-gray-600">Total Alerts</div>
+                    <div className="text-lg font-bold text-red-600">
+                      {customEvents?.filter(event => {
+                        const matchesSearch = !searchTerm || 
+                          (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
+                        
+                        let matchesDateRange = true;
+                        if (fromDate || toDate) {
+                          const eventDate = new Date(event.date_time);
+                          
+                          if (fromDate && toDate) {
+                            const startDate = new Date(fromDate + 'T00:00:00');
+                            const endDate = new Date(toDate + 'T23:59:59');
+                            matchesDateRange = eventDate >= startDate && eventDate <= endDate;
+                          } else if (fromDate) {
+                            const startDate = new Date(fromDate + 'T00:00:00');
+                            matchesDateRange = eventDate >= startDate;
+                          } else if (toDate) {
+                            const endDate = new Date(toDate + 'T23:59:59');
+                            matchesDateRange = eventDate <= endDate;
+                          }
+                        }
+                        
+                        return matchesSearch && matchesDateRange;
+                      }).length || 0}
+                    </div>
+                    <div className="text-xs text-gray-600">Filtered Alerts</div>
                   </div>
                   <div className="text-center">
                     <div className="text-lg font-bold text-green-600">{acknowledgedEvents.size}</div>
                     <div className="text-xs text-gray-600">Acknowledged</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-orange-600">{Math.max(0, customEventsSummary.total - acknowledgedEvents.size)}</div>
-                    <div className="text-xs text-gray-600">Pending</div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {fromDate || toDate ? 
+                        `📅 ${fromDate ? fromDate.split('-').reverse().join('/') : '∞'} - ${toDate ? toDate.split('-').reverse().join('/') : '∞'}` : 
+                        'All Time'
+                      }
+                    </div>
+                    <div className="text-xs text-gray-600">Date Range</div>
                   </div>
                 </div>
 
@@ -669,16 +710,39 @@ export default function SiteEventsEnhanced() {
                       <div className="space-y-1 max-h-80 overflow-y-auto">
                         {customEvents
                           .filter(event => {
+                            // Search filter
                             const matchesSearch = !searchTerm || 
                               (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) ||
                               (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
                             
+                            // Date range filter
                             let matchesDateRange = true;
                             if (fromDate || toDate) {
                               const eventDate = new Date(event.date_time);
-                              const startDate = fromDate ? new Date(fromDate) : new Date('1900-01-01');
-                              const endDate = toDate ? new Date(toDate + ' 23:59:59') : new Date('2100-12-31');
-                              matchesDateRange = eventDate >= startDate && eventDate <= endDate;
+                              
+                              if (fromDate && toDate) {
+                                // Both dates selected
+                                const startDate = new Date(fromDate + 'T00:00:00');
+                                const endDate = new Date(toDate + 'T23:59:59');
+                                matchesDateRange = eventDate >= startDate && eventDate <= endDate;
+                                if (!matchesDateRange) {
+                                  console.log(`Event ${event.description} filtered out: ${event.date_time} not between ${startDate} and ${endDate}`);
+                                }
+                              } else if (fromDate) {
+                                // Only from date selected
+                                const startDate = new Date(fromDate + 'T00:00:00');
+                                matchesDateRange = eventDate >= startDate;
+                                if (!matchesDateRange) {
+                                  console.log(`Event ${event.description} filtered out: ${event.date_time} before ${startDate}`);
+                                }
+                              } else if (toDate) {
+                                // Only to date selected
+                                const endDate = new Date(toDate + 'T23:59:59');
+                                matchesDateRange = eventDate <= endDate;
+                                if (!matchesDateRange) {
+                                  console.log(`Event ${event.description} filtered out: ${event.date_time} after ${endDate}`);
+                                }
+                              }
                             }
                             
                             return matchesSearch && matchesDateRange;
