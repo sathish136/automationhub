@@ -43,10 +43,32 @@ function DatabaseSelector({ value, onChange, onDatabaseChange, className, placeh
   placeholder?: string;
   [key: string]: any;
 }) {
-  const { data: databases = [] } = useQuery<string[]>({
+  const { data: databases = [], isError, error } = useQuery<string[]>({
     queryKey: ["/api/sql-viewer/databases"],
-    queryFn: () => fetch("/api/sql-viewer/databases").then(res => res.json()),
+    queryFn: () => fetch("/api/sql-viewer/databases").then(res => {
+      if (!res.ok) throw new Error('Failed to fetch databases');
+      return res.json();
+    }),
+    retry: 1,
   });
+
+  // Ensure databases is always an array
+  const databaseList = Array.isArray(databases) ? databases : [];
+
+  if (isError) {
+    return (
+      <Input 
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          onDatabaseChange?.(e.target.value);
+        }}
+        className={className}
+        placeholder="Database connection failed - enter manually"
+        {...props}
+      />
+    );
+  }
 
   return (
     <Select
@@ -61,9 +83,13 @@ function DatabaseSelector({ value, onChange, onDatabaseChange, className, placeh
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {databases.map(db => (
-          <SelectItem key={db} value={db}>{db}</SelectItem>
-        ))}
+        {databaseList.length > 0 ? (
+          databaseList.map(db => (
+            <SelectItem key={db} value={db}>{db}</SelectItem>
+          ))
+        ) : (
+          <SelectItem value="" disabled>No databases available</SelectItem>
+        )}
       </SelectContent>
     </Select>
   );
@@ -79,11 +105,31 @@ function TableSelector({ databaseName, value, onChange, className, placeholder, 
   disabled?: boolean;
   [key: string]: any;
 }) {
-  const { data: tables = [] } = useQuery<string[]>({
+  const { data: tables = [], isError } = useQuery<string[]>({
     queryKey: [`/api/sql-viewer/databases/${databaseName}/tables`],
-    queryFn: () => fetch(`/api/sql-viewer/databases/${databaseName}/tables`).then(res => res.json()),
+    queryFn: () => fetch(`/api/sql-viewer/databases/${databaseName}/tables`).then(res => {
+      if (!res.ok) throw new Error('Failed to fetch tables');
+      return res.json();
+    }),
     enabled: !!databaseName,
+    retry: 1,
   });
+
+  // Ensure tables is always an array
+  const tableList = Array.isArray(tables) ? tables : [];
+
+  if (isError || !databaseName) {
+    return (
+      <Input 
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={className}
+        placeholder={!databaseName ? "Select database first" : "Connection failed - enter manually"}
+        disabled={disabled || !databaseName}
+        {...props}
+      />
+    );
+  }
 
   return (
     <Select
@@ -96,9 +142,13 @@ function TableSelector({ databaseName, value, onChange, className, placeholder, 
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {tables.map(table => (
-          <SelectItem key={table} value={table}>{table}</SelectItem>
-        ))}
+        {tableList.length > 0 ? (
+          tableList.map(table => (
+            <SelectItem key={table} value={table}>{table}</SelectItem>
+          ))
+        ) : (
+          <SelectItem value="" disabled>No tables available</SelectItem>
+        )}
       </SelectContent>
     </Select>
   );
