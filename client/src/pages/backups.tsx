@@ -55,13 +55,14 @@ export default function BackupsPage() {
   // Fetch backups based on active tab and selected site
   const { data: backups, isLoading } = useQuery<ProgramBackup[]>({
     queryKey: ["/api/backups", { type: activeTab, siteId: selectedSite === "all" ? undefined : selectedSite }],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       params.append("type", activeTab);
       if (selectedSite !== "all") {
         params.append("siteId", selectedSite);
       }
-      return apiRequest(`/api/backups?${params}`);
+      const response = await apiRequest(`/api/backups?${params}`, "GET");
+      return response.json();
     },
   });
 
@@ -171,7 +172,7 @@ export default function BackupsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleString('en-IN', {
       day: '2-digit',
       month: '2-digit',
@@ -286,7 +287,7 @@ export default function BackupsPage() {
                         <FormItem>
                           <FormLabel>Version</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., v1.0.0" {...field} />
+                            <Input placeholder="e.g., v1.0.0" {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -299,7 +300,7 @@ export default function BackupsPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Platform</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -322,7 +323,7 @@ export default function BackupsPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Compile Status</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -347,7 +348,7 @@ export default function BackupsPage() {
                         <FormItem>
                           <FormLabel>Tags</FormLabel>
                           <FormControl>
-                            <Input placeholder="production, stable, test (comma-separated)" {...field} />
+                            <Input placeholder="production, stable, test (comma-separated)" {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -362,7 +363,7 @@ export default function BackupsPage() {
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Describe this backup..." {...field} />
+                          <Textarea placeholder="Describe this backup..." {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -376,7 +377,7 @@ export default function BackupsPage() {
                       <FormItem>
                         <FormLabel>Comments</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Additional comments..." {...field} />
+                          <Textarea placeholder="Additional comments..." {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -390,7 +391,7 @@ export default function BackupsPage() {
                       <FormItem>
                         <FormLabel>Compile Errors</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Enter compilation errors if any..." {...field} />
+                          <Textarea placeholder="Enter compilation errors if any..." {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -511,7 +512,7 @@ export default function BackupsPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-3 h-3" />
-                        {formatDate(backup.createdAt)}
+                        {backup.createdAt ? formatDate(backup.createdAt) : "N/A"}
                       </div>
                     </CardHeader>
 
