@@ -60,6 +60,7 @@ class ExternalDatabaseService {
       const query = `
         SELECT TOP ${limit} *
         FROM [${tableName}]
+        ORDER BY date_time DESC
       `;
 
       const result = await request.query(query);

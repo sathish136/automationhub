@@ -574,27 +574,27 @@ export default function SiteEventsEnhanced() {
                       ))}
                     </div>
                   ) : customEvents && customEvents.length > 0 ? (
-                    customEvents
-                      .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
-                      .map((event) => (
-                      <Card key={event.id || event.date_time} className="border-l-4 border-l-blue-500">
-                        <CardContent className="p-4">
+                    <div className="space-y-2">
+                      {customEvents.map((event, index) => (
+                        <div key={event.id || `${event.date_time}-${index}`} 
+                             className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Badge variant="secondary" className="text-xs px-2 py-1">
+                              <div className="w-1 h-8 bg-blue-500 rounded-full"></div>
+                              <Badge variant="outline" className="text-xs px-2 py-0.5 text-blue-600 border-blue-200">
                                 <AlertCircle className="h-3 w-3 mr-1" />
                                 Info
                               </Badge>
-                              <span className="text-sm font-medium text-gray-900">{event.description || event.message}</span>
+                              <span className="text-sm text-gray-800 font-medium">{event.description || event.message}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
                               <Clock className="h-3 w-3" />
                               {formatDate(event.date_time)}
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <Card>
                       <CardContent className="p-12 text-center">
