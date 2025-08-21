@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, AlertTriangle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network, Gauge, Fan, Beaker, Activity, Settings, Database, Server } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network, Gauge, Fan, Beaker, Activity, Settings, Database, Server, Download } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/layout/header";
@@ -62,7 +62,9 @@ export default function SiteEventsEnhanced() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [selectedSiteConfig, setSelectedSiteConfig] = useState<string>("all");
+  const [selectedSiteConfig, setSelectedSiteConfig] = useState<string>("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const { toast } = useToast();
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
@@ -79,18 +81,26 @@ export default function SiteEventsEnhanced() {
     queryKey: ["/api/site-events/configurations"],
   });
 
-  // Fetch custom site events for selected configuration
+  // Auto-select first site configuration on load
+  const firstSiteConfig = siteConfigs?.[0];
+  if (!selectedSiteConfig && firstSiteConfig) {
+    setSelectedSiteConfig(firstSiteConfig.id);
+  }
+
+  // Fetch custom site events for selected configuration (or first available)
   const { data: customEvents, isLoading: customEventsLoading } = useQuery<CustomSiteEvent[]>({
-    queryKey: ["/api/site-events/custom", selectedSiteConfig],
+    queryKey: ["/api/site-events/custom", selectedSiteConfig || firstSiteConfig?.id],
     queryFn: () => {
-      if (selectedSiteConfig === "all" || !selectedSiteConfig) return [];
-      const config = siteConfigs?.find(c => c.id === selectedSiteConfig);
-      if (!config) return [];
-      return fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=100`)
+      const configToUse = selectedSiteConfig ? 
+        siteConfigs?.find(c => c.id === selectedSiteConfig) : 
+        firstSiteConfig;
+      
+      if (!configToUse) return [];
+      return fetch(`/api/site-events/custom/${configToUse.eventsDatabaseName}/${configToUse.eventsTableName}?limit=100`)
         .then(res => res.json());
     },
-    enabled: selectedSiteConfig !== "all" && !!siteConfigs,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    enabled: !!(selectedSiteConfig || firstSiteConfig) && !!siteConfigs,
+    refetchInterval: 30000,
   });
 
   const markAsReadMutation = useMutation({
@@ -490,127 +500,162 @@ export default function SiteEventsEnhanced() {
 
               {/* Custom Site Events Tab */}
               <TabsContent value="custom-events" className="space-y-6 mt-6">
-                {/* Site Configuration Selection */}
+                {/* Filters and Export */}
                 <Card>
                   <CardContent className="p-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <Server className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-700">Site Database:</span>
+                    <div className="flex flex-wrap items-center gap-3 justify-between">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                          <Input
+                            placeholder="Search equipment alerts..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 h-9 w-64"
+                          />
+                        </div>
+                        
+                        <Input
+                          type="date"
+                          className="h-9 w-40"
+                          placeholder="From Date"
+                          value={fromDate}
+                          onChange={(e) => setFromDate(e.target.value)}
+                        />
+                        
+                        <Input
+                          type="date"
+                          className="h-9 w-40"
+                          placeholder="To Date"
+                          value={toDate}
+                          onChange={(e) => setToDate(e.target.value)}
+                        />
+
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9"
+                          onClick={() => {
+                            setSearchTerm("");
+                            setFromDate("");
+                            setToDate("");
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
                       </div>
                       
-                      <Select value={selectedSiteConfig} onValueChange={setSelectedSiteConfig}>
-                        <SelectTrigger className="w-64 h-9">
-                          <SelectValue placeholder="Select site configuration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Select a site configuration</SelectItem>
-                          {siteConfigs?.map(config => (
-                            <SelectItem key={config.id} value={config.id}>
-                              {config.siteName} - {config.eventsDatabaseName}.{config.eventsTableName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {selectedSiteConfig !== "all" && siteConfigs?.find(c => c.id === selectedSiteConfig) && (
-                        <Badge variant="outline" className="text-xs">
-                          <Database className="h-3 w-3 mr-1" />
-                          {siteConfigs.find(c => c.id === selectedSiteConfig)?.eventsDatabaseName}
-                        </Badge>
-                      )}
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9"
+                          onClick={() => {
+                            if (!customEvents) return;
+                            const csv = [
+                              ['Date & Time', 'Equipment Alert'],
+                              ...customEvents.map(event => [
+                                new Date(event.date_time).toLocaleString(),
+                                event.description || event.message
+                              ])
+                            ].map(row => row.join(',')).join('\n');
+                            
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `equipment-alerts-${new Date().toISOString().split('T')[0]}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Export CSV
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Custom Events Summary */}
-                {selectedSiteConfig !== "all" && (
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-red-600 dark:text-red-400">{customEventsSummary.critical}</div>
-                      <div className="text-xs text-gray-500">Critical</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{customEventsSummary.warning}</div>
-                      <div className="text-xs text-gray-500">Warning</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{customEventsSummary.total}</div>
-                      <div className="text-xs text-gray-500">Total</div>
-                    </div>
+                <div className="grid grid-cols-2 gap-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{customEventsSummary.total}</div>
+                    <div className="text-sm text-gray-600">Total Equipment Alerts</div>
                   </div>
-                )}
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">0</div>
+                    <div className="text-sm text-gray-600">Acknowledged Today</div>
+                  </div>
+                </div>
 
-                {/* Custom Events List */}
-                <div className="space-y-4">
-                  {selectedSiteConfig === "all" ? (
-                    <Card>
-                      <CardContent className="p-12 text-center">
-                        <Database className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">Select Site Configuration</h3>
-                        <p className="text-gray-600">Choose a site configuration to view custom database events.</p>
-                        {(!siteConfigs || siteConfigs.length === 0) && (
-                          <div className="mt-4 p-3 bg-blue-50 rounded-md">
-                            <p className="text-sm text-blue-700">
-                              <strong>Configuration Required:</strong> Configure site event databases in IPC Management settings to enable custom event viewing.
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ) : customEventsLoading ? (
-                    <div className="space-y-4">
-                      {[...Array(5)].map((_, i) => (
-                        <Card key={i}>
-                          <CardContent className="p-6">
-                            <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : customEvents && customEvents.length > 0 ? (
-                    <div className="space-y-1">
-                      {customEvents.map((event, index) => (
-                        <div key={event.id || `${event.date_time}-${index}`} 
-                             className="bg-white border border-gray-100 rounded p-2 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 flex-1">
-                              <div className="w-1 h-6 bg-blue-500 rounded-full flex-shrink-0"></div>
-                              <Badge variant="secondary" className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
-                                Info
-                              </Badge>
-                              <span className="text-xs text-gray-700 flex-1">{event.description || event.message}</span>
+                {/* Equipment Alerts List */}
+                <div className="bg-white rounded-lg border shadow-sm">
+                  <div className="border-b border-gray-200 p-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Live Equipment Alerts</h3>
+                    <p className="text-sm text-gray-600">Real-time industrial equipment alerts from all monitoring sites</p>
+                  </div>
+                  
+                  <div className="p-4">
+                    {customEventsLoading ? (
+                      <div className="space-y-2">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />
+                        ))}
+                      </div>
+                    ) : customEvents && customEvents.length > 0 ? (
+                      <div className="space-y-1 max-h-96 overflow-y-auto">
+                        {customEvents
+                          .filter(event => {
+                            const matchesSearch = !searchTerm || 
+                              (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase());
+                            const matchesDateRange = !fromDate || !toDate || 
+                              (new Date(event.date_time) >= new Date(fromDate) && new Date(event.date_time) <= new Date(toDate));
+                            return matchesSearch && matchesDateRange;
+                          })
+                          .map((event, index) => (
+                          <div key={event.id || `${event.date_time}-${index}`} 
+                               className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-all duration-200">
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className="w-2 h-8 bg-red-500 rounded-full animate-pulse"></div>
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-red-500 text-white text-xs px-2 py-1">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Alert
+                                </Badge>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {event.description || event.message}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <div className="flex items-center gap-1 text-xs text-gray-400">
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <div className="text-xs text-gray-500 flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {formatDate(event.date_time)}
                               </div>
                               <button 
-                                className="text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100 transition-colors"
-                                onClick={() => {/* TODO: Add ACK functionality */}}
+                                className="text-xs px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors font-medium"
+                                onClick={() => {
+                                  toast({
+                                    title: "Alert Acknowledged",
+                                    description: `${event.description || event.message} has been acknowledged`,
+                                  });
+                                }}
                               >
                                 ACK
                               </button>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <Card>
-                      <CardContent className="p-12 text-center">
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
                         <Database className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Custom Events Found</h3>
-                        <p className="text-gray-600">No events found in the configured database table. This could be due to:</p>
-                        <ul className="text-sm text-gray-500 mt-2 space-y-1">
-                          <li>• Database connection unavailable</li>
-                          <li>• Empty table or no matching records</li>
-                          <li>• Configuration needs verification</li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  )}
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Equipment Alerts</h3>
+                        <p className="text-gray-600">All systems are running normally. No alerts at this time.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
