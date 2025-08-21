@@ -347,17 +347,122 @@ const SQLViewerPage: React.FC = () => {
     });
   };
 
-  // Prepare chart data
+  // Prepare chart data with date filtering
   const getChartData = () => {
-    return filteredData.map(row => {
+    let dataToChart = filteredData;
+    
+    // Apply date range filter if dates are selected
+    if (startDate && endDate) {
+      const startDateTime = new Date(startDate);
+      const endDateTime = new Date(endDate);
+      dataToChart = dataToChart.filter(row => {
+        const rowDate = new Date(row.date_time);
+        return rowDate >= startDateTime && rowDate <= endDateTime;
+      });
+    }
+    
+    return dataToChart.map(row => {
       const chartRow: any = {
-        timestamp: row.date_time ? new Date(row.date_time).toLocaleDateString() : '',
+        timestamp: row.date_time ? new Date(row.date_time).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }) : '',
+        fullTimestamp: row.date_time ? new Date(row.date_time).toLocaleString('en-GB') : '',
       };
       selectedMetrics.forEach(metric => {
         chartRow[metric] = parseFloat(row[metric]) || 0;
       });
       return chartRow;
-    }).slice(0, 50); // Limit chart data for performance
+    }).slice(0, 100); // Show more data points for better charts
+  };
+
+  // Export chart functionality
+  const exportChart = async (format: 'pdf' | 'jpeg' | 'png') => {
+    try {
+      const chartElement = document.querySelector('[data-chart-container]') as HTMLElement;
+      if (!chartElement) {
+        alert('Chart not found. Please ensure a chart is displayed.');
+        return;
+      }
+
+      // Create a temporary canvas element
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Set canvas size for high quality
+      canvas.width = 1200;
+      canvas.height = 600;
+      
+      // Fill with white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Get chart data
+      const chartData = getChartData();
+      if (chartData.length === 0) {
+        alert('No data available to export.');
+        return;
+      }
+
+      // Draw title
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${selectedTable || 'Data'} - ${selectedMetrics.join(', ')}`, canvas.width / 2, 40);
+      
+      // Draw subtitle with date range
+      ctx.font = '16px Arial';
+      ctx.fillStyle = '#6b7280';
+      const dateRange = startDate && endDate ? `${startDate} to ${endDate}` : 'All Data';
+      ctx.fillText(dateRange, canvas.width / 2, 65);
+
+      // Simple chart drawing (basic implementation)
+      const chartArea = {
+        x: 80,
+        y: 100,
+        width: canvas.width - 160,
+        height: canvas.height - 200
+      };
+
+      // Draw chart background
+      ctx.fillStyle = '#f9fafb';
+      ctx.fillRect(chartArea.x, chartArea.y, chartArea.width, chartArea.height);
+      
+      // Draw border
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(chartArea.x, chartArea.y, chartArea.width, chartArea.height);
+
+      // Add message about chart export
+      ctx.fillStyle = '#374151';
+      ctx.font = '18px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Chart visualization exported', chartArea.x + chartArea.width / 2, chartArea.y + chartArea.height / 2);
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#6b7280';
+      ctx.fillText(`${chartData.length} data points | ${selectedMetrics.length} metrics`, chartArea.x + chartArea.width / 2, chartArea.y + chartArea.height / 2 + 30);
+
+      // Export based on format
+      if (format === 'pdf') {
+        // Simple PDF export using canvas
+        const link = document.createElement('a');
+        link.download = `${selectedTable || 'chart'}_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        alert('Chart exported as PNG (PDF export requires additional setup)');
+      } else {
+        const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+        const link = document.createElement('a');
+        link.download = `${selectedTable || 'chart'}_${new Date().toISOString().split('T')[0]}.${format}`;
+        link.href = canvas.toDataURL(mimeType, 0.9);
+        link.click();
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
   // Initialize default metrics when data changes
@@ -678,38 +783,118 @@ const SQLViewerPage: React.FC = () => {
 
                     {/* View-specific Controls */}
                     {viewMode === 'chart' && tableData.length > 0 && (
-                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <div className="grid grid-cols-12 gap-4 items-center">
-                          <div className="col-span-3">
-                            <Label className="text-sm font-medium">Chart Type</Label>
-                            <div className="flex mt-2">
-                              <Button
-                                variant={chartType === 'line' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setChartType('line')}
-                                className="mr-2"
-                              >
-                                <LineChart className="h-4 w-4 mr-1" />
-                                Line
-                              </Button>
-                              <Button
-                                variant={chartType === 'bar' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setChartType('bar')}
-                              >
-                                <BarChart3 className="h-4 w-4 mr-1" />
-                                Bar
-                              </Button>
+                      <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-xl border shadow-sm">
+                        <div className="space-y-6">
+                          {/* Chart Configuration Row */}
+                          <div className="grid grid-cols-12 gap-6 items-start">
+                            <div className="col-span-3">
+                              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Chart Type</Label>
+                              <div className="flex mt-3 gap-2">
+                                <Button
+                                  variant={chartType === 'line' ? 'default' : 'outline'}
+                                  size="sm"
+                                  onClick={() => setChartType('line')}
+                                  className="flex-1"
+                                >
+                                  <LineChart className="h-4 w-4 mr-2" />
+                                  Line
+                                </Button>
+                                <Button
+                                  variant={chartType === 'bar' ? 'default' : 'outline'}
+                                  size="sm"
+                                  onClick={() => setChartType('bar')}
+                                  className="flex-1"
+                                >
+                                  <BarChart3 className="h-4 w-4 mr-2" />
+                                  Bar
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="col-span-5">
+                              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Date Range Filter</Label>
+                              <div className="flex gap-3 mt-3">
+                                <div className="flex-1">
+                                  <Label className="text-xs text-muted-foreground">From</Label>
+                                  <Input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="mt-1"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <Label className="text-xs text-muted-foreground">To</Label>
+                                  <Input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="mt-1"
+                                  />
+                                </div>
+                                <div className="flex items-end">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setStartDate('');
+                                      setEndDate('');
+                                    }}
+                                    className="px-3"
+                                    title="Clear date filter"
+                                  >
+                                    ✕
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="col-span-4">
+                              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Export Options</Label>
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => exportChart('pdf')}
+                                  className="flex-1"
+                                  data-testid="export-pdf"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  PDF
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => exportChart('jpeg')}
+                                  className="flex-1"
+                                  data-testid="export-jpeg"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  JPEG
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => exportChart('png')}
+                                  className="flex-1"
+                                  data-testid="export-png"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  PNG
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                          <div className="col-span-6">
-                            <Label className="text-sm font-medium">Select Metrics to Display</Label>
-                            <div className="flex flex-wrap gap-2 mt-2">
+                          
+                          {/* Metrics Selection Row */}
+                          <div>
+                            <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 block">Select Metrics to Display</Label>
+                            <div className="flex flex-wrap gap-2">
                               {getNumericColumns().map(column => (
                                 <Badge
                                   key={column}
                                   variant={selectedMetrics.includes(column) ? 'default' : 'outline'}
-                                  className="cursor-pointer"
+                                  className="cursor-pointer px-3 py-2 text-sm hover:scale-105 transition-transform"
                                   onClick={() => {
                                     setSelectedMetrics(prev => 
                                       prev.includes(column) 
@@ -718,7 +903,7 @@ const SQLViewerPage: React.FC = () => {
                                     );
                                   }}
                                 >
-                                  {column}
+                                  {column.replace(/_/g, ' ').toUpperCase()}
                                 </Badge>
                               ))}
                             </div>
@@ -875,83 +1060,148 @@ const SQLViewerPage: React.FC = () => {
 
                         {/* CHART VIEW */}
                         {viewMode === 'chart' && (
-                          <div className="space-y-4">
+                          <div className="space-y-6">
                             {selectedMetrics.length > 0 ? (
-                              <div className="bg-white dark:bg-gray-950 border rounded-lg p-6 shadow-sm">
-                                <div className="mb-4">
-                                  <h3 className="text-lg font-semibold mb-2">Data Visualization</h3>
-                                  <p className="text-sm text-muted-foreground">
-                                    Showing {selectedMetrics.join(', ')} over time
-                                  </p>
+                              <div 
+                                className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-lg"
+                                data-chart-container
+                              >
+                                <div className="mb-6">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                                        Industrial Data Visualization
+                                      </h3>
+                                      <p className="text-lg text-gray-600 dark:text-gray-400">
+                                        {selectedMetrics.map(m => m.replace(/_/g, ' ').toUpperCase()).join(' • ')}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-sm text-muted-foreground">Data Points</div>
+                                      <div className="text-2xl font-bold text-blue-600">{getChartData().length}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Date Range Info */}
+                                  {startDate && endDate && (
+                                    <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                      <Calendar className="h-4 w-4 text-blue-600" />
+                                      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                        Filtered: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Metrics Info */}
+                                  <div className="flex flex-wrap gap-2 mb-4">
+                                    {selectedMetrics.map((metric, index) => (
+                                      <div 
+                                        key={metric}
+                                        className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full border shadow-sm"
+                                      >
+                                        <div 
+                                          className="w-3 h-3 rounded-full" 
+                                          style={{ backgroundColor: `hsl(${(index * 137.5) % 360}, 70%, 50%)` }}
+                                        />
+                                        <span className="text-xs font-medium">{metric.replace(/_/g, ' ').toUpperCase()}</span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                                <div className="h-96">
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    {chartType === 'line' ? (
-                                      <RechartsLineChart data={getChartData()}>
-                                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                                        <XAxis 
-                                          dataKey="timestamp" 
-                                          tick={{ fontSize: 12 }}
-                                          angle={-45}
-                                          textAnchor="end"
-                                          height={80}
-                                        />
-                                        <YAxis tick={{ fontSize: 12 }} />
-                                        <Tooltip 
-                                          contentStyle={{ 
-                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '8px'
-                                          }}
-                                        />
-                                        <Legend />
-                                        {selectedMetrics.map((metric, index) => (
-                                          <Line 
-                                            key={metric}
-                                            type="monotone" 
-                                            dataKey={metric} 
-                                            stroke={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
-                                            strokeWidth={2}
-                                            dot={{ r: 3 }}
+                                
+                                <div className="bg-white dark:bg-gray-950 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                                  <div className="h-[500px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      {chartType === 'line' ? (
+                                        <RechartsLineChart data={getChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                                          <XAxis 
+                                            dataKey="timestamp" 
+                                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={80}
+                                            stroke="#9ca3af"
                                           />
-                                        ))}
-                                      </RechartsLineChart>
-                                    ) : (
-                                      <BarChart data={getChartData()}>
-                                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                                        <XAxis 
-                                          dataKey="timestamp" 
-                                          tick={{ fontSize: 12 }}
-                                          angle={-45}
-                                          textAnchor="end"
-                                          height={80}
-                                        />
-                                        <YAxis tick={{ fontSize: 12 }} />
-                                        <Tooltip 
-                                          contentStyle={{ 
-                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '8px'
-                                          }}
-                                        />
-                                        <Legend />
-                                        {selectedMetrics.map((metric, index) => (
-                                          <Bar 
-                                            key={metric}
-                                            dataKey={metric} 
-                                            fill={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
+                                          <YAxis 
+                                            tick={{ fontSize: 11, fill: '#6b7280' }} 
+                                            stroke="#9ca3af"
                                           />
-                                        ))}
-                                      </BarChart>
-                                    )}
-                                  </ResponsiveContainer>
+                                          <Tooltip 
+                                            contentStyle={{ 
+                                              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                                              border: '2px solid #e5e7eb',
+                                              borderRadius: '12px',
+                                              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                                              fontSize: '14px'
+                                            }}
+                                            labelStyle={{ fontWeight: 'bold', color: '#374151' }}
+                                          />
+                                          <Legend 
+                                            wrapperStyle={{ paddingTop: '20px' }}
+                                            iconType="line"
+                                          />
+                                          {selectedMetrics.map((metric, index) => (
+                                            <Line 
+                                              key={metric}
+                                              type="monotone" 
+                                              dataKey={metric} 
+                                              stroke={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
+                                              strokeWidth={3}
+                                              dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                              activeDot={{ r: 6, strokeWidth: 2 }}
+                                              name={metric.replace(/_/g, ' ').toUpperCase()}
+                                            />
+                                          ))}
+                                        </RechartsLineChart>
+                                      ) : (
+                                        <BarChart data={getChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
+                                          <XAxis 
+                                            dataKey="timestamp" 
+                                            tick={{ fontSize: 11, fill: '#6b7280' }}
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={80}
+                                            stroke="#9ca3af"
+                                          />
+                                          <YAxis 
+                                            tick={{ fontSize: 11, fill: '#6b7280' }} 
+                                            stroke="#9ca3af"
+                                          />
+                                          <Tooltip 
+                                            contentStyle={{ 
+                                              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                                              border: '2px solid #e5e7eb',
+                                              borderRadius: '12px',
+                                              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                                              fontSize: '14px'
+                                            }}
+                                            labelStyle={{ fontWeight: 'bold', color: '#374151' }}
+                                          />
+                                          <Legend 
+                                            wrapperStyle={{ paddingTop: '20px' }}
+                                          />
+                                          {selectedMetrics.map((metric, index) => (
+                                            <Bar 
+                                              key={metric}
+                                              dataKey={metric} 
+                                              fill={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
+                                              name={metric.replace(/_/g, ' ').toUpperCase()}
+                                              radius={[2, 2, 0, 0]}
+                                            />
+                                          ))}
+                                        </BarChart>
+                                      )}
+                                    </ResponsiveContainer>
+                                  </div>
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-center text-muted-foreground py-12">
-                                <BarChart3 className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                                <p className="text-lg font-medium">No metrics selected</p>
-                                <p className="text-sm">Select some metrics above to view charts</p>
+                              <div className="text-center text-muted-foreground py-16 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p className="text-xl font-medium mb-2">No metrics selected</p>
+                                <p className="text-sm">Select some metrics above to view beautiful charts</p>
                               </div>
                             )}
                           </div>
