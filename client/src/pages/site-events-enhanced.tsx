@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, AlertTriangle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network, Gauge, Fan, Beaker, Activity, Settings, Database, Server, Download } from "lucide-react";
+import { CompactDateRange } from "@/components/ui/compact-date-range";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/layout/header";
@@ -68,26 +69,8 @@ export default function SiteEventsEnhanced() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [dateRange, setDateRange] = useState<string>("all");
-  const [showCalendar, setShowCalendar] = useState(false);
   const [acknowledgedEvents, setAcknowledgedEvents] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-  const calendarRef = useRef<HTMLDivElement>(null);
-
-  // Close calendar when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
-        setShowCalendar(false);
-      }
-    }
-
-    if (showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [showCalendar]);
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
     queryKey: ["/api/alerts"],
@@ -330,7 +313,7 @@ export default function SiteEventsEnhanced() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header title="Site Events & Alerts" subtitle="Monitor industrial automation events and custom site-specific events" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Header Section */}
@@ -582,58 +565,26 @@ export default function SiteEventsEnhanced() {
                         />
                       </div>
                           
-                      <div className="relative" ref={calendarRef}>
-                        <button
-                          className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${
-                            dateRange === "all" 
-                              ? "bg-gray-50 border-gray-200 text-gray-600" 
-                              : "bg-blue-50 border-blue-200 text-blue-700"
-                          }`}
-                          onClick={() => setShowCalendar(!showCalendar)}
-                        >
-                          📅
-                          <span className="text-xs">
-                            {dateRange === "all" ? "All dates" : 
-                             dateRange === "today" ? "Today" :
-                             dateRange === "yesterday" ? "Yesterday" :
-                             dateRange === "last7" ? "Last 7 days" :
-                             dateRange === "last30" ? "Last 30 days" :
-                             dateRange === "custom" && fromDate && toDate ? 
-                               `${fromDate.split('-').reverse().join('/')} - ${toDate.split('-').reverse().join('/')}` :
-                             "Select dates"
-                            }
-                          </span>
-                          <svg className={`w-3 h-3 transition-transform ${showCalendar ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                            
-                        {showCalendar && (
-                          <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64">
-                            <div className="space-y-2">
-                              <div className="grid grid-cols-1 gap-1">
-                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "all" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setShowCalendar(false); }}>All dates</button>
-                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "today" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const today = new Date().toISOString().split('T')[0]; setDateRange("today"); setFromDate(today); setToDate(today); setShowCalendar(false); }}>Today</button>
-                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "yesterday" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); const yesterdayStr = yesterday.toISOString().split('T')[0]; setDateRange("yesterday"); setFromDate(yesterdayStr); setToDate(yesterdayStr); setShowCalendar(false); }}>Yesterday</button>
-                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "last7" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const today = new Date(); const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); setDateRange("last7"); setFromDate(weekAgo.toISOString().split('T')[0]); setToDate(today.toISOString().split('T')[0]); setShowCalendar(false); }}>Last 7 days</button>
-                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "last30" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const today = new Date(); const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30); setDateRange("last30"); setFromDate(monthAgo.toISOString().split('T')[0]); setToDate(today.toISOString().split('T')[0]); setShowCalendar(false); }}>Last 30 days</button>
-                              </div>
-                              
-                              <div className="border-t pt-2">
-                                <div className="text-xs font-medium text-gray-700 mb-1">Custom Range</div>
-                                <div className="grid grid-cols-2 gap-1">
-                                  <Input type="date" className="h-6 text-xs" value={fromDate} onChange={(e) => { setFromDate(e.target.value); if (e.target.value && toDate) setDateRange("custom"); }} />
-                                  <Input type="date" className="h-6 text-xs" value={toDate} onChange={(e) => { setToDate(e.target.value); if (fromDate && e.target.value) setDateRange("custom"); }} />
-                                </div>
-                                <div className="flex gap-1 mt-2">
-                                  <Button size="sm" className="flex-1 h-6 text-xs" onClick={() => { if (fromDate && toDate) { setDateRange("custom"); setShowCalendar(false); } }} disabled={!fromDate || !toDate}>Apply</Button>
-                                  <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setShowCalendar(false); }}>Clear</Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <CompactDateRange
+                        fromDate={fromDate}
+                        toDate={toDate}
+                        onFromDateChange={(date) => {
+                          setFromDate(date);
+                          if (date && toDate) setDateRange("custom");
+                        }}
+                        onToDateChange={(date) => {
+                          setToDate(date);
+                          if (fromDate && date) setDateRange("custom");
+                        }}
+                        onRangeApply={() => {
+                          if (fromDate || toDate) {
+                            setDateRange("custom");
+                          } else {
+                            setDateRange("all");
+                          }
+                        }}
+                        className="w-64"
+                      />
 
                       <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { const csvData = customEvents?.map(event => ({ 'Date & Time': new Date(event.date_time).toLocaleString('en-GB'), 'Description': event.description || event.message, 'Site': event.siteName || event.deviceName || 'Site', 'Type': event.type || 'Alert', 'Severity': event.severity || 'Unknown' })) || []; const csvContent = [ Object.keys(csvData[0] || {}).join(','), ...csvData.map(row => Object.values(row).join(',')) ].join('\n'); const blob = new Blob([csvContent], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `site-events-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url); }}>
                         <Download className="h-2.5 w-2.5" />
