@@ -1,0 +1,45 @@
+[ADS] Successfully read tag 'FILTRATION_HMI.RO_TOTAL_RECOVERY_HMI', value: 0
+[ADS] Successfully read tag 'BIOLOGICAL_HMI.COOLING_TOWER_IN_FM_OUT_HMI', value: 7.974486827850342
+[ADS] Successfully read tag 'FILTRATION_HMI.RO_TOTAL_RECOVERY_HMI', value: 0
+Error creating IPC device: error: column "ipc_image" of relation "ipc_management" does not exist
+    at file:///C:/Users/Administrator/Desktop/AutoManage/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)   
+    at async NeonPreparedQuery.execute (C:\Users\Administrator\Desktop\AutoManage\node_modules\src\neon-serverless\session.ts:102:18)
+    at async DatabaseStorage.createIpcManagement (C:\Users\Administrator\Desktop\AutoManage\server\storage.ts:320:25)
+    at async <anonymous> (C:\Users\Administrator\Desktop\AutoManage\server\routes.ts:413:22) {
+  length: 137,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '358',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
+}
+11:55:09 AM [express] POST /api/ipc-management 400 in 382ms :: {"message":"Invalid device data"}
+[ADS] Successfully read tag 'BIOLOGICAL_HMI.COOLING_TOWER_IN_FM_OUT_HMI', value: 3.848383903503418
+[ADS] Successfully read tag 'FILTRATION_HMI.RO_TOTAL_RECOVERY_HMI', value: 0
+[ADS] Successfully read tag 'BIOLOGICAL_HMI.COOLING_TOWER_IN_FM_OUT_HMI', value: 11.095004081726074
+[ADS] Successfully read tag 'FILTRATION_HMI.RO_TOTAL_RECOVERY_HMI', value: 0
+Running scheduled ping checks...
+[ADS] Successfully read tag 'BIOLOGICAL_HMI.COOLING_TOWER_IN_FM_OUT_HMI', value: 6.987212657928467
+[ADS] Successfully read tag 'FILTRATION_HMI.RO_TOTAL_RECOVERY_HMI', value: 0
+Attempting to connect to 15.15.50.13...
+Successfully connected to 15.15.50.13:3389 - 98ms
+Ping check for RSL (VPN) (15.15.50.13): online - 98ms
+Attempting to connect to 15.15.50.25...
+Successfully connected to 15.15.50.25:3389 - 98ms
+Ping check for SONA-1 (VPN) (15.15.50.25): online - 98ms
+[ADS] Successfully read tag 'BIOLOGICAL_HMI.COOLING_TOWER_IN_FM_OUT_HMI', value: 12.944425582885742
+[ADS] Successfully read tag 'FILTRATION_HMI.RO_TOTAL_RECOVERY_HMI', value: 0
+[ADS] Successfully read tag 'BIOLOGICAL_HMI.COOLING_TOWER_IN_FM_OUT_HMI', value: 8.1011381149292
+[ADS] Successfully read tag 'FILTRATION_HMI.RO_TOTAL_RECOVERY_HMI', value: 0

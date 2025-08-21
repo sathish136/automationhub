@@ -46,7 +46,7 @@ import {
   type InsertPlcIoCalculation,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, count } from "drizzle-orm";
+import { eq, desc, and, gte, sql, count, isNotNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -317,9 +317,12 @@ export class DatabaseStorage implements IStorage {
       };
     }
     
+    // Temporarily remove ipcImage field until database migration is complete
+    const { ipcImage, ...deviceWithoutImage } = processedDevice as any;
+    
     const [newDevice] = await db
       .insert(ipcManagement)
-      .values(processedDevice)
+      .values(deviceWithoutImage)
       .returning();
     return newDevice;
   }
@@ -332,9 +335,12 @@ export class DatabaseStorage implements IStorage {
       updateData.ipcPassword = await bcrypt.hash(device.ipcPassword, 10);
     }
 
+    // Temporarily remove ipcImage field until database migration is complete
+    const { ipcImage, ...updateWithoutImage } = updateData as any;
+
     const [updatedDevice] = await db
       .update(ipcManagement)
-      .set(updateData)
+      .set(updateWithoutImage)
       .where(eq(ipcManagement.id, id))
       .returning();
     return updatedDevice;
