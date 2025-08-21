@@ -574,38 +574,22 @@ export default function SiteEventsEnhanced() {
                       ))}
                     </div>
                   ) : customEvents && customEvents.length > 0 ? (
-                    customEvents.map((event) => (
-                      <Card key={event.id}>
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-3">
-                                <Badge className="bg-blue-500 hover:bg-blue-600 text-white">
-                                  <div className="flex items-center gap-1">
-                                    <AlertCircle className="h-3 w-3" />
-                                    <span className="text-xs font-medium">Info</span>
-                                  </div>
-                                </Badge>
-                              </div>
-
-                              <h3 className="text-base font-semibold text-gray-900 mb-2">{event.description || event.message}</h3>
-                              
-                              <div className="text-sm text-gray-600 mb-3">
-                                <span className="font-medium">Source:</span> 
-                              </div>
-                              
-                              {event.note && (
-                                <div className="p-2 bg-gray-50 rounded text-sm text-gray-600 mb-3">
-                                  <strong>Note:</strong> {event.note}
-                                </div>
-                              )}
-                              
-                              <div className="flex items-center gap-4 text-xs text-gray-500">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatDate(event.date_time)}
-                                </div>
-                              </div>
+                    customEvents
+                      .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
+                      .map((event) => (
+                      <Card key={event.id || event.date_time} className="border-l-4 border-l-blue-500">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Badge variant="secondary" className="text-xs px-2 py-1">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Info
+                              </Badge>
+                              <span className="text-sm font-medium text-gray-900">{event.description || event.message}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <Clock className="h-3 w-3" />
+                              {formatDate(event.date_time)}
                             </div>
                           </div>
                         </CardContent>
