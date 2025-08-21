@@ -45,6 +45,7 @@ interface CustomSiteEvent {
   severity: string;
   type: string;
   message: string;
+  description: string;
   source: string;
   status: string;
   site: string;
@@ -175,7 +176,7 @@ export default function SiteEvents() {
   };
 
   const displayedEvents = customEvents?.filter(event => 
-    (event.message?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (event.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (event.site?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   ) || [];
 
@@ -242,7 +243,7 @@ export default function SiteEvents() {
                     <tr key={event.id || index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                       <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{index + 1}</td>
                       <td className="px-6 py-4">{new Date(event.date_time).toLocaleString()}</td>
-                      <td className="px-6 py-4">{event.message}</td>
+                      <td className="px-6 py-4">{event.description}</td>
                     </tr>
                   ))}
                 </tbody>
