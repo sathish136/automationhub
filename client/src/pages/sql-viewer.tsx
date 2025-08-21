@@ -351,12 +351,30 @@ const SQLViewerPage: React.FC = () => {
   const getChartData = () => {
     let dataToChart = filteredData;
     
-    // Apply date filter if date is selected
-    if (startDate) {
-      const selectedDate = new Date(startDate);
+    // Apply date range filter if dates are selected
+    if (startDate && endDate) {
+      const startDateTime = new Date(startDate);
+      const endDateTime = new Date(endDate);
+      // Set end time to end of day
+      endDateTime.setHours(23, 59, 59, 999);
       dataToChart = dataToChart.filter(row => {
         const rowDate = new Date(row.date_time);
-        return rowDate.toDateString() === selectedDate.toDateString();
+        return rowDate >= startDateTime && rowDate <= endDateTime;
+      });
+    } else if (startDate) {
+      // If only start date is selected, filter from that date onwards
+      const startDateTime = new Date(startDate);
+      dataToChart = dataToChart.filter(row => {
+        const rowDate = new Date(row.date_time);
+        return rowDate >= startDateTime;
+      });
+    } else if (endDate) {
+      // If only end date is selected, filter up to that date
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+      dataToChart = dataToChart.filter(row => {
+        const rowDate = new Date(row.date_time);
+        return rowDate <= endDateTime;
       });
     }
     
@@ -414,7 +432,13 @@ const SQLViewerPage: React.FC = () => {
       // Draw subtitle with date range
       ctx.font = '16px Arial';
       ctx.fillStyle = '#6b7280';
-      const dateRange = startDate ? `Date: ${startDate}` : 'All Data';
+      const dateRange = startDate && endDate 
+        ? `${startDate} to ${endDate}` 
+        : startDate 
+          ? `From ${startDate}` 
+          : endDate 
+            ? `Until ${endDate}`
+            : 'All Data';
       ctx.fillText(dateRange, canvas.width / 2, 65);
 
       // Simple chart drawing (basic implementation)
@@ -814,15 +838,26 @@ const SQLViewerPage: React.FC = () => {
                               <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Date Filter</Label>
                               <div className="flex gap-2 mt-2">
                                 <div className="flex-1">
+                                  <Label className="text-xs text-muted-foreground">From</Label>
                                   <Input
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
                                     className="h-8 text-xs"
-                                    placeholder="Select date"
+                                    placeholder="dd-mm-yyyy"
                                   />
                                 </div>
-                                <div className="flex items-center">
+                                <div className="flex-1">
+                                  <Label className="text-xs text-muted-foreground">To</Label>
+                                  <Input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="h-8 text-xs"
+                                    placeholder="dd-mm-yyyy"
+                                  />
+                                </div>
+                                <div className="flex items-end">
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -1071,11 +1106,16 @@ const SQLViewerPage: React.FC = () => {
                                   </div>
                                   
                                   {/* Date Filter Info */}
-                                  {startDate && (
+                                  {(startDate || endDate) && (
                                     <div className="flex items-center gap-2 mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                       <Calendar className="h-3 w-3 text-blue-600" />
                                       <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
-                                        Filtered: {new Date(startDate).toLocaleDateString()}
+                                        Filtered: {startDate && endDate 
+                                          ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+                                          : startDate 
+                                            ? `From ${new Date(startDate).toLocaleDateString()}`
+                                            : `Until ${new Date(endDate).toLocaleDateString()}`
+                                        }
                                       </span>
                                     </div>
                                   )}
