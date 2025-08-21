@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Database, 
   Table as TableIcon, 
@@ -21,8 +22,15 @@ import {
   ExternalLink,
   ChevronRight,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  BarChart3,
+  LineChart,
+  Calendar,
+  GitCompare,
+  TrendingUp,
+  Eye
 } from 'lucide-react';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface DatabaseInfo {
   name: string;
@@ -53,6 +61,16 @@ const SQLViewerPage: React.FC = () => {
   // Demo data for when database is not available
   const [demoData, setDemoData] = useState<any[]>([]);
   const [sortedDemoData, setSortedDemoData] = useState<any[]>([]);
+  
+  // New visualization and comparison states
+  const [viewMode, setViewMode] = useState<'table' | 'chart' | 'comparison'>('table');
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [comparisonStartDate, setComparisonStartDate] = useState<string>('');
+  const [comparisonEndDate, setComparisonEndDate] = useState<string>('');
+  const [comparisonData, setComparisonData] = useState<{ period1: any[], period2: any[] }>({ period1: [], period2: [] });
 
   // Generate demo data once
   useEffect(() => {
@@ -318,6 +336,57 @@ const SQLViewerPage: React.FC = () => {
     }
   };
 
+  // Get numeric columns for chart visualization
+  const getNumericColumns = () => {
+    if (filteredData.length === 0) return [];
+    const sample = filteredData[0];
+    return Object.keys(sample).filter(key => {
+      if (key === 'id' || key === 'date_time') return false;
+      const value = sample[key];
+      return !isNaN(parseFloat(value)) && isFinite(value);
+    });
+  };
+
+  // Prepare chart data
+  const getChartData = () => {
+    return filteredData.map(row => {
+      const chartRow: any = {
+        timestamp: row.date_time ? new Date(row.date_time).toLocaleDateString() : '',
+      };
+      selectedMetrics.forEach(metric => {
+        chartRow[metric] = parseFloat(row[metric]) || 0;
+      });
+      return chartRow;
+    }).slice(0, 50); // Limit chart data for performance
+  };
+
+  // Initialize default metrics when data changes
+  useEffect(() => {
+    if (filteredData.length > 0 && selectedMetrics.length === 0) {
+      const numericCols = getNumericColumns();
+      setSelectedMetrics(numericCols.slice(0, 3)); // Select first 3 numeric columns by default
+    }
+  }, [filteredData]);
+
+  // Filter data by date range for comparison
+  const filterDataByDateRange = (data: any[], start: string, end: string) => {
+    if (!start || !end) return data;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return data.filter(row => {
+      const rowDate = new Date(row.date_time);
+      return rowDate >= startDate && rowDate <= endDate;
+    });
+  };
+
+  // Calculate comparison metrics
+  const getComparisonMetrics = (data1: any[], data2: any[], metric: string) => {
+    const avg1 = data1.reduce((sum, row) => sum + (parseFloat(row[metric]) || 0), 0) / data1.length;
+    const avg2 = data2.reduce((sum, row) => sum + (parseFloat(row[metric]) || 0), 0) / data2.length;
+    const change = ((avg2 - avg1) / avg1) * 100;
+    return { avg1, avg2, change: isFinite(change) ? change : 0 };
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="w-full p-2 space-y-3">
@@ -454,98 +523,134 @@ const SQLViewerPage: React.FC = () => {
           )}
         </div>
 
-        {/* Data Viewer */}
+        {/* Enhanced Data Viewer with Visualization Options */}
         {selectedDatabase && (
-          <Card>
-            <CardHeader className="pb-2">
+          <Card className="shadow-lg">
+            <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center text-sm">
+                  <CardTitle className="flex items-center text-lg font-semibold">
                     {selectedTable ? (
                       <>
-                        <ExternalLink className="h-3 w-3 mr-1" />
+                        <Database className="h-5 w-5 mr-2 text-blue-600" />
                         {selectedTable}
-                        <Badge variant="secondary" className="ml-2 text-xs px-1 py-0">
-                          {filteredData.length}
+                        <Badge variant="secondary" className="ml-3 text-sm px-2 py-1">
+                          {filteredData.length} records
                         </Badge>
                       </>
                     ) : (
                       <>
-                        <Search className="h-3 w-3 mr-1" />
-                        Select table
+                        <Search className="h-5 w-5 mr-2 text-gray-400" />
+                        Select a table to view data
                       </>
                     )}
                   </CardTitle>
                   
                   {selectedTable && tableData.length > 0 && (
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-2">
+                      {/* View Mode Toggle */}
+                      <div className="flex bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border">
+                        <Button
+                          variant={viewMode === 'table' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('table')}
+                          className="h-8 px-3 text-xs"
+                          data-testid="view-table"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Table
+                        </Button>
+                        <Button
+                          variant={viewMode === 'chart' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('chart')}
+                          className="h-8 px-3 text-xs"
+                          data-testid="view-chart"
+                        >
+                          <TrendingUp className="h-4 w-4 mr-1" />
+                          Chart
+                        </Button>
+                        <Button
+                          variant={viewMode === 'comparison' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('comparison')}
+                          className="h-8 px-3 text-xs"
+                          data-testid="view-comparison"
+                        >
+                          <GitCompare className="h-4 w-4 mr-1" />
+                          Compare
+                        </Button>
+                      </div>
+                      
+                      <Separator orientation="vertical" className="h-8" />
+                      
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={exportToCSV}
                         data-testid="button-export-csv"
-                        className="h-7 px-2 text-xs"
+                        className="h-8 px-3 text-xs"
                       >
-                        <Download className="h-3 w-3 mr-1" />
-                        CSV
+                        <Download className="h-4 w-4 mr-1" />
+                        Export
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={refreshData}
                         disabled={loading}
-                        className="h-7 w-7 p-0"
+                        className="h-8 w-8 p-0"
                       >
-                        <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                       </Button>
                     </div>
                   )}
                 </div>
               </CardHeader>
               
-              <CardContent>
+              <CardContent className="p-6">
                 {selectedTable ? (
                   <>
-                    {/* Search and Filter Controls */}
+                    {/* Universal Search and Filter Controls */}
                     {tableData.length > 0 && (
-                      <div className="mb-3 space-y-2">
-                        <div className="grid grid-cols-12 gap-2 items-center">
+                      <div className="mb-4 space-y-3">
+                        <div className="grid grid-cols-12 gap-3 items-center">
                           <div className="col-span-4 relative">
-                            <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                               placeholder="Search all columns..."
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
-                              className="pl-7 h-6 text-xs"
+                              className="pl-10 h-9 text-sm"
                               data-testid="input-search-data"
                             />
                           </div>
                           
                           <div className="col-span-3 relative">
-                            <Filter className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
+                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                               placeholder="Filter columns..."
                               value={columnFilter}
                               onChange={(e) => setColumnFilter(e.target.value)}
-                              className="pl-7 h-6 text-xs"
+                              className="pl-10 h-9 text-sm"
                             />
                           </div>
                           
                           <div className="col-span-2">
-                            <select
-                              value={maxRows}
-                              onChange={(e) => setMaxRows(Number(e.target.value))}
-                              className="h-6 w-full text-xs border rounded px-2 bg-background"
-                              title="Rows to display"
-                            >
-                              <option value={25}>25 rows</option>
-                              <option value={50}>50 rows</option>
-                              <option value={100}>100 rows</option>
-                              <option value={200}>200 rows</option>
-                            </select>
+                            <Select value={maxRows.toString()} onValueChange={(value) => setMaxRows(Number(value))}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="25">25 rows</SelectItem>
+                                <SelectItem value="50">50 rows</SelectItem>
+                                <SelectItem value="100">100 rows</SelectItem>
+                                <SelectItem value="200">200 rows</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                           
                           <div className="col-span-2">
-                            <Badge variant="outline" className="text-xs px-2 py-1 w-full justify-center">
+                            <Badge variant="outline" className="text-sm px-3 py-2 w-full justify-center">
                               {filteredData.length}/{Math.min(tableData.length, maxRows)}
                             </Badge>
                           </div>
@@ -559,7 +664,7 @@ const SQLViewerPage: React.FC = () => {
                                   setSearchTerm('');
                                   setColumnFilter('');
                                 }}
-                                className="h-6 px-1 text-xs"
+                                className="h-9 px-3 text-sm"
                                 title="Clear filters"
                               >
                                 ✕
@@ -571,105 +676,335 @@ const SQLViewerPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Data Table */}
-                    {loading && tableData.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-                        <p className="text-xs">Loading...</p>
-                      </div>
-                    ) : filteredData.length === 0 && tableData.length > 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        <Search className="h-4 w-4 mx-auto mb-2 opacity-50" />
-                        <p className="text-xs">No matches</p>
-                      </div>
-                    ) : filteredData.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">
-                        <TableIcon className="h-4 w-4 mx-auto mb-2 opacity-50" />
-                        <p className="text-xs">No data</p>
-                      </div>
-                    ) : (
-                      <div className="w-full border rounded-sm bg-white dark:bg-gray-950 overflow-hidden">
-                        {/* Table Container with Both Horizontal and Vertical Scroll */}
-                        <div className="overflow-x-auto max-w-full max-h-96 overflow-y-auto">
-                          <div className="min-w-fit">
-                            {/* Frozen Header */}
-                            <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600 sticky top-0 z-10">
-                              <div className="flex">
-                                {/* S.No Header */}
-                                <div className="px-2 py-1 text-xs font-semibold border-r border-gray-300 dark:border-gray-600 whitespace-nowrap" style={{ minWidth: '60px', width: 'auto' }}>
-                                  <span className="text-xs">S.No</span>
-                                </div>
-                                {columns.map((column) => (
-                                  <div 
-                                    key={column} 
-                                    className="px-2 py-1 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 border-r border-gray-300 dark:border-gray-600 last:border-r-0 whitespace-nowrap"
-                                    style={{ minWidth: column === 'date_time' ? '150px' : '120px', width: 'auto' }}
-                                    onClick={() => handleSort(column)}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs">{column === 'date_time' ? 'Date & Time' : column}</span>
-                                      <div className="flex flex-col ml-1">
-                                        <ChevronUp 
-                                          className={`h-2.5 w-2.5 ${
-                                            sortColumn === column && sortDirection === 'asc' 
-                                              ? 'text-blue-600 dark:text-blue-400' 
-                                              : 'text-gray-400 hover:text-gray-600'
-                                          }`} 
-                                        />
-                                        <ChevronDown 
-                                          className={`h-2.5 w-2.5 -mt-0.5 ${
-                                            sortColumn === column && sortDirection === 'desc' 
-                                              ? 'text-blue-600 dark:text-blue-400' 
-                                              : 'text-gray-400 hover:text-gray-600'
-                                          }`} 
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                    {/* View-specific Controls */}
+                    {viewMode === 'chart' && tableData.length > 0 && (
+                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-3">
+                            <Label className="text-sm font-medium">Chart Type</Label>
+                            <div className="flex mt-2">
+                              <Button
+                                variant={chartType === 'line' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setChartType('line')}
+                                className="mr-2"
+                              >
+                                <LineChart className="h-4 w-4 mr-1" />
+                                Line
+                              </Button>
+                              <Button
+                                variant={chartType === 'bar' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setChartType('bar')}
+                              >
+                                <BarChart3 className="h-4 w-4 mr-1" />
+                                Bar
+                              </Button>
                             </div>
-                            
-                            {/* Data Rows */}
-                            <div>
-                              {filteredData.map((row, index) => (
-                                <div 
-                                  key={index} 
-                                  className={`flex hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700 ${
-                                    index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'
-                                  }`}
+                          </div>
+                          <div className="col-span-6">
+                            <Label className="text-sm font-medium">Select Metrics to Display</Label>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {getNumericColumns().map(column => (
+                                <Badge
+                                  key={column}
+                                  variant={selectedMetrics.includes(column) ? 'default' : 'outline'}
+                                  className="cursor-pointer"
+                                  onClick={() => {
+                                    setSelectedMetrics(prev => 
+                                      prev.includes(column) 
+                                        ? prev.filter(m => m !== column)
+                                        : [...prev, column]
+                                    );
+                                  }}
                                 >
-                                  {/* S.No Column */}
-                                  <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '60px', width: 'auto' }}>
-                                    <div className="text-xs">{index + 1}</div>
-                                  </div>
-                                  {columns.map((column) => (
-                                    <div 
-                                      key={column} 
-                                      className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 last:border-r-0 whitespace-nowrap"
-                                      style={{ minWidth: column === 'date_time' ? '150px' : '120px', width: 'auto' }}
-                                      title={String(row[column] || '')}
-                                    >
-                                      <div className="text-xs">
-                                        {column === 'date_time' 
-                                          ? new Date(row[column]).toLocaleString('en-GB', {
-                                              day: '2-digit',
-                                              month: '2-digit', 
-                                              year: 'numeric',
-                                              hour: '2-digit',
-                                              minute: '2-digit',
-                                              second: '2-digit'
-                                            })
-                                          : String(row[column] || '')
-                                        }
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                                  {column}
+                                </Badge>
                               ))}
                             </div>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {viewMode === 'comparison' && tableData.length > 0 && (
+                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-5">
+                            <Label className="text-sm font-medium">Period 1</Label>
+                            <div className="flex gap-2 mt-2">
+                              <Input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="text-sm"
+                              />
+                              <Input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="col-span-2 text-center">
+                            <GitCompare className="h-6 w-6 mx-auto text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">vs</span>
+                          </div>
+                          <div className="col-span-5">
+                            <Label className="text-sm font-medium">Period 2</Label>
+                            <div className="flex gap-2 mt-2">
+                              <Input
+                                type="date"
+                                value={comparisonStartDate}
+                                onChange={(e) => setComparisonStartDate(e.target.value)}
+                                className="text-sm"
+                              />
+                              <Input
+                                type="date"
+                                value={comparisonEndDate}
+                                onChange={(e) => setComparisonEndDate(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Loading States */}
+                    {loading && tableData.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-12">
+                        <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-3" />
+                        <p className="text-lg font-medium">Loading data...</p>
+                        <p className="text-sm">Please wait while we fetch your data</p>
+                      </div>
+                    ) : filteredData.length === 0 && tableData.length > 0 ? (
+                      <div className="text-center text-muted-foreground py-12">
+                        <Search className="h-6 w-6 mx-auto mb-3 opacity-50" />
+                        <p className="text-lg font-medium">No matches found</p>
+                        <p className="text-sm">Try adjusting your search criteria</p>
+                      </div>
+                    ) : filteredData.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-12">
+                        <TableIcon className="h-6 w-6 mx-auto mb-3 opacity-50" />
+                        <p className="text-lg font-medium">No data available</p>
+                        <p className="text-sm">This table appears to be empty</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* TABLE VIEW */}
+                        {viewMode === 'table' && (
+                          <div className="border rounded-lg bg-white dark:bg-gray-950 overflow-hidden shadow-sm">
+                            <div className="overflow-x-auto">
+                              <div className="max-h-[500px] overflow-y-auto">
+                                <table className="w-full">
+                                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 sticky top-0 z-10">
+                                    <tr className="border-b border-gray-200 dark:border-gray-600">
+                                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[60px]">
+                                        #
+                                      </th>
+                                      {columns.map((column) => (
+                                        <th 
+                                          key={column} 
+                                          className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                          style={{ minWidth: column === 'date_time' ? '180px' : '140px' }}
+                                          onClick={() => handleSort(column)}
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <span>{column === 'date_time' ? 'Date & Time' : column.replace(/_/g, ' ').toUpperCase()}</span>
+                                            <div className="flex flex-col ml-2">
+                                              <ChevronUp 
+                                                className={`h-3 w-3 ${
+                                                  sortColumn === column && sortDirection === 'asc' 
+                                                    ? 'text-blue-600 dark:text-blue-400' 
+                                                    : 'text-gray-400'
+                                                }`} 
+                                              />
+                                              <ChevronDown 
+                                                className={`h-3 w-3 -mt-1 ${
+                                                  sortColumn === column && sortDirection === 'desc' 
+                                                    ? 'text-blue-600 dark:text-blue-400' 
+                                                    : 'text-gray-400'
+                                                }`} 
+                                              />
+                                            </div>
+                                          </div>
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {filteredData.map((row, index) => (
+                                      <tr 
+                                        key={index} 
+                                        className={`border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
+                                          index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50/50 dark:bg-gray-900/50'
+                                        }`}
+                                      >
+                                        <td className="px-4 py-3 text-sm font-mono text-gray-600 dark:text-gray-400">
+                                          {index + 1}
+                                        </td>
+                                        {columns.map((column) => (
+                                          <td 
+                                            key={column} 
+                                            className="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100"
+                                            title={String(row[column] || '')}
+                                          >
+                                            {column === 'date_time' 
+                                              ? new Date(row[column]).toLocaleString('en-GB', {
+                                                  day: '2-digit',
+                                                  month: '2-digit', 
+                                                  year: 'numeric',
+                                                  hour: '2-digit',
+                                                  minute: '2-digit',
+                                                  second: '2-digit'
+                                                })
+                                              : String(row[column] || '')
+                                            }
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CHART VIEW */}
+                        {viewMode === 'chart' && (
+                          <div className="space-y-4">
+                            {selectedMetrics.length > 0 ? (
+                              <div className="bg-white dark:bg-gray-950 border rounded-lg p-6 shadow-sm">
+                                <div className="mb-4">
+                                  <h3 className="text-lg font-semibold mb-2">Data Visualization</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    Showing {selectedMetrics.join(', ')} over time
+                                  </p>
+                                </div>
+                                <div className="h-96">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    {chartType === 'line' ? (
+                                      <RechartsLineChart data={getChartData()}>
+                                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                                        <XAxis 
+                                          dataKey="timestamp" 
+                                          tick={{ fontSize: 12 }}
+                                          angle={-45}
+                                          textAnchor="end"
+                                          height={80}
+                                        />
+                                        <YAxis tick={{ fontSize: 12 }} />
+                                        <Tooltip 
+                                          contentStyle={{ 
+                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '8px'
+                                          }}
+                                        />
+                                        <Legend />
+                                        {selectedMetrics.map((metric, index) => (
+                                          <Line 
+                                            key={metric}
+                                            type="monotone" 
+                                            dataKey={metric} 
+                                            stroke={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
+                                            strokeWidth={2}
+                                            dot={{ r: 3 }}
+                                          />
+                                        ))}
+                                      </RechartsLineChart>
+                                    ) : (
+                                      <BarChart data={getChartData()}>
+                                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                                        <XAxis 
+                                          dataKey="timestamp" 
+                                          tick={{ fontSize: 12 }}
+                                          angle={-45}
+                                          textAnchor="end"
+                                          height={80}
+                                        />
+                                        <YAxis tick={{ fontSize: 12 }} />
+                                        <Tooltip 
+                                          contentStyle={{ 
+                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '8px'
+                                          }}
+                                        />
+                                        <Legend />
+                                        {selectedMetrics.map((metric, index) => (
+                                          <Bar 
+                                            key={metric}
+                                            dataKey={metric} 
+                                            fill={`hsl(${(index * 137.5) % 360}, 70%, 50%)`}
+                                          />
+                                        ))}
+                                      </BarChart>
+                                    )}
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center text-muted-foreground py-12">
+                                <BarChart3 className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                                <p className="text-lg font-medium">No metrics selected</p>
+                                <p className="text-sm">Select some metrics above to view charts</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* COMPARISON VIEW */}
+                        {viewMode === 'comparison' && (
+                          <div className="space-y-6">
+                            {startDate && endDate && comparisonStartDate && comparisonEndDate ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {getNumericColumns().slice(0, 4).map(metric => {
+                                  const period1Data = filterDataByDateRange(filteredData, startDate, endDate);
+                                  const period2Data = filterDataByDateRange(filteredData, comparisonStartDate, comparisonEndDate);
+                                  const comparison = getComparisonMetrics(period1Data, period2Data, metric);
+                                  
+                                  return (
+                                    <Card key={metric} className="p-4">
+                                      <CardHeader className="pb-2">
+                                        <CardTitle className="text-base font-semibold">
+                                          {metric.replace(/_/g, ' ').toUpperCase()}
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                            <p className="text-xs text-muted-foreground">Period 1 Avg</p>
+                                            <p className="text-lg font-bold text-blue-600">{comparison.avg1.toFixed(2)}</p>
+                                          </div>
+                                          <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                            <p className="text-xs text-muted-foreground">Period 2 Avg</p>
+                                            <p className="text-lg font-bold text-green-600">{comparison.avg2.toFixed(2)}</p>
+                                          </div>
+                                        </div>
+                                        <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                          <p className="text-xs text-muted-foreground">Change</p>
+                                          <p className={`text-lg font-bold ${comparison.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {comparison.change >= 0 ? '+' : ''}{comparison.change.toFixed(1)}%
+                                          </p>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-center text-muted-foreground py-12">
+                                <Calendar className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                                <p className="text-lg font-medium">Select date ranges to compare</p>
+                                <p className="text-sm">Choose start and end dates for both periods above</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
@@ -688,15 +1023,49 @@ const SQLViewerPage: React.FC = () => {
 
         {/* Demo Data When Database Not Available */}
         {!selectedDatabase && error && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-sm">
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Demo Data - kanchan_rej
-                <Badge variant="secondary" className="ml-2 text-xs px-1 py-0">
-                  100
-                </Badge>
-              </CardTitle>
+          <Card className="shadow-lg">
+            <CardHeader className="pb-3 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950 dark:to-yellow-950">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center text-lg font-semibold">
+                  <Database className="h-5 w-5 mr-2 text-orange-600" />
+                  Demo Data - kanchan_rej
+                  <Badge variant="secondary" className="ml-3 text-sm px-2 py-1">
+                    100 records
+                  </Badge>
+                </CardTitle>
+                <div className="flex items-center space-x-2">
+                  {/* View Mode Toggle for Demo */}
+                  <div className="flex bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border">
+                    <Button
+                      variant={viewMode === 'table' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('table')}
+                      className="h-8 px-3 text-xs"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Table
+                    </Button>
+                    <Button
+                      variant={viewMode === 'chart' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('chart')}
+                      className="h-8 px-3 text-xs"
+                    >
+                      <TrendingUp className="h-4 w-4 mr-1" />
+                      Chart
+                    </Button>
+                    <Button
+                      variant={viewMode === 'comparison' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('comparison')}
+                      className="h-8 px-3 text-xs"
+                    >
+                      <GitCompare className="h-4 w-4 mr-1" />
+                      Compare
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="mb-3 space-y-2">
