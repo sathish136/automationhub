@@ -62,9 +62,10 @@ export default function SiteEventsEnhanced() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [selectedSiteConfig, setSelectedSiteConfig] = useState<string>("");
+  const [selectedSiteConfig, setSelectedSiteConfig] = useState<string>("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [acknowledgedEvents, setAcknowledgedEvents] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
@@ -81,25 +82,31 @@ export default function SiteEventsEnhanced() {
     queryKey: ["/api/site-events/configurations"],
   });
 
-  // Auto-select first site configuration on load
-  const firstSiteConfig = siteConfigs?.[0];
-  if (!selectedSiteConfig && firstSiteConfig) {
-    setSelectedSiteConfig(firstSiteConfig.id);
-  }
-
-  // Fetch custom site events for selected configuration (or first available)
+  // Fetch custom site events for all configurations when "all" is selected
   const { data: customEvents, isLoading: customEventsLoading } = useQuery<CustomSiteEvent[]>({
-    queryKey: ["/api/site-events/custom", selectedSiteConfig || firstSiteConfig?.id],
-    queryFn: () => {
-      const configToUse = selectedSiteConfig ? 
-        siteConfigs?.find(c => c.id === selectedSiteConfig) : 
-        firstSiteConfig;
+    queryKey: ["/api/site-events/custom", selectedSiteConfig],
+    queryFn: async () => {
+      if (!siteConfigs || siteConfigs.length === 0) return [];
       
-      if (!configToUse) return [];
-      return fetch(`/api/site-events/custom/${configToUse.eventsDatabaseName}/${configToUse.eventsTableName}?limit=100`)
-        .then(res => res.json());
+      if (selectedSiteConfig === "all") {
+        // Fetch from all configurations
+        const allEvents = await Promise.all(
+          siteConfigs.map(config => 
+            fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=50`)
+              .then(res => res.json())
+              .then(events => events.map((event: any) => ({...event, siteName: config.siteName})))
+          )
+        );
+        return allEvents.flat();
+      } else {
+        // Fetch from selected configuration
+        const config = siteConfigs.find(c => c.id === selectedSiteConfig);
+        if (!config) return [];
+        return fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=100`)
+          .then(res => res.json());
+      }
     },
-    enabled: !!(selectedSiteConfig || firstSiteConfig) && !!siteConfigs,
+    enabled: !!siteConfigs,
     refetchInterval: 30000,
   });
 
@@ -500,63 +507,88 @@ export default function SiteEventsEnhanced() {
 
               {/* Custom Site Events Tab */}
               <TabsContent value="custom-events" className="space-y-6 mt-6">
-                {/* Filters and Export */}
+                {/* Site Selection and Filters */}
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex flex-wrap items-center gap-3 justify-between">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                          <Input
-                            placeholder="Search equipment alerts..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 h-9 w-64"
-                          />
+                  <CardContent className="p-3">
+                    <div className="space-y-3">
+                      {/* Site Selection Row */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Database className="h-4 w-4 text-gray-500" />
+                          <span className="text-xs font-medium text-gray-700">Site:</span>
+                        </div>
+                        <Select value={selectedSiteConfig} onValueChange={setSelectedSiteConfig}>
+                          <SelectTrigger className="w-48 h-8 text-xs">
+                            <SelectValue placeholder="All Sites" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Sites</SelectItem>
+                            {siteConfigs?.map(config => (
+                              <SelectItem key={config.id} value={config.id}>
+                                {config.siteName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Filters Row */}
+                      <div className="flex flex-wrap items-center gap-2 justify-between">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+                            <Input
+                              placeholder="Search alerts..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="pl-7 h-8 w-40 text-xs"
+                            />
+                          </div>
+                          
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center gap-2">
+                            <span className="text-xs text-gray-600">From:</span>
+                            <Input
+                              type="date"
+                              className="h-7 w-28 text-xs border-0 bg-white"
+                              value={fromDate}
+                              onChange={(e) => setFromDate(e.target.value)}
+                            />
+                            <span className="text-xs text-gray-600">To:</span>
+                            <Input
+                              type="date"
+                              className="h-7 w-28 text-xs border-0 bg-white"
+                              value={toDate}
+                              onChange={(e) => setToDate(e.target.value)}
+                            />
+                          </div>
+
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-xs"
+                            onClick={() => {
+                              setSearchTerm("");
+                              setFromDate("");
+                              setToDate("");
+                              setSelectedSiteConfig("all");
+                            }}
+                          >
+                            Clear All
+                          </Button>
                         </div>
                         
-                        <Input
-                          type="date"
-                          className="h-9 w-40"
-                          placeholder="From Date"
-                          value={fromDate}
-                          onChange={(e) => setFromDate(e.target.value)}
-                        />
-                        
-                        <Input
-                          type="date"
-                          className="h-9 w-40"
-                          placeholder="To Date"
-                          value={toDate}
-                          onChange={(e) => setToDate(e.target.value)}
-                        />
-
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="h-9"
-                          onClick={() => {
-                            setSearchTerm("");
-                            setFromDate("");
-                            setToDate("");
-                          }}
-                        >
-                          Clear Filters
-                        </Button>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-9"
+                          className="h-8 text-xs"
                           onClick={() => {
                             if (!customEvents) return;
                             const csv = [
-                              ['Date & Time', 'Equipment Alert'],
+                              ['Date & Time', 'Equipment Alert', 'Status'],
                               ...customEvents.map(event => [
                                 new Date(event.date_time).toLocaleString(),
-                                event.description || event.message
+                                event.description || event.message,
+                                acknowledgedEvents.has(`${event.date_time}-${event.description}`) ? 'Acknowledged' : 'Pending'
                               ])
                             ].map(row => row.join(',')).join('\n');
                             
@@ -569,90 +601,124 @@ export default function SiteEventsEnhanced() {
                             URL.revokeObjectURL(url);
                           }}
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          Export CSV
+                          <Download className="h-3 w-3 mr-1" />
+                          Export
                         </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Custom Events Summary */}
-                <div className="grid grid-cols-2 gap-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
+                {/* Alert Summary */}
+                <div className="grid grid-cols-3 gap-4 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg border">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{customEventsSummary.total}</div>
-                    <div className="text-sm text-gray-600">Total Equipment Alerts</div>
+                    <div className="text-lg font-bold text-red-600">{customEventsSummary.total}</div>
+                    <div className="text-xs text-gray-600">Total Alerts</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">0</div>
-                    <div className="text-sm text-gray-600">Acknowledged Today</div>
+                    <div className="text-lg font-bold text-green-600">{acknowledgedEvents.size}</div>
+                    <div className="text-xs text-gray-600">Acknowledged</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-orange-600">{Math.max(0, customEventsSummary.total - acknowledgedEvents.size)}</div>
+                    <div className="text-xs text-gray-600">Pending</div>
                   </div>
                 </div>
 
                 {/* Equipment Alerts List */}
-                <div className="bg-white rounded-lg border shadow-sm">
-                  <div className="border-b border-gray-200 p-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Live Equipment Alerts</h3>
-                    <p className="text-sm text-gray-600">Real-time industrial equipment alerts from all monitoring sites</p>
+                <div className="bg-white rounded border">
+                  <div className="border-b p-2">
+                    <h3 className="text-sm font-semibold text-gray-900">Equipment Alerts</h3>
+                    <p className="text-xs text-gray-500">Real-time equipment status from monitoring sites</p>
                   </div>
                   
-                  <div className="p-4">
+                  <div className="p-2">
                     {customEventsLoading ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         {[...Array(3)].map((_, i) => (
-                          <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />
+                          <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />
                         ))}
                       </div>
                     ) : customEvents && customEvents.length > 0 ? (
-                      <div className="space-y-1 max-h-96 overflow-y-auto">
+                      <div className="space-y-1 max-h-80 overflow-y-auto">
                         {customEvents
                           .filter(event => {
                             const matchesSearch = !searchTerm || 
                               (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase());
-                            const matchesDateRange = !fromDate || !toDate || 
-                              (new Date(event.date_time) >= new Date(fromDate) && new Date(event.date_time) <= new Date(toDate));
+                            const matchesDateRange = (!fromDate && !toDate) || 
+                              (new Date(event.date_time) >= new Date(fromDate || '1900-01-01') && 
+                               new Date(event.date_time) <= new Date(toDate || '2100-12-31'));
                             return matchesSearch && matchesDateRange;
                           })
-                          .map((event, index) => (
-                          <div key={event.id || `${event.date_time}-${index}`} 
-                               className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-all duration-200">
-                            <div className="flex items-center gap-3 flex-1">
-                              <div className="w-2 h-8 bg-red-500 rounded-full animate-pulse"></div>
-                              <div className="flex items-center gap-2">
-                                <Badge className="bg-red-500 text-white text-xs px-2 py-1">
-                                  <AlertCircle className="h-3 w-3 mr-1" />
-                                  Alert
-                                </Badge>
-                                <span className="text-sm font-medium text-gray-900">
-                                  {event.description || event.message}
-                                </span>
+                          .map((event, index) => {
+                            const eventKey = `${event.date_time}-${event.description || event.message}`;
+                            const isAcknowledged = acknowledgedEvents.has(eventKey);
+                            
+                            return (
+                              <div key={eventKey} 
+                                   className={`flex items-center justify-between p-2 border rounded transition-colors ${
+                                     isAcknowledged ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200 hover:bg-red-100'
+                                   }`}>
+                                <div className="flex items-center gap-2 flex-1">
+                                  <div className={`w-1 h-6 rounded-full ${isAcknowledged ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                  <Badge className={`text-xs px-1.5 py-0.5 ${
+                                    isAcknowledged ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                                  }`}>
+                                    <AlertCircle className="h-2 w-2 mr-1" />
+                                    {isAcknowledged ? 'ACK' : 'Alert'}
+                                  </Badge>
+                                  <span className="text-xs font-medium text-gray-900 flex-1">
+                                    {event.description || event.message}
+                                  </span>
+                                  {event.siteName && (
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-1 rounded">
+                                      {event.siteName}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <div className="text-xs text-gray-500 flex items-center gap-1">
+                                    <Clock className="h-2 w-2" />
+                                    {new Date(event.date_time).toLocaleString('en-GB', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </div>
+                                  {!isAcknowledged && (
+                                    <button 
+                                      className="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                      onClick={() => {
+                                        const newAcknowledged = new Set(acknowledgedEvents);
+                                        newAcknowledged.add(eventKey);
+                                        setAcknowledgedEvents(newAcknowledged);
+                                        
+                                        toast({
+                                          title: "Alert Acknowledged",
+                                          description: `${event.description || event.message} acknowledged by User at ${new Date().toLocaleTimeString()}`,
+                                        });
+                                      }}
+                                    >
+                                      ACK
+                                    </button>
+                                  )}
+                                  {isAcknowledged && (
+                                    <span className="text-xs text-green-600 font-medium">
+                                      ✓ User
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              <div className="text-xs text-gray-500 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {formatDate(event.date_time)}
-                              </div>
-                              <button 
-                                className="text-xs px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors font-medium"
-                                onClick={() => {
-                                  toast({
-                                    title: "Alert Acknowledged",
-                                    description: `${event.description || event.message} has been acknowledged`,
-                                  });
-                                }}
-                              >
-                                ACK
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                            );
+                          })}
                       </div>
                     ) : (
-                      <div className="text-center py-12">
-                        <Database className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Equipment Alerts</h3>
-                        <p className="text-gray-600">All systems are running normally. No alerts at this time.</p>
+                      <div className="text-center py-8">
+                        <Database className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                        <h3 className="text-sm font-medium text-gray-900 mb-1">No Equipment Alerts</h3>
+                        <p className="text-xs text-gray-600">All systems running normally</p>
                       </div>
                     )}
                   </div>
