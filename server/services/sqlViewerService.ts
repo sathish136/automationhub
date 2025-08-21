@@ -61,26 +61,23 @@ class SQLViewerService {
     sortDirection?: 'asc' | 'desc';
   }): Promise<any[]> {
     await this.connect();
-    // Basic protection against SQL injection, but a more robust solution is recommended for production
-    if (!/^[a-zA-Z0-9_]+$/.test(database) || !/^[a-zA-Z0-9_]+$/.test(table)) {
-      throw new Error('Invalid database or table name.');
-    }
+    // Sanitize database and table names to prevent SQL injection
+    const sanitizedDatabase = database.replace(/[\[\]';"--]/g, '');
+    const sanitizedTable = table.replace(/[\[\]';"--]/g, '');
     
     const limit = options?.limit || 100;
-    let query = `USE [${database}]; SELECT TOP ${limit} * FROM [${table}]`;
+    let query = `USE [${sanitizedDatabase}]; SELECT TOP ${limit} * FROM [${sanitizedTable}]`;
     
     // Add ORDER BY clause if sorting is specified
     if (options?.sortColumn && options?.sortDirection) {
       // Validate column name to prevent SQL injection
-      if (!/^[a-zA-Z0-9_]+$/.test(options.sortColumn)) {
-        throw new Error('Invalid column name.');
-      }
-      query += ` ORDER BY [${options.sortColumn}] ${options.sortDirection.toUpperCase()}`;
+      const sanitizedSortColumn = options.sortColumn.replace(/[\[\]';"--]/g, '');
+      query += ` ORDER BY [${sanitizedSortColumn}] ${options.sortDirection.toUpperCase()}`;
     }
     
     query += ';';
     const result = await this.pool.request().query(query);
-    return result.recordset;
+    return result.recordset.map(row => ({ ...row, isRead: false, isResolved: false }));
   }
 }
 

@@ -418,9 +418,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         anydeskPassword: device.anydeskPassword ? "****" : undefined,
       };
       res.status(201).json(safeDevice);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating IPC device:", error);
-      res.status(400).json({ message: "Invalid device data" });
+      res.status(400).json({ 
+        message: "Invalid device data", 
+        error: error.flatten ? error.flatten() : error.message 
+      });
     }
   });
 

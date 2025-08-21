@@ -1,0 +1,1 @@
+ALTER TABLE "ipc_management" ADD COLUMN "ipc_image" varchar(500);

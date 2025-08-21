@@ -352,7 +352,9 @@ export const insertProgramBackupSchema = createInsertSchema(programBackups).omit
 
 
 
-export const insertIpcManagementSchema = createInsertSchema(ipcManagement).omit({
+export const insertIpcManagementSchema = createInsertSchema(ipcManagement, {
+  siteId: z.string().optional(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,

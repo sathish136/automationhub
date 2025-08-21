@@ -1,0 +1,1 @@
+ALTER TABLE "ipc_management" DROP COLUMN "ipc_image";

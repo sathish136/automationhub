@@ -52,6 +52,8 @@ interface CustomSiteEvent {
   tag_value?: number;
   setpoint?: number;
   note?: string;
+  isRead?: boolean;
+  isResolved?: boolean;
 }
 
 export default function SiteEvents() {
@@ -62,11 +64,6 @@ export default function SiteEvents() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedSiteConfig, setSelectedSiteConfig] = useState<string>("all");
   const { toast } = useToast();
-
-  const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
-    queryKey: ["/api/alerts"],
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
 
   const { data: sites } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
@@ -89,28 +86,6 @@ export default function SiteEvents() {
     },
     enabled: selectedSiteConfig !== "all" && !!siteConfigs,
     refetchInterval: 30000, // Refresh every 30 seconds
-  });
-
-  const markAsReadMutation = useMutation({
-    mutationFn: (alertId: string) => apiRequest(`/api/alerts/${alertId}/read`, "PUT"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-      toast({
-        title: "Success",
-        description: "Alert marked as read",
-      });
-    },
-  });
-
-  const markAsResolvedMutation = useMutation({
-    mutationFn: (alertId: string) => apiRequest(`/api/alerts/${alertId}/resolve`, "PUT"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-      toast({
-        title: "Success",
-        description: "Alert marked as resolved",
-      });
-    },
   });
 
   const getSeverityColor = (severity: string) => {
@@ -199,293 +174,89 @@ export default function SiteEvents() {
     return site ? site.name : "Unknown Site";
   };
 
-  const formatTimeAgo = (createdAt: string) => {
-    const date = new Date(createdAt);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-    
-    if (diffMins < 60) {
-      return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    } else {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  // Filter to show PLC tag and site events
-  const plcEventTypes = ["plc_tag_trip", "plc_tag_alarm", "site_offline", "equipment_failure"];
-  
-  const filteredAlerts = alerts?.filter(alert => {
-    // Show PLC tag events and critical site events
-    const isPlcEvent = plcEventTypes.includes(alert.type) || 
-                      alert.message.toLowerCase().includes("trip") ||
-                      alert.message.toLowerCase().includes("pump") ||
-                      alert.message.toLowerCase().includes("blower") ||
-                      alert.message.toLowerCase().includes("alarm") ||
-                      alert.message.toLowerCase().includes("chemical") ||
-                      alert.message.toLowerCase().includes("offline");
-    
-    if (!isPlcEvent) return false;
-    
-    const matchesSearch = alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         alert.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         getSiteName(alert.siteId).toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
-    const matchesType = typeFilter === "all" || alert.type === typeFilter;
-    const matchesCategory = categoryFilter === "all" || getPlcCategory(alert.type, alert.message) === categoryFilter;
-    
-    let matchesStatus = true;
-    if (statusFilter === "unread") {
-      matchesStatus = !alert.isRead;
-    } else if (statusFilter === "unresolved") {
-      matchesStatus = !alert.isResolved;
-    } else if (statusFilter === "resolved") {
-      matchesStatus = alert.isResolved;
-    }
-    
-    return matchesSearch && matchesSeverity && matchesType && matchesCategory && matchesStatus;
-  }) || [];
-
-  const eventTypes = Array.from(new Set(filteredAlerts?.map(alert => alert.type) || []));
-  
-  // Available PLC categories
-  const plcCategories = Array.from(new Set(
-    alerts?.filter(alert => {
-      const isPlcEvent = plcEventTypes.includes(alert.type) || 
-                        alert.message.toLowerCase().includes("trip") ||
-                        alert.message.toLowerCase().includes("pump") ||
-                        alert.message.toLowerCase().includes("blower") ||
-                        alert.message.toLowerCase().includes("alarm") ||
-                        alert.message.toLowerCase().includes("chemical") ||
-                        alert.message.toLowerCase().includes("offline");
-      return isPlcEvent;
-    }).map(alert => getPlcCategory(alert.type, alert.message)) || []
-  ));
-  
-  // Site events summary
-  const getSiteEventsSummary = () => {
-    const critical = filteredAlerts.filter(a => a.severity === "critical" && !a.isResolved).length;
-    const warning = filteredAlerts.filter(a => a.severity === "warning" && !a.isResolved).length;
-    const unread = filteredAlerts.filter(a => !a.isRead).length;
-    return { critical, warning, unread };
-  };
-  
-  const siteEventsSummary = getSiteEventsSummary();
+  const displayedEvents = customEvents?.filter(event => 
+    (event.message?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (event.site?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  ) || [];
 
   return (
     <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Site Events</h1>
-          <p className="text-sm text-gray-500">Real-time PLC tag monitoring and site alerts for industrial equipment</p>
-        </div>
-        <div className="flex gap-4">
-          <div className="text-center">
-            <div className="text-xl font-bold text-red-600 dark:text-red-400">{siteEventsSummary.critical}</div>
-            <div className="text-xs text-gray-500">Critical</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{siteEventsSummary.warning}</div>
-            <div className="text-xs text-gray-500">Warning</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{siteEventsSummary.unread}</div>
-            <div className="text-xs text-gray-500">Unread</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{filteredAlerts.length}</div>
-            <div className="text-xs text-gray-500">Total</div>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Site Events</h1>
+        <p className="text-sm text-gray-500">Live events from the selected site database.</p>
       </div>
 
       {/* Compact Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="flex flex-wrap gap-2">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search sites or messages..."
+                placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-9"
-                data-testid="input-search-events"
+                className="pl-10 w-full"
               />
             </div>
-            
-            <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger className="w-32 h-9" data-testid="select-severity-filter">
-                <SelectValue placeholder="Severity" />
+            <Select value={selectedSiteConfig} onValueChange={setSelectedSiteConfig}>
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Select Site Database" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="warning">Warning</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-40 h-9" data-testid="select-category-filter">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {plcCategories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                <SelectItem value="all">Select a Site Database to view events</SelectItem>
+                {siteConfigs?.map(config => (
+                  <SelectItem key={config.id} value={config.id}>
+                    {config.siteName} - {config.eventsTableName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32 h-9" data-testid="select-status-filter">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="unread">Unread</SelectItem>
-                <SelectItem value="unresolved">Active</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                setSearchTerm("");
-                setSeverityFilter("all");
-                setTypeFilter("all");
-                setCategoryFilter("all");
-                setStatusFilter("all");
-              }}
-              className="h-9"
-              data-testid="button-clear-filters"
-            >
-              Clear
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Events List */}
       <div className="space-y-4">
-        {alertsLoading ? (
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : filteredAlerts.length > 0 ? (
-          filteredAlerts.map((alert) => (
-            <Card key={alert.id} className={`transition-all hover:shadow-md ${!alert.isRead ? 'ring-2 ring-blue-200 dark:ring-blue-400' : ''}`} data-testid={`alert-card-${alert.id}`}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <div className={`p-2 rounded-full ${getSeverityColor(alert.severity)} shrink-0`}>
-                      {getPlcCategoryIcon(alert.type, alert.message)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {getSiteName(alert.siteId)}
-                        </h3>
-                        <Badge variant="outline" className={`text-xs ${getSeverityTextColor(alert.severity)}`}>
-                          {alert.severity}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-800">
-                          {getPlcCategory(alert.type, alert.message)}
-                        </Badge>
-                      </div>
-                      
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-1">
-                        {alert.message}
-                      </p>
-                      
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span>{formatTimeAgo(alert.createdAt)}</span>
-                        <span className="opacity-70">{formatDate(alert.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 ml-3">
-                    {!alert.isRead && (
-                      <Badge variant="secondary" className="text-xs px-2 py-1">
-                        New
-                      </Badge>
-                    )}
-                    {alert.isResolved && (
-                      <Badge variant="default" className="text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        Resolved
-                      </Badge>
-                    )}
-                    
-                    <div className="flex gap-1">
-                      {!alert.isRead && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => markAsReadMutation.mutate(alert.id)}
-                          disabled={markAsReadMutation.isPending}
-                          className="h-8 w-8 p-0"
-                          data-testid={`button-mark-read-${alert.id}`}
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                      )}
-                      
-                      {!alert.isResolved && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => markAsResolvedMutation.mutate(alert.id)}
-                          disabled={markAsResolvedMutation.isPending}
-                          className="h-8 w-8 p-0"
-                          data-testid={`button-resolve-${alert.id}`}
-                        >
-                          <CheckCircle className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+        {customEventsLoading ? (
+          <p>Loading events...</p>
+        ) : selectedSiteConfig === "all" || !selectedSiteConfig ? (
+          <Card>
+            <CardContent className="p-6 text-center text-gray-500">
+              <p>Please select a site database to view events.</p>
+            </CardContent>
+          </Card>
+        ) : displayedEvents.length > 0 ? (
+          <Card>
+            <CardContent>
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                  <tr>
+                    <th scope="col" className="px-6 py-3">S.No</th>
+                    <th scope="col" className="px-6 py-3">Date & Time</th>
+                    <th scope="col" className="px-6 py-3">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedEvents.map((event: CustomSiteEvent, index: number) => (
+                    <tr key={event.id || index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                      <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{index + 1}</td>
+                      <td className="px-6 py-4">{new Date(event.date_time).toLocaleString()}</td>
+                      <td className="px-6 py-4">{event.message}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
         ) : (
           <Card>
-            <CardContent className="p-8 text-center">
-              <Network className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                No network events found
-              </h3>
-              <p className="text-sm text-gray-500">
-                {searchTerm || severityFilter !== "all" || typeFilter !== "all" || statusFilter !== "all"
-                  ? "Try adjusting your filters to see more network events."
-                  : "All sites are running smoothly - no connectivity issues detected."}
-              </p>
+            <CardContent className="p-6 text-center text-gray-500">
+              <p>No events found for the selected site database.</p>
             </CardContent>
           </Card>
         )}
       </div>
     </div>
   );
-}
+};
