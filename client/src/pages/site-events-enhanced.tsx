@@ -551,317 +551,144 @@ export default function SiteEventsEnhanced() {
               </TabsContent>
 
               {/* Custom Site Events Tab */}
-              <TabsContent value="custom-events" className="space-y-6 mt-6">
-                {/* Site Selection and Filters */}
-                <Card>
-                  <CardContent className="p-3">
-                    <div className="space-y-3">
-                      {/* Site Selection Row */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Database className="h-4 w-4 text-gray-500" />
-                          <span className="text-xs font-medium text-gray-700">Site:</span>
-                        </div>
-                        <Select value={selectedSiteConfig} onValueChange={setSelectedSiteConfig}>
-                          <SelectTrigger className="w-48 h-8 text-xs">
-                            <SelectValue placeholder="All Sites" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Sites</SelectItem>
-                            {siteConfigs?.map(config => (
-                              <SelectItem key={config.id} value={config.id}>
-                                {config.siteName || config.deviceName || 'Unnamed Site'}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+              <TabsContent value="custom-events" className="space-y-2 mt-2">
+                {/* Compact Controls */}
+                <div className="bg-gray-50 border rounded p-2">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-3 w-3" />
+                      <span className="font-medium">Site:</span>
+                      <Select value={selectedSiteConfig} onValueChange={setSelectedSiteConfig}>
+                        <SelectTrigger className="w-32 h-6 text-xs">
+                          <SelectValue placeholder="All Sites" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Sites</SelectItem>
+                          {siteConfigs?.map(config => (
+                            <SelectItem key={config.id} value={config.id}>
+                              {config.siteName || config.deviceName || 'Unnamed Site'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <div className="relative">
+                        <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-2.5 w-2.5" />
+                        <Input
+                          placeholder="Search..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-6 h-6 w-24 text-xs"
+                        />
                       </div>
-
-                      {/* Filters Row */}
-                      <div className="flex flex-wrap items-center gap-2 justify-between">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="relative">
-                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
-                            <Input
-                              placeholder="Search alerts..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="pl-7 h-8 w-40 text-xs"
-                            />
-                          </div>
                           
-                          <div className="relative" ref={calendarRef}>
-                            <button
-                              className={`flex items-center gap-2 px-3 py-2 text-xs border rounded-lg transition-colors ${
-                                dateRange === "all" 
-                                  ? "bg-gray-50 border-gray-200 text-gray-600" 
-                                  : "bg-blue-50 border-blue-200 text-blue-700"
-                              }`}
-                              onClick={() => setShowCalendar(!showCalendar)}
-                            >
-                              📅
-                              <span className="font-medium">
-                                {dateRange === "all" ? "All dates" : 
-                                 dateRange === "today" ? "Today" :
-                                 dateRange === "yesterday" ? "Yesterday" :
-                                 dateRange === "last7" ? "Last 7 days" :
-                                 dateRange === "last30" ? "Last 30 days" :
-                                 dateRange === "custom" && fromDate && toDate ? 
-                                   `${fromDate.split('-').reverse().join('/')} - ${toDate.split('-').reverse().join('/')}` :
-                                 "Select dates"
-                                }
-                              </span>
-                              <svg className={`w-4 h-4 transition-transform ${showCalendar ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
+                      <div className="relative" ref={calendarRef}>
+                        <button
+                          className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${
+                            dateRange === "all" 
+                              ? "bg-gray-50 border-gray-200 text-gray-600" 
+                              : "bg-blue-50 border-blue-200 text-blue-700"
+                          }`}
+                          onClick={() => setShowCalendar(!showCalendar)}
+                        >
+                          📅
+                          <span className="text-xs">
+                            {dateRange === "all" ? "All dates" : 
+                             dateRange === "today" ? "Today" :
+                             dateRange === "yesterday" ? "Yesterday" :
+                             dateRange === "last7" ? "Last 7 days" :
+                             dateRange === "last30" ? "Last 30 days" :
+                             dateRange === "custom" && fromDate && toDate ? 
+                               `${fromDate.split('-').reverse().join('/')} - ${toDate.split('-').reverse().join('/')}` :
+                             "Select dates"
+                            }
+                          </span>
+                          <svg className={`w-3 h-3 transition-transform ${showCalendar ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
                             
-                            {showCalendar && (
-                              <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80">
-                                <div className="space-y-3">
-                                  <div className="grid grid-cols-1 gap-2">
-                                    <button
-                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "all" ? "bg-blue-100 text-blue-700" : ""}`}
-                                      onClick={() => {
-                                        setDateRange("all");
-                                        setFromDate("");
-                                        setToDate("");
-                                        setShowCalendar(false);
-                                      }}
-                                    >
-                                      All dates
-                                    </button>
-                                    <button
-                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "today" ? "bg-blue-100 text-blue-700" : ""}`}
-                                      onClick={() => {
-                                        const today = new Date().toISOString().split('T')[0];
-                                        setDateRange("today");
-                                        setFromDate(today);
-                                        setToDate(today);
-                                        setShowCalendar(false);
-                                      }}
-                                    >
-                                      Today
-                                    </button>
-                                    <button
-                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "yesterday" ? "bg-blue-100 text-blue-700" : ""}`}
-                                      onClick={() => {
-                                        const yesterday = new Date();
-                                        yesterday.setDate(yesterday.getDate() - 1);
-                                        const yesterdayStr = yesterday.toISOString().split('T')[0];
-                                        setDateRange("yesterday");
-                                        setFromDate(yesterdayStr);
-                                        setToDate(yesterdayStr);
-                                        setShowCalendar(false);
-                                      }}
-                                    >
-                                      Yesterday
-                                    </button>
-                                    <button
-                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "last7" ? "bg-blue-100 text-blue-700" : ""}`}
-                                      onClick={() => {
-                                        const today = new Date();
-                                        const weekAgo = new Date();
-                                        weekAgo.setDate(weekAgo.getDate() - 7);
-                                        setDateRange("last7");
-                                        setFromDate(weekAgo.toISOString().split('T')[0]);
-                                        setToDate(today.toISOString().split('T')[0]);
-                                        setShowCalendar(false);
-                                      }}
-                                    >
-                                      Last 7 days
-                                    </button>
-                                    <button
-                                      className={`text-left px-3 py-2 text-xs rounded hover:bg-gray-100 ${dateRange === "last30" ? "bg-blue-100 text-blue-700" : ""}`}
-                                      onClick={() => {
-                                        const today = new Date();
-                                        const monthAgo = new Date();
-                                        monthAgo.setDate(monthAgo.getDate() - 30);
-                                        setDateRange("last30");
-                                        setFromDate(monthAgo.toISOString().split('T')[0]);
-                                        setToDate(today.toISOString().split('T')[0]);
-                                        setShowCalendar(false);
-                                      }}
-                                    >
-                                      Last 30 days
-                                    </button>
-                                  </div>
-                                  
-                                  <div className="border-t pt-3">
-                                    <div className="text-xs font-medium text-gray-700 mb-2">Custom Range</div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <label className="text-xs text-gray-500">From</label>
-                                        <Input
-                                          type="date"
-                                          className="h-8 text-xs"
-                                          value={fromDate}
-                                          onChange={(e) => {
-                                            setFromDate(e.target.value);
-                                            if (e.target.value && toDate) {
-                                              setDateRange("custom");
-                                            }
-                                          }}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="text-xs text-gray-500">To</label>
-                                        <Input
-                                          type="date"
-                                          className="h-8 text-xs"
-                                          value={toDate}
-                                          onChange={(e) => {
-                                            setToDate(e.target.value);
-                                            if (fromDate && e.target.value) {
-                                              setDateRange("custom");
-                                            }
-                                          }}
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-2 mt-3">
-                                      <Button
-                                        size="sm"
-                                        className="flex-1 h-8 text-xs"
-                                        onClick={() => {
-                                          if (fromDate && toDate) {
-                                            setDateRange("custom");
-                                            setShowCalendar(false);
-                                          }
-                                        }}
-                                        disabled={!fromDate || !toDate}
-                                      >
-                                        Apply
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-8 text-xs"
-                                        onClick={() => {
-                                          setDateRange("all");
-                                          setFromDate("");
-                                          setToDate("");
-                                          setShowCalendar(false);
-                                        }}
-                                      >
-                                        Clear
-                                      </Button>
-                                    </div>
-                                  </div>
+                        {showCalendar && (
+                          <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64">
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-1 gap-1">
+                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "all" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setShowCalendar(false); }}>All dates</button>
+                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "today" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const today = new Date().toISOString().split('T')[0]; setDateRange("today"); setFromDate(today); setToDate(today); setShowCalendar(false); }}>Today</button>
+                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "yesterday" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); const yesterdayStr = yesterday.toISOString().split('T')[0]; setDateRange("yesterday"); setFromDate(yesterdayStr); setToDate(yesterdayStr); setShowCalendar(false); }}>Yesterday</button>
+                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "last7" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const today = new Date(); const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); setDateRange("last7"); setFromDate(weekAgo.toISOString().split('T')[0]); setToDate(today.toISOString().split('T')[0]); setShowCalendar(false); }}>Last 7 days</button>
+                                <button className={`text-left px-2 py-1 text-xs rounded hover:bg-gray-50 ${dateRange === "last30" ? "bg-blue-100 text-blue-700" : ""}`} onClick={() => { const today = new Date(); const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30); setDateRange("last30"); setFromDate(monthAgo.toISOString().split('T')[0]); setToDate(today.toISOString().split('T')[0]); setShowCalendar(false); }}>Last 30 days</button>
+                              </div>
+                              
+                              <div className="border-t pt-2">
+                                <div className="text-xs font-medium text-gray-700 mb-1">Custom Range</div>
+                                <div className="grid grid-cols-2 gap-1">
+                                  <Input type="date" className="h-6 text-xs" value={fromDate} onChange={(e) => { setFromDate(e.target.value); if (e.target.value && toDate) setDateRange("custom"); }} />
+                                  <Input type="date" className="h-6 text-xs" value={toDate} onChange={(e) => { setToDate(e.target.value); if (fromDate && e.target.value) setDateRange("custom"); }} />
+                                </div>
+                                <div className="flex gap-1 mt-2">
+                                  <Button size="sm" className="flex-1 h-6 text-xs" onClick={() => { if (fromDate && toDate) { setDateRange("custom"); setShowCalendar(false); } }} disabled={!fromDate || !toDate}>Apply</Button>
+                                  <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => { setDateRange("all"); setFromDate(""); setToDate(""); setShowCalendar(false); }}>Clear</Button>
                                 </div>
                               </div>
-                            )}
+                            </div>
                           </div>
-
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 text-xs"
-                            onClick={() => {
-                              setSearchTerm("");
-                              setFromDate("");
-                              setToDate("");
-                              setSelectedSiteConfig("all");
-                            }}
-                          >
-                            Clear All
-                          </Button>
-                        </div>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-8 text-xs"
-                          onClick={() => {
-                            if (!customEvents) return;
-                            const csv = [
-                              ['Date & Time', 'Equipment Alert', 'Status'],
-                              ...customEvents.map(event => [
-                                new Date(event.date_time).toLocaleString(),
-                                event.description || event.message,
-                                acknowledgedEvents.has(`${event.date_time}-${event.description}`) ? 'Acknowledged' : 'Pending'
-                              ])
-                            ].map(row => row.join(',')).join('\n');
-                            
-                            const blob = new Blob([csv], { type: 'text/csv' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `equipment-alerts-${new Date().toISOString().split('T')[0]}.csv`;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                          }}
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          Export
-                        </Button>
+                        )}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Alert Summary */}
-                <div className="grid grid-cols-3 gap-4 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg border">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-red-600">
-                      {customEvents?.filter(event => {
-                        const matchesSearch = !searchTerm || 
-                          (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
-                        
-                        let matchesDateRange = true;
-                        if (fromDate || toDate) {
-                          const eventDate = new Date(event.date_time);
-                          
-                          if (fromDate && toDate) {
-                            const startDate = new Date(fromDate + 'T00:00:00');
-                            const endDate = new Date(toDate + 'T23:59:59');
-                            matchesDateRange = eventDate >= startDate && eventDate <= endDate;
-                          } else if (fromDate) {
-                            const startDate = new Date(fromDate + 'T00:00:00');
-                            matchesDateRange = eventDate >= startDate;
-                          } else if (toDate) {
-                            const endDate = new Date(toDate + 'T23:59:59');
-                            matchesDateRange = eventDate <= endDate;
-                          }
-                        }
-                        
-                        return matchesSearch && matchesDateRange;
-                      }).length || 0}
+                      <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { const csvData = customEvents?.map(event => ({ 'Date & Time': new Date(event.date_time).toLocaleString('en-GB'), 'Description': event.description || event.message, 'Site': event.siteName || event.deviceName || 'Site', 'Type': event.type || 'Alert', 'Severity': event.severity || 'Unknown' })) || []; const csvContent = [ Object.keys(csvData[0] || {}).join(','), ...csvData.map(row => Object.values(row).join(',')) ].join('\n'); const blob = new Blob([csvContent], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `site-events-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url); }}>
+                        <Download className="h-2.5 w-2.5" />
+                      </Button>
                     </div>
-                    <div className="text-xs text-gray-600">Filtered Alerts</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-green-600">{acknowledgedEvents.size}</div>
-                    <div className="text-xs text-gray-600">Acknowledged</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-blue-600">
-                      {fromDate || toDate ? 
-                        `📅 ${fromDate ? fromDate.split('-').reverse().join('/') : '∞'} - ${toDate ? toDate.split('-').reverse().join('/') : '∞'}` : 
-                        'All Time'
-                      }
+                    
+                    <div className="flex items-center gap-3 ml-auto">
+                      <span className="text-xs">
+                        <span className="font-bold text-red-600">
+                          {customEvents?.filter(event => {
+                            const matchesSearch = !searchTerm || (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) || (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
+                            let matchesDateRange = true;
+                            if (fromDate || toDate) {
+                              const eventDate = new Date(event.date_time);
+                              if (fromDate && toDate) {
+                                const startDate = new Date(fromDate + 'T00:00:00');
+                                const endDate = new Date(toDate + 'T23:59:59');
+                                matchesDateRange = eventDate >= startDate && eventDate <= endDate;
+                              } else if (fromDate) {
+                                const startDate = new Date(fromDate + 'T00:00:00');
+                                matchesDateRange = eventDate >= startDate;
+                              } else if (toDate) {
+                                const endDate = new Date(toDate + 'T23:59:59');
+                                matchesDateRange = eventDate <= endDate;
+                              }
+                            }
+                            return matchesSearch && matchesDateRange;
+                          }).length || 0}
+                        </span> Alerts
+                      </span>
+                      <span className="text-xs">
+                        <span className="font-bold text-green-600">{acknowledgedEvents.size}</span> ACK
+                      </span>
                     </div>
-                    <div className="text-xs text-gray-600">Date Range</div>
                   </div>
                 </div>
 
-                {/* Equipment Alerts List */}
-                <div className="bg-white rounded border">
-                  <div className="border-b p-2">
-                    <h3 className="text-sm font-semibold text-gray-900">Equipment Alerts</h3>
+
+
+                {/* Equipment Alerts List - 75% Space for Data */}
+                <div className="bg-white rounded border flex-1">
+                  <div className="border-b p-1">
+                    <h3 className="text-xs font-semibold text-gray-900">Equipment Alerts</h3>
                     <p className="text-xs text-gray-500">Real-time equipment status from monitoring sites</p>
                   </div>
                   
-                  <div className="p-2">
+                  <div className="p-1">
                     {customEventsLoading ? (
-                      <div className="space-y-1">
-                        {[...Array(3)].map((_, i) => (
-                          <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />
+                      <div className="space-y-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="h-6 bg-gray-100 rounded animate-pulse" />
                         ))}
                       </div>
                     ) : customEvents && customEvents.length > 0 ? (
-                      <div className="space-y-1 max-h-80 overflow-y-auto">
+                      <div className="space-y-0.5 max-h-[calc(100vh-180px)] overflow-y-auto">
                         {customEvents
                           .filter(event => {
                             // Search filter
@@ -906,57 +733,26 @@ export default function SiteEventsEnhanced() {
                             const isAcknowledged = acknowledgedEvents.has(eventKey);
                             
                             return (
-                              <div key={eventKey} 
-                                   className={`flex items-center justify-between p-2 border rounded transition-colors ${
-                                     isAcknowledged ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200 hover:bg-red-100'
-                                   }`}>
-                                <div className="flex items-center gap-2 flex-1">
-                                  <div className={`w-1 h-6 rounded-full ${isAcknowledged ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                  <Badge className={`text-xs px-1.5 py-0.5 ${
-                                    isAcknowledged ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                                  }`}>
-                                    <AlertCircle className="h-2 w-2 mr-1" />
+                              <div key={eventKey} className={`flex items-center justify-between p-1 border rounded text-xs transition-colors ${isAcknowledged ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200 hover:bg-red-100'}`}>
+                                <div className="flex items-center gap-1 flex-1 min-w-0">
+                                  <div className={`w-0.5 h-4 rounded-full ${isAcknowledged ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                  <Badge className={`text-xs px-1 py-0 ${isAcknowledged ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                                    <AlertCircle className="h-1.5 w-1.5 mr-0.5" />
                                     {isAcknowledged ? 'ACK' : 'Alert'}
                                   </Badge>
-                                  <span className="text-xs font-medium text-gray-900 flex-1">
-                                    {event.description || event.message}
-                                  </span>
-                                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded font-medium">
-                                    {event.siteName || event.deviceName || 'Site'}
-                                  </span>
+                                  <span className="font-medium text-gray-900 flex-1 truncate">{event.description || event.message}</span>
+                                  <span className="text-blue-600 bg-blue-100 px-1 py-0 rounded font-medium">{event.siteName || event.deviceName || 'Site'}</span>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <div className="text-xs text-gray-500 flex items-center gap-1">
-                                    <Clock className="h-2 w-2" />
-                                    {new Date(event.date_time).toLocaleString('en-GB', {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: '2-digit',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <div className="text-gray-500 flex items-center gap-0.5">
+                                    <Clock className="h-1.5 w-1.5" />
+                                    {new Date(event.date_time).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                   </div>
                                   {!isAcknowledged && (
-                                    <button 
-                                      className="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                      onClick={() => {
-                                        const newAcknowledged = new Set(acknowledgedEvents);
-                                        newAcknowledged.add(eventKey);
-                                        setAcknowledgedEvents(newAcknowledged);
-                                        
-                                        toast({
-                                          title: "Alert Acknowledged",
-                                          description: `${event.description || event.message} acknowledged by User at ${event.siteName || event.deviceName || 'Site'} - ${new Date().toLocaleTimeString()}`,
-                                        });
-                                      }}
-                                    >
-                                      ACK
-                                    </button>
+                                    <button className="px-1 py-0.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors" onClick={() => { const newAcknowledged = new Set(acknowledgedEvents); newAcknowledged.add(eventKey); setAcknowledgedEvents(newAcknowledged); toast({ title: "Alert Acknowledged", description: `${event.description || event.message} by Admin@${event.siteName || event.deviceName || 'Site'}` }); }}>ACK</button>
                                   )}
                                   {isAcknowledged && (
-                                    <span className="text-xs text-green-600 font-medium">
-                                      ✓ User@{event.siteName || event.deviceName || 'Site'}
-                                    </span>
+                                    <span className="text-green-600 font-medium">✓ Admin@{event.siteName || event.deviceName || 'Site'}</span>
                                   )}
                                 </div>
                               </div>
@@ -964,9 +760,9 @@ export default function SiteEventsEnhanced() {
                           })}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <Database className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                        <h3 className="text-sm font-medium text-gray-900 mb-1">No Equipment Alerts</h3>
+                      <div className="text-center py-4">
+                        <Database className="h-6 w-6 mx-auto text-gray-300 mb-1" />
+                        <h3 className="text-xs font-medium text-gray-900">No Equipment Alerts</h3>
                         <p className="text-xs text-gray-600">All systems running normally</p>
                       </div>
                     )}
