@@ -61,40 +61,23 @@ class SQLViewerService {
     sortDirection?: 'asc' | 'desc';
   }): Promise<any[]> {
     await this.connect();
-    try {
-      // Sanitize database and table names to prevent SQL injection
-      const sanitizedDatabase = database.replace(/[\[\]';"--]/g, '');
-      const sanitizedTable = table.replace(/[\[\]';"--]/g, '');
-      
-      const limit = options?.limit || 100;
-      let query = `USE [${sanitizedDatabase}]; SELECT TOP ${limit} * FROM [${sanitizedTable}]`;
-      
-      // Add ORDER BY clause if sorting is specified
-      if (options?.sortColumn && options?.sortDirection) {
-        // First verify the column exists
-        const columnCheckQuery = `
-          USE [${sanitizedDatabase}];
-          SELECT COLUMN_NAME 
-          FROM INFORMATION_SCHEMA.COLUMNS 
-          WHERE TABLE_NAME = '${sanitizedTable}' 
-          AND COLUMN_NAME = '${options.sortColumn}'
-        `;
-        
-        const columnCheck = await this.pool.request().query(columnCheckQuery);
-        if (columnCheck.recordset.length > 0) {
-          const sanitizedSortColumn = options.sortColumn.replace(/[\[\]';"--]/g, '');
-          query += ` ORDER BY [${sanitizedSortColumn}] ${options.sortDirection.toUpperCase()}`;
-        }
-      }
-      
-      query += ';';
-      const result = await this.pool.request().query(query);
-      return result.recordset.map(row => ({ ...row, isRead: false, isResolved: false }));
-    } catch (error) {
-      console.error(`Error fetching data for table ${table}:`, error);
-      // Return empty array instead of throwing error
-      return [];
+    // Sanitize database and table names to prevent SQL injection
+    const sanitizedDatabase = database.replace(/[\[\]';"--]/g, '');
+    const sanitizedTable = table.replace(/[\[\]';"--]/g, '');
+    
+    const limit = options?.limit || 100;
+    let query = `USE [${sanitizedDatabase}]; SELECT TOP ${limit} * FROM [${sanitizedTable}]`;
+    
+    // Add ORDER BY clause if sorting is specified
+    if (options?.sortColumn && options?.sortDirection) {
+      // Validate column name to prevent SQL injection
+      const sanitizedSortColumn = options.sortColumn.replace(/[\[\]';"--]/g, '');
+      query += ` ORDER BY [${sanitizedSortColumn}] ${options.sortDirection.toUpperCase()}`;
     }
+    
+    query += ';';
+    const result = await this.pool.request().query(query);
+    return result.recordset.map(row => ({ ...row, isRead: false, isResolved: false }));
   }
 }
 
