@@ -56,18 +56,10 @@ class ExternalDatabaseService {
       const pool = await this.getConnection(databaseName);
       const request = pool.request();
 
-      // Basic query with common fields that might exist in alerts tables
+      // Simple query to get all records from the alerts table
       const query = `
-        SELECT TOP ${limit}
-          *
+        SELECT TOP ${limit} *
         FROM [${tableName}]
-        ORDER BY 
-          CASE 
-            WHEN COLUMNPROPERTY(OBJECT_ID('[${tableName}]'), 'date_time', 'ColumnId') IS NOT NULL THEN date_time
-            WHEN COLUMNPROPERTY(OBJECT_ID('[${tableName}]'), 'timestamp', 'ColumnId') IS NOT NULL THEN timestamp
-            WHEN COLUMNPROPERTY(OBJECT_ID('[${tableName}]'), 'created_at', 'ColumnId') IS NOT NULL THEN created_at
-            ELSE (SELECT TOP 1 name FROM sys.columns WHERE object_id = OBJECT_ID('[${tableName}]') AND system_type_id IN (61, 42))
-          END DESC
       `;
 
       const result = await request.query(query);
