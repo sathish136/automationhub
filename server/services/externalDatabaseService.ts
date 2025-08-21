@@ -56,11 +56,38 @@ class ExternalDatabaseService {
       const pool = await this.getConnection(databaseName);
       const request = pool.request();
 
-      // Simple query to get all records from the alerts table
+      // First, check what columns exist in the table
+      const columnsQuery = `
+        USE [${databaseName}];
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = '${tableName}'
+      `;
+      
+      const columnsResult = await request.query(columnsQuery);
+      const columns = columnsResult.recordset.map((row: any) => row.COLUMN_NAME.toLowerCase());
+      
+      // Determine the best column to order by (prefer datetime columns)
+      let orderByClause = '';
+      const dateColumns = ['date_time', 'datetime', 'timestamp', 'created_at', 'updated_at', 'date', 'time'];
+      const foundDateColumn = dateColumns.find(col => columns.includes(col));
+      
+      if (foundDateColumn) {
+        orderByClause = `ORDER BY [${foundDateColumn}] DESC`;
+      } else if (columns.length > 0) {
+        // If no date column, order by the first column
+        const firstColumn = columnsResult.recordset[0]?.COLUMN_NAME;
+        if (firstColumn) {
+          orderByClause = `ORDER BY [${firstColumn}]`;
+        }
+      }
+
+      // Build the final query
       const query = `
+        USE [${databaseName}];
         SELECT TOP ${limit} *
         FROM [${tableName}]
-        ORDER BY date_time DESC
+        ${orderByClause}
       `;
 
       const result = await request.query(query);
