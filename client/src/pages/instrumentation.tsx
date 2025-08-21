@@ -81,7 +81,8 @@ export default function InstrumentationPage() {
       if (selectedSite !== 'all') {
         params.append('siteId', selectedSite);
       }
-      return await apiRequest(`/api/instrumentation?${params.toString()}`);
+      const response = await apiRequest(`/api/instrumentation?${params.toString()}`, "GET");
+      return response.json();
     },
   });
 
@@ -111,10 +112,7 @@ export default function InstrumentationPage() {
         lastCalibration: data.lastCalibration ? new Date(data.lastCalibration) : undefined,
         nextCalibration: data.nextCalibration ? new Date(data.nextCalibration) : undefined,
       };
-      return await apiRequest('/api/instrumentation', {
-        method: 'POST',
-        body: JSON.stringify(processedData),
-      });
+      return await apiRequest('/api/instrumentation', 'POST', processedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/instrumentation'] });
@@ -142,10 +140,7 @@ export default function InstrumentationPage() {
         lastCalibration: data.lastCalibration ? new Date(data.lastCalibration) : undefined,
         nextCalibration: data.nextCalibration ? new Date(data.nextCalibration) : undefined,
       };
-      return await apiRequest(`/api/instrumentation/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(processedData),
-      });
+      return await apiRequest(`/api/instrumentation/${id}`, 'PUT', processedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/instrumentation'] });
@@ -167,7 +162,7 @@ export default function InstrumentationPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => await apiRequest(`/api/instrumentation/${id}`, { method: 'DELETE' }),
+    mutationFn: async (id: string) => await apiRequest(`/api/instrumentation/${id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/instrumentation'] });
       toast({
@@ -495,7 +490,7 @@ export default function InstrumentationPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Operational Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                           <FormControl>
                             <SelectTrigger data-testid="select-operational-status">
                               <SelectValue />
