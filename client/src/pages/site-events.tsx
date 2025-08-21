@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, AlertTriangle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network, Gauge, Fan, Beaker, Activity, Settings } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, AlertTriangle, CheckCircle, Clock, Filter, Search, Eye, EyeOff, Wifi, WifiOff, Timer, Network, Gauge, Fan, Beaker, Activity, Settings, Database, Server } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,12 +31,36 @@ interface Site {
   status: string;
 }
 
+interface SiteEventConfiguration {
+  id: string;
+  siteName: string;
+  deviceName: string;
+  eventsDatabaseName: string;
+  eventsTableName: string;
+}
+
+interface CustomSiteEvent {
+  id: string;
+  date_time: string;
+  severity: string;
+  type: string;
+  message: string;
+  source: string;
+  status: string;
+  site: string;
+  equipment?: string;
+  tag_value?: number;
+  setpoint?: number;
+  note?: string;
+}
+
 export default function SiteEvents() {
   const [searchTerm, setSearchTerm] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [selectedSiteConfig, setSelectedSiteConfig] = useState<string>("all");
   const { toast } = useToast();
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
@@ -45,6 +70,25 @@ export default function SiteEvents() {
 
   const { data: sites } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
+  });
+
+  // Fetch site event configurations
+  const { data: siteConfigs } = useQuery<SiteEventConfiguration[]>({
+    queryKey: ["/api/site-events/configurations"],
+  });
+
+  // Fetch custom site events for selected configuration
+  const { data: customEvents, isLoading: customEventsLoading } = useQuery<CustomSiteEvent[]>({
+    queryKey: ["/api/site-events/custom", selectedSiteConfig],
+    queryFn: () => {
+      if (selectedSiteConfig === "all" || !selectedSiteConfig) return [];
+      const config = siteConfigs?.find(c => c.id === selectedSiteConfig);
+      if (!config) return [];
+      return fetch(`/api/site-events/custom/${config.eventsDatabaseName}/${config.eventsTableName}?limit=100`)
+        .then(res => res.json());
+    },
+    enabled: selectedSiteConfig !== "all" && !!siteConfigs,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const markAsReadMutation = useMutation({

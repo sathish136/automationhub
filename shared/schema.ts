@@ -146,6 +146,10 @@ export const ipcManagement = pgTable("ipc_management", {
   network2DnsServers: varchar("network2_dns_servers", { length: 255 }),
   network2MacAddress: varchar("network2_mac_address", { length: 17 }),
 
+  // Site Events Database Configuration
+  eventsDatabaseName: varchar("events_database_name", { length: 100 }), // Database name for site events
+  eventsTableName: varchar("events_table_name", { length: 100 }), // Table name for alerts (e.g., bhilwara_alerts)
+
   lastAccess: timestamp("last_access"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -774,3 +778,13 @@ export type PlcIoCalculation = typeof plcIoCalculations.$inferSelect;
 export type InsertPlcIoCalculation = z.infer<typeof insertPlcIoCalculationSchema>;
 export type PlcIoMapping = typeof plcIoMappings.$inferSelect;
 export type InsertPlcIoMapping = z.infer<typeof insertPlcIoMappingSchema>;
+
+// Site Event Database Configuration Schema
+export const insertSiteEventConfigSchema = z.object({
+  siteId: z.string().optional(),
+  siteName: z.string().min(1, "Site name is required"),
+  databaseName: z.string().min(1, "Database name is required"),
+  tableName: z.string().min(1, "Table name is required"),
+});
+
+export type SiteEventConfig = z.infer<typeof insertSiteEventConfigSchema>;

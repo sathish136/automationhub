@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Sites from "@/pages/sites";
-import SiteEvents from "@/pages/site-events";
+import SiteEvents from "@/pages/site-events-enhanced";
 import SiteDatabase from "@/pages/site-database";
 import Backups from "@/pages/backups";
 import ProjectDetails from "@/pages/project-details";

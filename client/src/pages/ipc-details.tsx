@@ -30,6 +30,8 @@ import {
   Network,
   Image,
   Upload,
+  Database,
+  AlertCircle,
 } from "lucide-react";
 
 // Using types from shared schema
@@ -1860,6 +1862,57 @@ export default function IPCDetails() {
                       ) : (
                         <div className="text-sm text-gray-900 mt-1">{currentData.network2MacAddress}</div>
                       )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Site Events Database Configuration Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Database size={18} />
+                    Site Events Database Configuration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-medium text-gray-700">Database Name</Label>
+                      {isEditing ? (
+                        <Input 
+                          value={currentData.eventsDatabaseName || ''}
+                          onChange={(e) => handleFieldChange('eventsDatabaseName', e.target.value)}
+                          className="text-sm h-8 mt-1"
+                          placeholder="e.g., bhilwara"
+                          data-testid="edit-events-database-name"
+                        />
+                      ) : (
+                        <div className="text-sm text-gray-900 mt-1">{currentData.eventsDatabaseName || 'Not configured'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-gray-700">Events Table Name</Label>
+                      {isEditing ? (
+                        <Input 
+                          value={currentData.eventsTableName || ''}
+                          onChange={(e) => handleFieldChange('eventsTableName', e.target.value)}
+                          className="text-sm h-8 mt-1"
+                          placeholder="e.g., bhilwara_alerts"
+                          data-testid="edit-events-table-name"
+                        />
+                      ) : (
+                        <div className="text-sm text-gray-900 mt-1">{currentData.eventsTableName || 'Not configured'}</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                    <div className="flex gap-2">
+                      <AlertCircle size={16} className="text-blue-600 mt-0.5" />
+                      <div className="text-xs text-blue-700">
+                        <strong>Site Events Configuration:</strong> Specify the external database and table name where site-specific alerts are stored. 
+                        This allows the Site Events page to display custom alerts from your configured database table instead of just connection status.
+                      </div>
                     </div>
                   </div>
                 </CardContent>

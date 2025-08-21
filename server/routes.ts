@@ -353,7 +353,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(backup);
     } catch (error) {
       console.error("Error creating backup:", error);
-      res.status(400).json({ message: "Invalid backup data", error: error.message });
+      res.status(400).json({ 
+        message: "Invalid backup data", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 
@@ -956,6 +959,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting PLC calculation:", error);
       res.status(500).json({ message: "Failed to delete calculation" });
+    }
+  });
+
+  // Site Events Configuration
+  app.get("/api/site-events/configurations", async (req, res) => {
+    try {
+      const configurations = await storage.getSiteEventConfigurations();
+      res.json(configurations);
+    } catch (error) {
+      console.error("Error fetching site event configurations:", error);
+      res.status(500).json({ message: "Failed to fetch site event configurations" });
+    }
+  });
+
+  app.get("/api/site-events/custom/:databaseName/:tableName", async (req, res) => {
+    try {
+      const { databaseName, tableName } = req.params;
+      const limit = parseInt(req.query.limit as string) || 100;
+      const events = await storage.getCustomSiteEvents(databaseName, tableName, limit);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching custom site events:", error);
+      res.status(500).json({ message: "Failed to fetch custom site events" });
     }
   });
 

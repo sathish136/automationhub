@@ -139,6 +139,10 @@ export interface IStorage {
     avgResponseTime: number;
   }>;
 
+  // Site Events Configuration
+  getSiteEventConfigurations(): Promise<any[]>;
+  getCustomSiteEvents(databaseName: string, tableName: string, limit?: number): Promise<any[]>;
+
   // Site Database Tags
   getSiteDatabaseTags(siteId?: string): Promise<SiteDatabaseTag[]>;
   getSiteDatabaseTag(id: string): Promise<SiteDatabaseTag | undefined>;
@@ -465,6 +469,46 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.isRead, false));
     return result.count;
   }
+
+  // Site Events Database Configuration Methods
+  async getSiteEventConfigurations(): Promise<any[]> {
+    try {
+      const ipcDevices = await db
+        .select({
+          id: ipcManagement.id,
+          deviceName: ipcManagement.deviceName,
+          siteName: sites.name,
+          siteId: ipcManagement.siteId,
+          eventsDatabaseName: ipcManagement.eventsDatabaseName,
+          eventsTableName: ipcManagement.eventsTableName,
+        })
+        .from(ipcManagement)
+        .leftJoin(sites, eq(ipcManagement.siteId, sites.id))
+        .where(and(
+          isNotNull(ipcManagement.eventsDatabaseName),
+          isNotNull(ipcManagement.eventsTableName)
+        ));
+      
+      return ipcDevices.filter(device => device.eventsDatabaseName && device.eventsTableName);
+    } catch (error) {
+      console.error("Error fetching site event configurations:", error);
+      return [];
+    }
+  }
+
+  async getCustomSiteEvents(databaseName: string, tableName: string, limit: number = 100): Promise<any[]> {
+    try {
+      // Import the external database service dynamically
+      const { externalDatabaseService } = await import('./services/externalDatabaseService');
+      const events = await externalDatabaseService.queryCustomSiteEvents(databaseName, tableName, limit);
+      return events;
+    } catch (error) {
+      console.error(`Error querying custom site events from ${databaseName}.${tableName}:`, error);
+      return [];
+    }
+  }
+
+
 
   // Projects
   async getAllProjects(): Promise<Project[]> {
@@ -807,7 +851,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(plcIoCalculations)
       .where(eq(plcIoCalculations.id, id));
-    return result.rowCount > 0;
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 
