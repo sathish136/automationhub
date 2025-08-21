@@ -34,6 +34,76 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+// Database Selector Component
+function DatabaseSelector({ value, onChange, onDatabaseChange, className, placeholder, ...props }: {
+  value: string;
+  onChange: (value: string) => void;
+  onDatabaseChange?: (value: string) => void;
+  className?: string;
+  placeholder?: string;
+  [key: string]: any;
+}) {
+  const { data: databases = [] } = useQuery<string[]>({
+    queryKey: ["/api/sql-viewer/databases"],
+    queryFn: () => fetch("/api/sql-viewer/databases").then(res => res.json()),
+  });
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(selectedValue) => {
+        onChange(selectedValue);
+        onDatabaseChange?.(selectedValue);
+      }}
+      {...props}
+    >
+      <SelectTrigger className={className}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {databases.map(db => (
+          <SelectItem key={db} value={db}>{db}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+// Table Selector Component
+function TableSelector({ databaseName, value, onChange, className, placeholder, disabled, ...props }: {
+  databaseName: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  [key: string]: any;
+}) {
+  const { data: tables = [] } = useQuery<string[]>({
+    queryKey: [`/api/sql-viewer/databases/${databaseName}/tables`],
+    queryFn: () => fetch(`/api/sql-viewer/databases/${databaseName}/tables`).then(res => res.json()),
+    enabled: !!databaseName,
+  });
+
+  return (
+    <Select
+      value={value}
+      onValueChange={onChange}
+      disabled={disabled}
+      {...props}
+    >
+      <SelectTrigger className={className}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {tables.map(table => (
+          <SelectItem key={table} value={table}>{table}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 // Using types from shared schema
 
 export default function IPCDetails() {
@@ -843,25 +913,28 @@ export default function IPCDetails() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs font-semibold text-gray-700">Events Database Name</Label>
-                        <Input
+                        <DatabaseSelector
                           value={newIPCData.eventsDatabaseName || ""}
-                          onChange={(e) =>
-                            handleNewIPCChange("eventsDatabaseName", e.target.value)
-                          }
+                          onChange={(value) => handleNewIPCChange("eventsDatabaseName", value)}
+                          onDatabaseChange={(dbName) => {
+                            handleNewIPCChange("eventsDatabaseName", dbName);
+                            // Reset table name when database changes
+                            handleNewIPCChange("eventsTableName", "");
+                          }}
                           className="text-sm h-9 mt-1 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
-                          placeholder="e.g., bhilwara_db"
+                          placeholder="Select database..."
                         />
                         <p className="text-xs text-gray-500 mt-1">External SQL database name for site-specific events</p>
                       </div>
                       <div>
                         <Label className="text-xs font-semibold text-gray-700">Events Table Name</Label>
-                        <Input
+                        <TableSelector
+                          databaseName={newIPCData.eventsDatabaseName || ""}
                           value={newIPCData.eventsTableName || ""}
-                          onChange={(e) =>
-                            handleNewIPCChange("eventsTableName", e.target.value)
-                          }
+                          onChange={(value) => handleNewIPCChange("eventsTableName", value)}
                           className="text-sm h-9 mt-1 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
-                          placeholder="e.g., site_alerts"
+                          placeholder="Select table..."
+                          disabled={!newIPCData.eventsDatabaseName}
                         />
                         <p className="text-xs text-gray-500 mt-1">Table name containing site events and alerts</p>
                       </div>
@@ -2081,11 +2154,16 @@ export default function IPCDetails() {
                   <div>
                     <Label className="text-xs font-medium text-gray-700">Events Database Name</Label>
                     {isEditing ? (
-                      <Input 
+                      <DatabaseSelector
                         value={currentData.eventsDatabaseName || ''}
-                        onChange={(e) => handleFieldChange('eventsDatabaseName', e.target.value)}
+                        onChange={(value) => handleFieldChange('eventsDatabaseName', value)}
+                        onDatabaseChange={(dbName) => {
+                          handleFieldChange('eventsDatabaseName', dbName);
+                          // Reset table name when database changes
+                          handleFieldChange('eventsTableName', '');
+                        }}
                         className="text-sm h-8 mt-1"
-                        placeholder="e.g., bhilwara_db"
+                        placeholder="Select database..."
                         data-testid="edit-events-database-name"
                       />
                     ) : (
@@ -2096,11 +2174,13 @@ export default function IPCDetails() {
                   <div>
                     <Label className="text-xs font-medium text-gray-700">Events Table Name</Label>
                     {isEditing ? (
-                      <Input 
+                      <TableSelector
+                        databaseName={currentData.eventsDatabaseName || ''}
                         value={currentData.eventsTableName || ''}
-                        onChange={(e) => handleFieldChange('eventsTableName', e.target.value)}
+                        onChange={(value) => handleFieldChange('eventsTableName', value)}
                         className="text-sm h-8 mt-1"
-                        placeholder="e.g., site_alerts"
+                        placeholder="Select table..."
+                        disabled={!currentData.eventsDatabaseName}
                         data-testid="edit-events-table-name"
                       />
                     ) : (
