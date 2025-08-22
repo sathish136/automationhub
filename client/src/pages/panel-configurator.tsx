@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Settings, Calculator, Cpu, Zap, FileText, Trash2, Edit } from "lucide-react";
 import type { 
+  Site,
   PanelConfiguration, 
   InstrumentTemplate, 
   PanelInstrument, 
@@ -164,28 +165,28 @@ const PanelConfiguratorPage = () => {
   const queryClient = useQueryClient();
 
   // Fetch sites for dropdown
-  const { data: sites = [] } = useQuery({
+  const { data: sites = [] } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
   });
 
   // Fetch panel configurations
-  const { data: panels = [], isLoading: isPanelsLoading } = useQuery({
+  const { data: panels = [], isLoading: isPanelsLoading } = useQuery<PanelConfiguration[]>({
     queryKey: ["/api/panel-configurations", selectedSite],
   });
 
   // Fetch instrument templates
-  const { data: templates = [] } = useQuery({
+  const { data: templates = [] } = useQuery<InstrumentTemplate[]>({
     queryKey: ["/api/instrument-templates"],
   });
 
   // Fetch panel instruments if panel selected
-  const { data: panelInstruments = [] } = useQuery({
+  const { data: panelInstruments = [] } = useQuery<PanelInstrument[]>({
     queryKey: ["/api/panel-instruments", selectedPanel?.id],
     enabled: !!selectedPanel?.id,
   });
 
   // Fetch calculations for selected panel
-  const { data: calculations = [] } = useQuery({
+  const { data: calculations = [] } = useQuery<BeckhoffModuleCalculation[]>({
     queryKey: ["/api/beckhoff-calculations", selectedPanel?.id],
     enabled: !!selectedPanel?.id,
   });
@@ -217,10 +218,16 @@ const PanelConfiguratorPage = () => {
     defaultValues: {
       siteId: "",
       panelName: "",
+      panelDescription: "",
+      panelLocation: "",
       panelType: "control",
+      cabinetSize: "",
       mountingType: "wall",
       enclosureRating: "IP54",
+      couplerType: "",
       powerSupply: "EL9011",
+      distanceFromPlc: undefined,
+      estimatedCost: undefined,
     },
   });
 
@@ -736,8 +743,8 @@ const PanelConfiguratorPage = () => {
                               Distance: {selectedPanel.distanceFromPlc || 0}m
                             </div>
                             <div className="text-xs mt-1">
-                              {selectedPanel.distanceFromPlc <= 50 ? "Short distance - Standard copper" :
-                               selectedPanel.distanceFromPlc <= 100 ? "Medium distance - Fiber optic" :
+                              {(selectedPanel.distanceFromPlc || 0) <= 50 ? "Short distance - Standard copper" :
+                               (selectedPanel.distanceFromPlc || 0) <= 100 ? "Medium distance - Fiber optic" :
                                "Long distance - EtherCAT over fiber"}
                             </div>
                           </div>
