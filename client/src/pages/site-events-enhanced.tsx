@@ -604,98 +604,171 @@ export default function SiteEventsEnhanced() {
 
 
 
-                {/* Equipment Alerts List */}
-                <Card>
-                  <CardContent className="p-2">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Equipment Alerts</h3>
-                    <p className="text-xs text-gray-500 mb-2">Real-time equipment status from monitoring sites</p>
-                    {customEventsLoading ? (
-                      <div className="space-y-1">
-                        {[...Array(3)].map((_, i) => (
-                          <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" />
-                        ))}
-                      </div>
-                    ) : customEvents && customEvents.length > 0 ? (
-                      <div className="space-y-1 max-h-[calc(100vh-180px)] overflow-y-auto">
-                        {customEvents
-                          .filter(event => {
-                            // Search filter
-                            const matchesSearch = !searchTerm || 
-                              (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
-                            
-                            // Date range filter
-                            let matchesDateRange = true;
-                            if (fromDate || toDate) {
-                              const eventDate = new Date(event.date_time);
-                              
-                              if (fromDate && toDate) {
-                                // Both dates selected
-                                const startDate = new Date(fromDate + 'T00:00:00');
-                                const endDate = new Date(toDate + 'T23:59:59');
-                                matchesDateRange = eventDate >= startDate && eventDate <= endDate;
-                                if (!matchesDateRange) {
-                                  console.log(`Event ${event.description} filtered out: ${event.date_time} not between ${startDate} and ${endDate}`);
-                                }
-                              } else if (fromDate) {
-                                // Only from date selected
-                                const startDate = new Date(fromDate + 'T00:00:00');
-                                matchesDateRange = eventDate >= startDate;
-                                if (!matchesDateRange) {
-                                  console.log(`Event ${event.description} filtered out: ${event.date_time} before ${startDate}`);
-                                }
-                              } else if (toDate) {
-                                // Only to date selected
-                                const endDate = new Date(toDate + 'T23:59:59');
-                                matchesDateRange = eventDate <= endDate;
-                                if (!matchesDateRange) {
-                                  console.log(`Event ${event.description} filtered out: ${event.date_time} after ${endDate}`);
-                                }
-                              }
-                            }
-                            
-                            return matchesSearch && matchesDateRange;
-                          })
-                          .map((event, index) => {
-                            const eventKey = `${event.date_time}-${event.description || event.message}`;
-                            const isAcknowledged = acknowledgedEvents.has(eventKey);
-                            
-                            return (
-                              <div key={eventKey} className={`flex items-center justify-between p-1 border rounded text-xs transition-colors ${isAcknowledged ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200 hover:bg-red-100'}`}>
-                                <div className="flex items-center gap-1 flex-1 min-w-0">
-                                  <div className={`w-0.5 h-4 rounded-full ${isAcknowledged ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                  <Badge className={`text-xs px-1 py-0 ${isAcknowledged ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                                    <AlertCircle className="h-1.5 w-1.5 mr-0.5" />
-                                    {isAcknowledged ? 'ACK' : 'Alert'}
-                                  </Badge>
-                                  <span className="font-medium text-gray-900 flex-1 truncate">{event.description || event.message}</span>
-                                  <span className="text-blue-600 bg-blue-100 px-1 py-0 rounded font-medium text-xs">{event.siteName || event.deviceName || 'Site'}</span>
-                                </div>
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  <div className="text-gray-500 flex items-center gap-0.5">
-                                    <Clock className="h-1.5 w-1.5" />
-                                    {new Date(event.date_time).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                {/* Custom Site Events List */}
+                <div className="space-y-2">
+                  {customEventsLoading ? (
+                    <div className="space-y-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Card key={i}>
+                          <CardContent className="p-2">
+                            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : customEvents && customEvents.length > 0 ? (
+                    customEvents
+                      .filter(event => {
+                        // Search filter
+                        const matchesSearch = !searchTerm || 
+                          (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
+                        
+                        // Date range filter
+                        let matchesDateRange = true;
+                        if (fromDate || toDate) {
+                          const eventDate = new Date(event.date_time);
+                          
+                          if (fromDate && toDate) {
+                            const startDate = new Date(fromDate + 'T00:00:00');
+                            const endDate = new Date(toDate + 'T23:59:59');
+                            matchesDateRange = eventDate >= startDate && eventDate <= endDate;
+                          } else if (fromDate) {
+                            const startDate = new Date(fromDate + 'T00:00:00');
+                            matchesDateRange = eventDate >= startDate;
+                          } else if (toDate) {
+                            const endDate = new Date(toDate + 'T23:59:59');
+                            matchesDateRange = eventDate <= endDate;
+                          }
+                        }
+                        
+                        return matchesSearch && matchesDateRange;
+                      })
+                      .map((event, index) => {
+                        const eventKey = `${event.date_time}-${event.description || event.message}`;
+                        const isAcknowledged = acknowledgedEvents.has(eventKey);
+                        
+                        // Determine severity based on event data or default to critical for alerts
+                        const severity = event.severity?.toLowerCase() || (event.type?.includes('trip') || event.description?.toLowerCase().includes('trip')) ? 'critical' : 'warning';
+                        
+                        return (
+                          <Card key={eventKey} className={`transition-all ${!isAcknowledged ? 'border-l-4 border-l-red-500 bg-red-50/30' : 'border-l-4 border-l-green-500 bg-green-50/30'}`}>
+                            <CardContent className="p-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge className={`${isAcknowledged ? 'bg-green-500 hover:bg-green-600' : getSeverityColor(severity)} text-white`}>
+                                      <div className="flex items-center gap-1">
+                                        {isAcknowledged ? (
+                                          <CheckCircle className="h-4 w-4" />
+                                        ) : (
+                                          getSeverityIcon(severity)
+                                        )}
+                                        <span className="text-xs font-medium capitalize">
+                                          {isAcknowledged ? 'Acknowledged' : severity}
+                                        </span>
+                                      </div>
+                                    </Badge>
+                                    
+                                    <Badge variant="outline" className="text-xs">
+                                      {getPlcCategory(event.type || '', event.description || '')}
+                                    </Badge>
+                                    
+                                    <Badge variant="secondary" className="text-xs">
+                                      {event.siteName || event.deviceName || 'Unknown Site'}
+                                    </Badge>
+                                    
+                                    {event.equipment && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {event.equipment}
+                                      </Badge>
+                                    )}
+                                    
+                                    {!isAcknowledged && (
+                                      <Badge variant="outline" className="text-xs border-red-500 text-red-700">
+                                        Needs Action
+                                      </Badge>
+                                    )}
                                   </div>
-                                  {!isAcknowledged && (
-                                    <button className="px-1 py-0 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-xs" onClick={() => { const newAcknowledged = new Set(acknowledgedEvents); newAcknowledged.add(eventKey); setAcknowledgedEvents(newAcknowledged); toast({ title: "Alert Acknowledged", description: `${event.description || event.message} by Admin@${event.siteName || event.deviceName || 'Site'}` }); }}>ACK</button>
+
+                                  <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                                    {event.message || event.description || 'Equipment Alert'}
+                                  </h3>
+                                  <p className="text-xs text-gray-600 mb-2">{event.description}</p>
+                                  
+                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {formatTimeAgo(event.date_time)}
+                                    </div>
+                                    <div>{formatDate(event.date_time)}</div>
+                                    {event.tag_value && (
+                                      <div className="flex items-center gap-1">
+                                        <Activity className="h-3 w-3" />
+                                        Value: {event.tag_value}
+                                      </div>
+                                    )}
+                                    {event.setpoint && (
+                                      <div className="flex items-center gap-1">
+                                        <Settings className="h-3 w-3" />
+                                        Setpoint: {event.setpoint}
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {event.note && (
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 italic">
+                                      Note: {event.note}
+                                    </p>
                                   )}
+                                  
                                   {isAcknowledged && (
-                                    <span className="text-green-600 font-medium text-xs">✓ Admin@{event.siteName || event.deviceName || 'Site'}</span>
+                                    <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
+                                      ✓ Acknowledged by Admin@{event.siteName || event.deviceName || 'Site'}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                  {!isAcknowledged ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newAcknowledged = new Set(acknowledgedEvents);
+                                        newAcknowledged.add(eventKey);
+                                        setAcknowledgedEvents(newAcknowledged);
+                                        toast({
+                                          title: "Alert Acknowledged",
+                                          description: `${event.description || event.message} acknowledged`
+                                        });
+                                      }}
+                                      className="text-xs h-6 px-2 border-green-500 text-green-700 hover:bg-green-50"
+                                    >
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      ACK
+                                    </Button>
+                                  ) : (
+                                    <div className="text-xs text-green-600 text-right font-medium">
+                                      Acknowledged
+                                    </div>
                                   )}
                                 </div>
                               </div>
-                            );
-                          })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-3">
-                        <Database className="h-4 w-4 mx-auto text-gray-300 mb-1" />
-                        <h3 className="text-xs font-medium text-gray-900">No Equipment Alerts</h3>
-                        <p className="text-xs text-gray-600">All systems running normally</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                            </CardContent>
+                          </Card>
+                        );
+                      })
+                  ) : (
+                    <Card>
+                      <CardContent className="p-6 text-center">
+                        <Database className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                        <h3 className="text-xs font-medium text-gray-900 mb-1">No Custom Site Events Found</h3>
+                        <p className="text-xs text-gray-600">No events match your current filters or all systems are running normally.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
           </div>
