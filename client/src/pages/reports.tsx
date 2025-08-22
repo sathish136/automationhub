@@ -1056,87 +1056,200 @@ export default function ReportsPage() {
       'last_3_months': 90
     }[selectedTimeRange] || 7;
 
+    // Get actual column names and create dynamic metrics
+    const columns = getColumns();
+    console.log('Available columns for', tableName, ':', columns);
+    
     switch (systemType) {
       case 'mbr':
-        return calculateMBRMetrics(data, parseValue, average, format, estimatedHours, daysInRange);
+        return calculateMBRMetrics(data, parseValue, average, format, estimatedHours, daysInRange, columns);
       case 'ro':
-        return calculateROMetrics(data, parseValue, average, format, estimatedHours, daysInRange);
+        return calculateROMetrics(data, parseValue, average, format, estimatedHours, daysInRange, columns);
       case 'power':
-        return calculatePowerMetrics(data, parseValue, average, format, estimatedHours, daysInRange);
+        return calculatePowerMetrics(data, parseValue, average, format, estimatedHours, daysInRange, columns);
       case 'cip':
-        return calculateCIPMetrics(data, parseValue, average, format, estimatedHours, daysInRange);
+        return calculateCIPMetrics(data, parseValue, average, format, estimatedHours, daysInRange, columns);
       case 'biological':
-        return calculateBiologicalMetrics(data, parseValue, average, format, estimatedHours, daysInRange);
+        return calculateBiologicalMetrics(data, parseValue, average, format, estimatedHours, daysInRange, columns);
       case 'reject_ro':
-        return calculateRejectROMetrics(data, parseValue, average, format, estimatedHours, daysInRange);
+        return calculateRejectROMetrics(data, parseValue, average, format, estimatedHours, daysInRange, columns);
       default:
-        return calculateGeneralMetrics(data, parseValue, average, format, estimatedHours, daysInRange, getColumns());
+        return calculateGeneralMetrics(data, parseValue, average, format, estimatedHours, daysInRange, columns);
     }
   };
 
-  const calculateMBRMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number) => {
-    const mbrFlow = data.map(row => parseValue(row.mbr_flow || row.mbrFlow || 0)).filter(val => val > 0);
-    const mbrTmp = data.map(row => parseValue(row.mbr_tmp || row.mbrTmp || 0)).filter(val => val > 0);
-    const turbidity = data.map(row => parseValue(row.turbidity || 0)).filter(val => val > 0);
-    const mbrPh = data.map(row => parseValue(row.mbr_ph || row.mbrPh || 0)).filter(val => val > 0);
+  const calculateMBRMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number, columns: string[]) => {
+    // Find actual column names dynamically
+    const findColumn = (patterns: string[]) => {
+      return columns.find(col => patterns.some(pattern => 
+        col.toLowerCase().includes(pattern.toLowerCase())
+      ));
+    };
+
+    // Get numeric data for available columns
+    const getColumnData = (columnName: string | undefined) => {
+      if (!columnName) return [];
+      return data.map(row => parseValue(row[columnName])).filter(val => val > 0);
+    };
+
+    // Find relevant MBR columns
+    const flowCol = findColumn(['flow', 'mbr_flow', 'permeate', 'outlet']);
+    const tempCol = findColumn(['temp', 'temperature', 'tmp']);
+    const phCol = findColumn(['ph', 'mbr_ph']);
+    const turbidityCol = findColumn(['turbidity', 'turb']);
+    const pressureCol = findColumn(['pressure', 'pt', 'press']);
+
+    const flowData = getColumnData(flowCol);
+    const tempData = getColumnData(tempCol);
+    const phData = getColumnData(phCol);
+    const turbidityData = getColumnData(turbidityCol);
+    const pressureData = getColumnData(pressureCol);
+
+    // Create summary with actual data
+    const summary = [];
+    if (flowCol && flowData.length > 0) {
+      summary.push({
+        metric: `${flowCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(flowData)),
+        maximum: format(Math.max(...flowData)),
+        minimum: format(Math.min(...flowData)),
+        status: average(flowData) > 10 ? 'Optimal' : 'Low'
+      });
+    }
+    if (tempCol && tempData.length > 0) {
+      summary.push({
+        metric: `${tempCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(tempData)),
+        maximum: format(Math.max(...tempData)),
+        minimum: format(Math.min(...tempData)),
+        status: average(tempData) >= 15 && average(tempData) <= 35 ? 'Optimal' : 'Warning'
+      });
+    }
+    if (phCol && phData.length > 0) {
+      summary.push({
+        metric: `${phCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(phData)),
+        maximum: format(Math.max(...phData)),
+        minimum: format(Math.min(...phData)),
+        status: average(phData) >= 6.5 && average(phData) <= 8.5 ? 'Optimal' : 'Warning'
+      });
+    }
+    if (turbidityCol && turbidityData.length > 0) {
+      summary.push({
+        metric: `${turbidityCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(turbidityData)),
+        maximum: format(Math.max(...turbidityData)),
+        minimum: format(Math.min(...turbidityData)),
+        status: average(turbidityData) < 1 ? 'Optimal' : 'High'
+      });
+    }
+    if (pressureCol && pressureData.length > 0) {
+      summary.push({
+        metric: `${pressureCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(pressureData)),
+        maximum: format(Math.max(...pressureData)),
+        minimum: format(Math.min(...pressureData)),
+        status: average(pressureData) > 0.5 ? 'Optimal' : 'Low'
+      });
+    }
 
     return {
-      summary: [
-        {
-          metric: 'MBR Flow Rate (m³/h)',
-          average: mbrFlow.length > 0 ? format(average(mbrFlow)) : 'N/A',
-          maximum: mbrFlow.length > 0 ? format(Math.max(...mbrFlow)) : 'N/A',
-          minimum: mbrFlow.length > 0 ? format(Math.min(...mbrFlow)) : 'N/A',
-          status: mbrFlow.length > 0 && average(mbrFlow) > 50 ? 'Optimal' : 'Low'
-        },
-        {
-          metric: 'Temperature (°C)',
-          average: mbrTmp.length > 0 ? format(average(mbrTmp)) : 'N/A',
-          maximum: mbrTmp.length > 0 ? format(Math.max(...mbrTmp)) : 'N/A',
-          minimum: mbrTmp.length > 0 ? format(Math.min(...mbrTmp)) : 'N/A',
-          status: mbrTmp.length > 0 && average(mbrTmp) >= 15 && average(mbrTmp) <= 35 ? 'Optimal' : 'Warning'
-        }
-      ],
+      summary,
       backwash: [
         {
-          process: 'Membrane Backwash',
-          frequency: '4 cycles/day',
-          duration: '15',
-          efficiency: format(Math.random() * 20 + 80),
-          rating: 'Good'
+          process: 'Membrane Operation',
+          frequency: 'Continuous',
+          duration: format(estimatedHours / daysInRange) + ' hrs/day',
+          efficiency: summary.length > 0 ? format((summary.length / 5) * 100) : 0,
+          rating: summary.length >= 3 ? 'Good' : summary.length >= 2 ? 'Fair' : 'Limited Data'
         }
       ]
     };
   };
 
-  const calculateROMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number) => {
-    const recoveryData = {
-      ro_reco: data.map(row => parseValue(row.ro_reco || row.roRecovery || 0)).filter(val => val > 0),
-      ro_1st_reco: data.map(row => parseValue(row.ro_1st_reco || row.stg1Recovery || 0)).filter(val => val > 0)
-    };
-    const flowData = {
-      ro_feed: data.map(row => parseValue(row.ro_feed || row.feedFlow || 0)).filter(val => val > 0)
+  const calculateROMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number, columns: string[]) => {
+    // Find actual column names dynamically
+    const findColumn = (patterns: string[]) => {
+      return columns.find(col => patterns.some(pattern => 
+        col.toLowerCase().includes(pattern.toLowerCase())
+      ));
     };
 
+    // Get numeric data for available columns
+    const getColumnData = (columnName: string | undefined) => {
+      if (!columnName) return [];
+      return data.map(row => parseValue(row[columnName])).filter(val => val > 0);
+    };
+
+    // Find relevant RO columns
+    const feedFlowCol = findColumn(['feed', 'ro_feed', 'inlet', 'input']);
+    const permeateCol = findColumn(['permeate', 'product', 'outlet']);
+    const rejectCol = findColumn(['reject', 'concentrate', 'waste']);
+    const recoveryCol = findColumn(['recovery', 'reco']);
+    const pressureCol = findColumn(['pressure', 'pt', 'press']);
+    const conductivityCol = findColumn(['conductivity', 'tds', 'cond']);
+
+    const feedData = getColumnData(feedFlowCol);
+    const permeateData = getColumnData(permeateCol);
+    const rejectData = getColumnData(rejectCol);
+    const recoveryData = getColumnData(recoveryCol);
+    const pressureData = getColumnData(pressureCol);
+    const conductivityData = getColumnData(conductivityCol);
+
+    // Create summary with actual data
+    const summary = [];
+    if (feedFlowCol && feedData.length > 0) {
+      summary.push({
+        metric: `${feedFlowCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(feedData)),
+        maximum: format(Math.max(...feedData)),
+        minimum: format(Math.min(...feedData)),
+        total: format(feedData.reduce((a, b) => a + b, 0))
+      });
+    }
+    if (permeateCol && permeateData.length > 0) {
+      summary.push({
+        metric: `${permeateCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(permeateData)),
+        maximum: format(Math.max(...permeateData)),
+        minimum: format(Math.min(...permeateData)),
+        total: format(permeateData.reduce((a, b) => a + b, 0))
+      });
+    }
+    if (pressureCol && pressureData.length > 0) {
+      summary.push({
+        metric: `${pressureCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(pressureData)),
+        maximum: format(Math.max(...pressureData)),
+        minimum: format(Math.min(...pressureData)),
+        total: 'N/A'
+      });
+    }
+
+    const recovery = [];
+    if (recoveryCol && recoveryData.length > 0) {
+      recovery.push({
+        stage: recoveryCol.replace(/_/g, ' ').toUpperCase(),
+        average: format(average(recoveryData)),
+        max: format(Math.max(...recoveryData)),
+        min: format(Math.min(...recoveryData)),
+        rating: average(recoveryData) > 80 ? 'Excellent' : average(recoveryData) > 60 ? 'Good' : 'Poor'
+      });
+    }
+    if (feedData.length > 0 && permeateData.length > 0) {
+      const calcRecovery = (permeateData.reduce((a, b) => a + b, 0) / feedData.reduce((a, b) => a + b, 0)) * 100;
+      recovery.push({
+        stage: 'Calculated Recovery %',
+        average: format(calcRecovery),
+        max: format(calcRecovery),
+        min: format(calcRecovery),
+        rating: calcRecovery > 80 ? 'Excellent' : calcRecovery > 60 ? 'Good' : 'Poor'
+      });
+    }
+
     return {
-      summary: [
-        {
-          metric: 'RO Feed Flow',
-          average: flowData.ro_feed.length > 0 ? format(average(flowData.ro_feed)) : 'N/A',
-          maximum: flowData.ro_feed.length > 0 ? format(Math.max(...flowData.ro_feed)) : 'N/A',
-          minimum: flowData.ro_feed.length > 0 ? format(Math.min(...flowData.ro_feed)) : 'N/A',
-          total: flowData.ro_feed.length > 0 ? format(flowData.ro_feed.reduce((a, b) => a + b, 0)) : 'N/A'
-        }
-      ],
-      recovery: [
-        {
-          stage: 'Overall RO Recovery',
-          average: recoveryData.ro_reco.length > 0 ? format(average(recoveryData.ro_reco)) : 0,
-          max: recoveryData.ro_reco.length > 0 ? format(Math.max(...recoveryData.ro_reco)) : 0,
-          min: recoveryData.ro_reco.length > 0 ? format(Math.min(...recoveryData.ro_reco)) : 0,
-          rating: recoveryData.ro_reco.length > 0 && average(recoveryData.ro_reco) > 80 ? 'Excellent' : average(recoveryData.ro_reco) > 60 ? 'Good' : 'Poor'
-        }
-      ],
+      summary,
+      recovery,
       runningHours: [
         {
           parameter: 'RO System Operation',
@@ -1149,137 +1262,300 @@ export default function ReportsPage() {
     };
   };
 
-  const calculatePowerMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number) => {
-    const voltage = data.map(row => parseValue(row.voltage || 0)).filter(val => val > 0);
-    const power = data.map(row => parseValue(row.power || 0)).filter(val => val > 0);
-    const frequency = data.map(row => parseValue(row.frequency || 0)).filter(val => val > 0);
-
-    return {
-      summary: [
-        {
-          metric: 'Voltage (V)',
-          average: voltage.length > 0 ? format(average(voltage)) : 'N/A',
-          maximum: voltage.length > 0 ? format(Math.max(...voltage)) : 'N/A',
-          minimum: voltage.length > 0 ? format(Math.min(...voltage)) : 'N/A',
-          efficiency: voltage.length > 0 ? format((average(voltage) / 400) * 100) + '%' : 'N/A'
-        }
-      ],
-      vfd: [
-        {
-          unit: 'VFD-01',
-          load: format(Math.random() * 30 + 60),
-          frequency: frequency.length > 0 ? format(average(frequency)) : '50.0',
-          power: power.length > 0 ? format(average(power) / 1000) : '25.0',
-          status: 'Optimal'
-        }
-      ]
+  const calculatePowerMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number, columns: string[]) => {
+    const findColumn = (patterns: string[]) => {
+      return columns.find(col => patterns.some(pattern => 
+        col.toLowerCase().includes(pattern.toLowerCase())
+      ));
     };
+    const getColumnData = (columnName: string | undefined) => {
+      if (!columnName) return [];
+      return data.map(row => parseValue(row[columnName])).filter(val => val > 0);
+    };
+
+    const voltageCol = findColumn(['voltage', 'volt', 'v']);
+    const currentCol = findColumn(['current', 'amp', 'a']);
+    const powerCol = findColumn(['power', 'watt', 'kw']);
+    const freqCol = findColumn(['frequency', 'freq', 'hz']);
+    const loadCol = findColumn(['load', 'percent', '%']);
+
+    const voltageData = getColumnData(voltageCol);
+    const currentData = getColumnData(currentCol);
+    const powerData = getColumnData(powerCol);
+    const freqData = getColumnData(freqCol);
+    const loadData = getColumnData(loadCol);
+
+    const summary = [];
+    if (voltageCol && voltageData.length > 0) {
+      summary.push({
+        metric: `${voltageCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(voltageData)),
+        maximum: format(Math.max(...voltageData)),
+        minimum: format(Math.min(...voltageData)),
+        efficiency: format((average(voltageData) / 400) * 100) + '%'
+      });
+    }
+    if (currentCol && currentData.length > 0) {
+      summary.push({
+        metric: `${currentCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(currentData)),
+        maximum: format(Math.max(...currentData)),
+        minimum: format(Math.min(...currentData)),
+        efficiency: 'N/A'
+      });
+    }
+    if (powerCol && powerData.length > 0) {
+      summary.push({
+        metric: `${powerCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(powerData)),
+        maximum: format(Math.max(...powerData)),
+        minimum: format(Math.min(...powerData)),
+        efficiency: 'N/A'
+      });
+    }
+
+    const vfd = [];
+    if (freqCol || loadCol || powerCol) {
+      vfd.push({
+        unit: 'Power System',
+        load: loadData.length > 0 ? format(average(loadData)) + '%' : 'N/A',
+        frequency: freqData.length > 0 ? format(average(freqData)) + ' Hz' : 'N/A',
+        power: powerData.length > 0 ? format(average(powerData)) + ' W' : 'N/A',
+        status: summary.length >= 2 ? 'Optimal' : 'Limited Data'
+      });
+    }
+
+    return { summary, vfd };
   };
 
-  const calculateCIPMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number) => {
-    const cipFlow = data.map(row => parseValue(row.ro_cip_flow || row.cip_flow || 0)).filter(val => val > 0);
-
-    return {
-      summary: [
-        {
-          metric: 'CIP Flow Rate',
-          average: cipFlow.length > 0 ? format(average(cipFlow)) : 'N/A',
-          maximum: cipFlow.length > 0 ? format(Math.max(...cipFlow)) : 'N/A',
-          minimum: cipFlow.length > 0 ? format(Math.min(...cipFlow)) : 'N/A',
-          efficiency: cipFlow.length > 0 ? format(Math.random() * 10 + 90) + '%' : 'N/A'
-        }
-      ],
-      cycles: [
-        {
-          cycle: 'Membrane Cleaning',
-          frequency: 'Daily',
-          duration: '45',
-          effectiveness: format(Math.random() * 10 + 90),
-          status: 'Optimal'
-        }
-      ]
+  const calculateCIPMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number, columns: string[]) => {
+    const findColumn = (patterns: string[]) => {
+      return columns.find(col => patterns.some(pattern => 
+        col.toLowerCase().includes(pattern.toLowerCase())
+      ));
     };
+    const getColumnData = (columnName: string | undefined) => {
+      if (!columnName) return [];
+      return data.map(row => parseValue(row[columnName])).filter(val => val > 0);
+    };
+
+    const cipFlowCol = findColumn(['cip', 'clean', 'wash']);
+    const pressureCol = findColumn(['pressure', 'pt']);
+    const tempCol = findColumn(['temp', 'temperature']);
+    const conductivityCol = findColumn(['conductivity', 'cond']);
+
+    const cipFlowData = getColumnData(cipFlowCol);
+    const pressureData = getColumnData(pressureCol);
+    const tempData = getColumnData(tempCol);
+    const conductivityData = getColumnData(conductivityCol);
+
+    const summary = [];
+    if (cipFlowCol && cipFlowData.length > 0) {
+      summary.push({
+        metric: `${cipFlowCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(cipFlowData)),
+        maximum: format(Math.max(...cipFlowData)),
+        minimum: format(Math.min(...cipFlowData)),
+        efficiency: format((average(cipFlowData) / Math.max(...cipFlowData)) * 100) + '%'
+      });
+    }
+    if (pressureCol && pressureData.length > 0) {
+      summary.push({
+        metric: `${pressureCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(pressureData)),
+        maximum: format(Math.max(...pressureData)),
+        minimum: format(Math.min(...pressureData)),
+        efficiency: 'N/A'
+      });
+    }
+
+    const cycles = [{
+      cycle: 'System Operation',
+      frequency: 'Continuous',
+      duration: format(estimatedHours / daysInRange) + ' hrs/day',
+      effectiveness: summary.length > 0 ? format((summary.length / 4) * 100) : 0,
+      status: summary.length >= 2 ? 'Optimal' : 'Limited Data'
+    }];
+
+    return { summary, cycles };
   };
 
-  const calculateBiologicalMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number) => {
-    const ph = data.map(row => parseValue(row.ph || row.cts_ph || 0)).filter(val => val > 0);
-    const temperature = data.map(row => parseValue(row.temperature || row.mbr_tmp || 0)).filter(val => val > 0);
-    const turbidity = data.map(row => parseValue(row.turbidity || 0)).filter(val => val > 0);
-
-    return {
-      summary: [
-        {
-          metric: 'pH Level',
-          average: ph.length > 0 ? format(average(ph)) : 'N/A',
-          optimalRange: '6.5 - 8.5',
-          status: ph.length > 0 && average(ph) >= 6.5 && average(ph) <= 8.5 ? 'Normal' : 'Warning',
-          compliance: ph.length > 0 && average(ph) >= 6.5 && average(ph) <= 8.5 ? 'Good' : 'Warning'
-        }
-      ],
-      quality: [
-        {
-          parameter: 'Turbidity',
-          value: turbidity.length > 0 ? format(average(turbidity)) + ' NTU' : 'N/A',
-          limit: '< 1 NTU',
-          trend: 'Stable',
-          status: turbidity.length > 0 && average(turbidity) < 1 ? 'Good' : 'Warning'
-        }
-      ]
+  const calculateBiologicalMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number, columns: string[]) => {
+    const findColumn = (patterns: string[]) => {
+      return columns.find(col => patterns.some(pattern => 
+        col.toLowerCase().includes(pattern.toLowerCase())
+      ));
     };
+    const getColumnData = (columnName: string | undefined) => {
+      if (!columnName) return [];
+      return data.map(row => parseValue(row[columnName])).filter(val => val > 0);
+    };
+
+    const phCol = findColumn(['ph', 'ph_level']);
+    const tempCol = findColumn(['temp', 'temperature']);
+    const turbidityCol = findColumn(['turbidity', 'turb']);
+    const doCol = findColumn(['do', 'dissolved_oxygen', 'oxygen']);
+    const flowCol = findColumn(['flow', 'inlet', 'nt_flow']);
+
+    const phData = getColumnData(phCol);
+    const tempData = getColumnData(tempCol);
+    const turbidityData = getColumnData(turbidityCol);
+    const doData = getColumnData(doCol);
+    const flowData = getColumnData(flowCol);
+
+    const summary = [];
+    if (phCol && phData.length > 0) {
+      summary.push({
+        metric: `${phCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(phData)),
+        optimalRange: '6.5 - 8.5',
+        status: average(phData) >= 6.5 && average(phData) <= 8.5 ? 'Normal' : 'Warning',
+        compliance: average(phData) >= 6.5 && average(phData) <= 8.5 ? 'Good' : 'Warning'
+      });
+    }
+    if (tempCol && tempData.length > 0) {
+      summary.push({
+        metric: `${tempCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(tempData)),
+        optimalRange: '15 - 35°C',
+        status: average(tempData) >= 15 && average(tempData) <= 35 ? 'Normal' : 'Warning',
+        compliance: average(tempData) >= 15 && average(tempData) <= 35 ? 'Good' : 'Warning'
+      });
+    }
+    if (flowCol && flowData.length > 0) {
+      summary.push({
+        metric: `${flowCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(flowData)),
+        optimalRange: '> 0',
+        status: average(flowData) > 0 ? 'Normal' : 'Low',
+        compliance: average(flowData) > 0 ? 'Good' : 'Warning'
+      });
+    }
+
+    const quality = [];
+    if (turbidityCol && turbidityData.length > 0) {
+      quality.push({
+        parameter: turbidityCol.replace(/_/g, ' ').toUpperCase(),
+        value: format(average(turbidityData)) + ' NTU',
+        limit: '< 1 NTU',
+        trend: 'Stable',
+        status: average(turbidityData) < 1 ? 'Good' : 'Warning'
+      });
+    }
+    if (doCol && doData.length > 0) {
+      quality.push({
+        parameter: doCol.replace(/_/g, ' ').toUpperCase(),
+        value: format(average(doData)) + ' mg/L',
+        limit: '> 2 mg/L',
+        trend: 'Stable',
+        status: average(doData) > 2 ? 'Good' : 'Low'
+      });
+    }
+
+    return { summary, quality };
   };
 
-  const calculateRejectROMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number) => {
-    const rejectFlow = data.map(row => parseValue(row.reject_flow || row.waste_flow || 0)).filter(val => val > 0);
-
-    return {
-      summary: [
-        {
-          metric: 'Reject Flow Rate',
-          average: rejectFlow.length > 0 ? format(average(rejectFlow)) : 'N/A',
-          maximum: rejectFlow.length > 0 ? format(Math.max(...rejectFlow)) : 'N/A',
-          recovery: rejectFlow.length > 0 ? format(Math.random() * 20 + 10) + '%' : 'N/A',
-          efficiency: rejectFlow.length > 0 ? format(Math.random() * 15 + 75) + '%' : 'N/A'
-        }
-      ],
-      waste: [
-        {
-          stream: 'Primary Reject',
-          flow: rejectFlow.length > 0 ? format(average(rejectFlow)) + ' m³/h' : 'N/A',
-          quality: 'Standard',
-          potential: format(Math.random() * 30 + 20),
-          status: 'Good'
-        }
-      ]
+  const calculateRejectROMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number, columns: string[]) => {
+    const findColumn = (patterns: string[]) => {
+      return columns.find(col => patterns.some(pattern => 
+        col.toLowerCase().includes(pattern.toLowerCase())
+      ));
     };
+    const getColumnData = (columnName: string | undefined) => {
+      if (!columnName) return [];
+      return data.map(row => parseValue(row[columnName])).filter(val => val > 0);
+    };
+
+    const rejectCol = findColumn(['reject', 'waste', 'concentrate']);
+    const qualityCol = findColumn(['quality', 'tds', 'conductivity']);
+    const flowCol = findColumn(['flow', 'rate']);
+
+    const rejectData = getColumnData(rejectCol);
+    const qualityData = getColumnData(qualityCol);
+    const flowData = getColumnData(flowCol);
+
+    const summary = [];
+    if (rejectCol && rejectData.length > 0) {
+      summary.push({
+        metric: `${rejectCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(rejectData)),
+        maximum: format(Math.max(...rejectData)),
+        recovery: 'N/A',
+        efficiency: format((1 - average(rejectData) / Math.max(...rejectData)) * 100) + '%'
+      });
+    }
+    if (flowCol && flowData.length > 0) {
+      summary.push({
+        metric: `${flowCol.replace(/_/g, ' ').toUpperCase()}`,
+        average: format(average(flowData)),
+        maximum: format(Math.max(...flowData)),
+        recovery: 'N/A',
+        efficiency: 'N/A'
+      });
+    }
+
+    const waste = [];
+    if (rejectCol || flowCol) {
+      waste.push({
+        stream: 'Reject Stream',
+        flow: (rejectData.length > 0 ? format(average(rejectData)) : flowData.length > 0 ? format(average(flowData)) : 'N/A') + ' units',
+        quality: qualityData.length > 0 ? format(average(qualityData)) + ' units' : 'Standard',
+        potential: summary.length > 0 ? format(summary.length * 25) : 0,
+        status: summary.length >= 1 ? 'Good' : 'Limited Data'
+      });
+    }
+
+    return { summary, waste };
   };
 
   const calculateGeneralMetrics = (data: any[], parseValue: any, average: any, format: any, estimatedHours: number, daysInRange: number, columns: string[]) => {
+    // Filter to numeric columns with actual data, excluding date/time columns
     const numericColumns = columns.filter(col => {
+      if (col.toLowerCase().includes('date') || col.toLowerCase().includes('time')) return false;
       const values = data.map(row => parseValue(row[col])).filter(val => val > 0);
       return values.length > 0;
-    }).slice(0, 5);
+    }).slice(0, 8); // Show up to 8 key metrics
 
-    return {
-      summary: numericColumns.map((col: string) => {
-        const values = data.map(row => parseValue(row[col])).filter(val => val > 0);
-        return {
-          metric: col.replace(/_/g, ' ').toUpperCase(),
-          average: values.length > 0 ? format(average(values)) : 'N/A',
-          maximum: values.length > 0 ? format(Math.max(...values)) : 'N/A',
-          minimum: values.length > 0 ? format(Math.min(...values)) : 'N/A',
-          status: 'Normal'
-        };
-      }),
-      operational: [
-        {
-          metric: 'System Availability',
-          value: format((estimatedHours / (daysInRange * 24)) * 100) + '%',
-          target: '95%',
-          performance: format(Math.random() * 20 + 80),
-          status: 'Good'
-        }
-      ]
-    };
+    const summary = numericColumns.map((col: string) => {
+      const values = data.map(row => parseValue(row[col])).filter(val => val > 0);
+      const avg = average(values);
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+      
+      // Determine status based on value distribution
+      const variance = avg > 0 ? ((max - min) / avg) : 0;
+      let status = 'Normal';
+      if (variance > 2) status = 'High Variance';
+      else if (variance < 0.1) status = 'Stable';
+      else if (avg > (max * 0.8)) status = 'Optimal';
+      
+      return {
+        metric: col.replace(/_/g, ' ').toUpperCase(),
+        average: format(avg),
+        maximum: format(max),
+        minimum: format(min),
+        status
+      };
+    });
+
+    const operational = [
+      {
+        metric: 'Data Availability',
+        value: format((numericColumns.length / columns.length) * 100) + '%',
+        target: '80%',
+        performance: format((numericColumns.length / Math.max(columns.length, 1)) * 100),
+        status: numericColumns.length >= 3 ? 'Good' : 'Limited'
+      },
+      {
+        metric: 'System Operation Time',
+        value: format(estimatedHours / daysInRange) + ' hrs/day',
+        target: '20+ hrs/day',
+        performance: format((estimatedHours / (daysInRange * 24)) * 100),
+        status: (estimatedHours / (daysInRange * 24)) > 0.8 ? 'Optimal' : 'Monitoring'
+      }
+    ];
+
+    return { summary, operational };
   };
 
   const handleGenerateReport = async () => {
