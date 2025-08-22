@@ -55,6 +55,21 @@ class SQLViewerService {
     return result.recordset.map((row) => row.TABLE_NAME);
   }
 
+  public async getTableColumns(database: string, table: string): Promise<string[]> {
+    try {
+      await this.connect();
+      const sanitizedDatabase = database.replace(/[\[\]';"--]/g, '');
+      const sanitizedTable = table.replace(/[\[\]';"--]/g, '');
+      
+      const query = `USE [${sanitizedDatabase}]; SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${sanitizedTable}' ORDER BY ORDINAL_POSITION;`;
+      const result = await this.pool.request().query(query);
+      return result.recordset.map(row => row.COLUMN_NAME);
+    } catch (error: any) {
+      console.error(`Error fetching columns for table ${table}:`, error);
+      return [];
+    }
+  }
+
   public async getTableData(database: string, table: string, options?: {
     limit?: number;
     sortColumn?: string;
@@ -71,9 +86,28 @@ class SQLViewerService {
       
       // Add ORDER BY clause if sorting is specified
       if (options?.sortColumn && options?.sortDirection) {
-        // Validate column name to prevent SQL injection
-        const sanitizedSortColumn = options.sortColumn.replace(/[\[\]';"--]/g, '');
-        query += ` ORDER BY [${sanitizedSortColumn}] ${options.sortDirection.toUpperCase()}`;
+        // Get available columns to validate sort column exists
+        const availableColumns = await this.getTableColumns(database, table);
+        const sortColumn = options.sortColumn;
+        
+        // Check if the requested sort column exists (case-insensitive)
+        const columnExists = availableColumns.some(col => 
+          col.toLowerCase() === sortColumn.toLowerCase()
+        );
+        
+        if (columnExists) {
+          const sanitizedSortColumn = sortColumn.replace(/[\[\]';"--]/g, '');
+          query += ` ORDER BY [${sanitizedSortColumn}] ${options.sortDirection.toUpperCase()}`;
+        } else {
+          // If requested column doesn't exist, try common date/time columns
+          const dateColumns = availableColumns.filter(col => 
+            /date|time|created|modified|timestamp/i.test(col)
+          );
+          if (dateColumns.length > 0) {
+            query += ` ORDER BY [${dateColumns[0]}] DESC`;
+          }
+          // If no date columns, just use default ordering (no ORDER BY)
+        }
       }
       
       query += ';';

@@ -1009,6 +1009,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/sql-viewer/databases/:database/tables/:table/columns", async (req, res) => {
+    try {
+      const columns = await sqlViewerService.getTableColumns(req.params.database, req.params.table);
+      res.json(columns);
+    } catch (error) {
+      console.error(`Error fetching columns for table ${req.params.table}:`, error);
+      res.status(500).json({ message: "Failed to fetch table columns" });
+    }
+  });
+
   app.get("/api/sql-viewer/databases/:database/tables/:table", async (req, res) => {
     try {
       const options = {

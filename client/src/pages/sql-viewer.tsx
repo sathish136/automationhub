@@ -53,7 +53,7 @@ const SQLViewerPage: React.FC = () => {
   // Filter and search states
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [sortColumn, setSortColumn] = useState<string>('date_time');
+  const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [maxRows, setMaxRows] = useState(100);
   const [columnFilter, setColumnFilter] = useState<string>('');
@@ -210,10 +210,11 @@ const SQLViewerPage: React.FC = () => {
     fetchTables();
   }, [selectedDatabase]);
 
-  // Reset sort when table changes
+  // Reset sort when table changes and determine best sort column
   useEffect(() => {
-    if (selectedTable) {
-      setSortColumn('date_time');
+    if (selectedTable && selectedDatabase) {
+      // Reset sorting, let the data fetching determine the best column
+      setSortColumn('');
       setSortDirection('desc');
     }
   }, [selectedTable]);
@@ -232,10 +233,10 @@ const SQLViewerPage: React.FC = () => {
         
         let url = `/api/sql-viewer/databases/${selectedDatabase}/tables/${selectedTable}?limit=${maxRows}`;
         
-        // Always add default sorting parameters to URL (date_time DESC by default)
-        const currentSortColumn = sortColumn || 'date_time';
-        const currentSortDirection = sortDirection || 'desc';
-        url += `&sortColumn=${encodeURIComponent(currentSortColumn)}&sortDirection=${currentSortDirection}`;
+        // Add sorting parameters only if sortColumn is specified
+        if (sortColumn) {
+          url += `&sortColumn=${encodeURIComponent(sortColumn)}&sortDirection=${sortDirection}`;
+        }
         
         const response = await fetch(url);
         
@@ -300,8 +301,8 @@ const SQLViewerPage: React.FC = () => {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortColumn(column);
-      // For date_time column, start with DESC (newest first), for others start with ASC
-      const defaultDirection = column === 'date_time' ? 'desc' : 'asc';
+      // For columns with date/time in name, start with DESC (newest first), for others start with ASC
+      const defaultDirection = /date|time|created|modified|timestamp/i.test(column) ? 'desc' : 'asc';
       setSortDirection(defaultDirection);
     }
   };
