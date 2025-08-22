@@ -29,6 +29,11 @@ export default function Dashboard() {
         {/* Key Metrics Cards */}
         <MetricsCards metrics={metrics} isLoading={metricsLoading} />
 
+        {/* Recent Alerts Dashboard - Prominently displayed */}
+        <div className="mb-6">
+          <RecentAlerts />
+        </div>
+
         {/* Main Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Site Status Overview */}
@@ -38,7 +43,6 @@ export default function Dashboard() {
 
           {/* Sidebar Content */}
           <div className="space-y-6">
-            <RecentAlerts />
             <QuickActions />
           </div>
         </div>
