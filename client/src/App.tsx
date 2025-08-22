@@ -13,6 +13,7 @@ import IPCDetails from "@/pages/ipc-details";
 import SqlViewerPage from "@/pages/sql-viewer";
 import InstrumentationPage from "@/pages/instrumentation";
 import PlcCalculationsPage from "@/pages/plc-calculations";
+import ReportsPage from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 import { SidebarProvider, useSidebar } from "@/contexts/sidebar-context";
@@ -37,6 +38,7 @@ function Router() {
           <Route path="/sql-viewer" component={SqlViewerPage} />
           <Route path="/instrumentation" component={InstrumentationPage} />
           <Route path="/plc-calculations" component={PlcCalculationsPage} />
+          <Route path="/reports" component={ReportsPage} />
           <Route component={NotFound} />
         </Switch>
       </main>

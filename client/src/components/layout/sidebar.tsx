@@ -20,6 +20,7 @@ import {
   HardDrive,
   FileText,
   AlertTriangle,
+  BarChart3,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
 
@@ -34,6 +35,7 @@ const navigation = [
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
   { name: "PLC Calculations", href: "/plc-calculations", icon: Calculator },
+  { name: "Reports", href: "/reports", icon: BarChart3 },
 ];
 
 export default function Sidebar() {
