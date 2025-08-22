@@ -86,33 +86,33 @@ export function CompactDateRange({
   ];
 
   return (
-    <div className={`w-full max-w-sm ${className}`}>
+    <div className={`w-full max-w-xs ${className}`}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <div className="w-full cursor-pointer border rounded-lg overflow-hidden shadow-sm">
+          <div className="w-full cursor-pointer border rounded-lg overflow-hidden shadow-sm bg-white">
             {/* Purple Gradient Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3">
+            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 text-white px-3 py-2">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xs font-medium opacity-90 tracking-wider">DATE RANGE</div>
                   <div className="text-sm font-semibold">Select Date Range</div>
                 </div>
-                <Calendar className="w-5 h-5 opacity-90" />
+                <Calendar className="w-4 h-4 opacity-90" />
               </div>
             </div>
             
             {/* Date Display */}
-            <div className="bg-white p-3">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white px-3 py-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-gray-600 block mb-1">From</label>
-                  <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                  <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1">
                     {formatDisplayDate(fromDate)}
                   </div>
                 </div>
                 <div>
                   <label className="text-xs text-gray-600 block mb-1">To</label>
-                  <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                  <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1">
                     {formatDisplayDate(toDate)}
                   </div>
                 </div>
