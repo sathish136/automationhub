@@ -359,24 +359,52 @@ const PanelConfiguratorPage = () => {
   const ioCalculation = calculateIORequirements();
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-4 space-y-4">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Beckhoff Panel Configurator</h1>
-          <p className="text-muted-foreground">Design panels, select instruments, and calculate I/O requirements</p>
+      <div className="text-center space-y-2 mb-6">
+        <h1 className="text-2xl font-bold text-primary">Panel Configuration Wizard</h1>
+        <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+          Create and configure Beckhoff I/O panels in 3 simple steps: Choose site → Create panel → Add instruments
+        </p>
+      </div>
+
+      {/* Step Indicator */}
+      <div className="flex justify-center mb-6">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+              selectedSite ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>1</div>
+            <span className="ml-2 text-xs font-medium">Choose Site</span>
+          </div>
+          <div className="w-8 h-px bg-border"></div>
+          <div className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+              panels.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>2</div>
+            <span className="ml-2 text-xs font-medium">Create Panel</span>
+          </div>
+          <div className="w-8 h-px bg-border"></div>
+          <div className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+              selectedPanel ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>3</div>
+            <span className="ml-2 text-xs font-medium">Configure</span>
+          </div>
         </div>
+      </div>
+
+      <div className="flex justify-end mb-4">
         <Dialog open={isCreatePanelOpen} onOpenChange={setIsCreatePanelOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Panel
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create New Panel Configuration</DialogTitle>
-              <DialogDescription>Configure a new Beckhoff I/O panel for your site</DialogDescription>
+              <DialogTitle className="text-lg flex items-center">
+                <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold mr-2">+</div>
+                Create New Panel
+              </DialogTitle>
+              <DialogDescription className="text-sm">
+                Fill in the basic information for your new Beckhoff I/O panel
+              </DialogDescription>
             </DialogHeader>
             <Form {...panelForm}>
               <form onSubmit={panelForm.handleSubmit((data) => {
@@ -388,29 +416,29 @@ const PanelConfiguratorPage = () => {
                 }
                 console.log("Form data:", data); // Debug log
                 createPanelMutation.mutate(data);
-              })} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              })} className="space-y-3">
+                <div className="space-y-3">
                   <FormField
                     control={panelForm.control}
                     name="siteId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Site</FormLabel>
+                        <FormLabel className="text-sm font-medium">Site *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select site" />
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Choose the site for this panel" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {sites.map((site: any) => (
                               <SelectItem key={site.id} value={site.id}>
-                                {site.name}
+                                <div className="text-sm">{site.name}</div>
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
@@ -419,11 +447,15 @@ const PanelConfiguratorPage = () => {
                     name="panelName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Panel Name</FormLabel>
+                        <FormLabel className="text-sm font-medium">Panel Name *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Main Control Panel" {...field} />
+                          <Input 
+                            placeholder="e.g., Main Control Panel" 
+                            {...field} 
+                            className="h-10 text-sm"
+                          />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
@@ -434,26 +466,35 @@ const PanelConfiguratorPage = () => {
                   name="panelDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel className="text-sm font-medium">Description</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Panel description..." {...field} />
+                        <Textarea 
+                          placeholder="Brief description of the panel's purpose..." 
+                          {...field} 
+                          className="text-sm resize-none"
+                          rows={2}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <FormField
                     control={panelForm.control}
                     name="panelLocation"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Location</FormLabel>
+                        <FormLabel className="text-sm font-medium">Location</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Building A" {...field} />
+                          <Input 
+                            placeholder="e.g., Building A" 
+                            {...field} 
+                            className="h-10 text-sm"
+                          />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
@@ -462,49 +503,59 @@ const PanelConfiguratorPage = () => {
                     name="distanceFromPlc"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Distance from PLC (m)</FormLabel>
+                        <FormLabel className="text-sm font-medium">Distance from PLC</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
-                            placeholder="Distance in meters"
+                            placeholder="meters"
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                             value={field.value || ''}
+                            className="h-10 text-sm"
                           />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={panelForm.control}
-                    name="enclosureRating"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Enclosure Rating</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="IP54">IP54</SelectItem>
-                            <SelectItem value="IP65">IP65</SelectItem>
-                            <SelectItem value="IP67">IP67</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
+                        <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
                 </div>
+                <FormField
+                  control={panelForm.control}
+                  name="enclosureRating"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Enclosure Rating</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select protection rating" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="IP54">IP54 - Standard indoor</SelectItem>
+                          <SelectItem value="IP65">IP65 - Dust/water resistant</SelectItem>
+                          <SelectItem value="IP67">IP67 - Outdoor rated</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsCreatePanelOpen(false)}>
+                <div className="flex justify-end space-x-2 pt-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsCreatePanelOpen(false)}
+                    className="h-9 px-4 text-sm"
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createPanelMutation.isPending}>
-                    Create Panel
+                  <Button 
+                    type="submit" 
+                    disabled={createPanelMutation.isPending}
+                    className="h-9 px-4 text-sm"
+                  >
+                    {createPanelMutation.isPending ? 'Creating...' : 'Create Panel'}
                   </Button>
                 </div>
               </form>
@@ -513,93 +564,139 @@ const PanelConfiguratorPage = () => {
         </Dialog>
       </div>
 
-      {/* Site Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Site Selection</CardTitle>
-          <CardDescription>Select a site to view and configure panels</CardDescription>
+      {/* Step 1: Site Selection */}
+      <Card className="border-2 border-dashed border-primary/20">
+        <CardHeader className="pb-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+            <CardTitle className="text-lg">Choose Your Site</CardTitle>
+          </div>
+          <CardDescription className="text-sm">
+            Select which site you want to configure panels for
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Select value={selectedSite} onValueChange={setSelectedSite}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a site to configure panels" />
+            <SelectTrigger className="w-full h-12">
+              <SelectValue placeholder="🏭 Choose a site to get started" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
+              <SelectItem value="all">🌐 Show All Sites</SelectItem>
               {sites.map((site: any) => (
                 <SelectItem key={site.id} value={site.id}>
-                  {site.name} - {site.location || 'No location'}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium">{site.name}</span>
+                    <span className="text-xs text-muted-foreground">({site.location || 'No location'})</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {selectedSite && (
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-xs text-green-600 font-medium">✓ Site selected! Now you can create panels below.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Panels Grid */}
-      <Card>
-            <CardHeader>
-              <CardTitle>Panel Configurations</CardTitle>
-              <CardDescription>
-                {selectedSite ? 
-                  `Manage panel configurations for the selected site` : 
-                  'Manage all panel configurations (select a site above to filter)'
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isPanelsLoading ? (
-                <div className="text-center py-8">Loading panels...</div>
-              ) : panels.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No panels configured yet. Create your first panel to get started.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {panels.map((panel: PanelConfiguration) => (
-                    <Card 
-                      key={panel.id} 
-                      className={`cursor-pointer transition-colors ${
-                        selectedPanel?.id === panel.id ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-                      }`}
-                      onClick={() => setSelectedPanel(panel)}
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg">{panel.panelName}</CardTitle>
-                          <Badge variant={panel.isActive ? "default" : "secondary"}>
-                            {panel.installationStatus}
-                          </Badge>
+      {/* Step 2: Panel Management */}
+      <Card className={selectedSite ? "border-2 border-dashed border-primary/20" : "opacity-75"}>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                selectedSite ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>2</div>
+              <CardTitle className="text-lg">Create & Manage Panels</CardTitle>
+            </div>
+            <Button 
+              size="sm" 
+              disabled={!selectedSite}
+              onClick={() => setIsCreatePanelOpen(true)}
+              className="h-8 px-3 text-xs"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              New Panel
+            </Button>
+          </div>
+          <CardDescription className="text-sm">
+            {selectedSite ? 
+              'Create new panels or select existing ones to configure' : 
+              'Select a site first to create panels'
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!selectedSite ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="mb-2">⬆️</div>
+              <p className="text-sm">Please select a site above to view and create panels</p>
+            </div>
+          ) : isPanelsLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+              <p className="text-xs text-muted-foreground">Loading panels...</p>
+            </div>
+          ) : panels.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="mb-4 text-4xl">📋</div>
+              <h3 className="text-sm font-medium mb-2">No panels yet</h3>
+              <p className="text-xs text-muted-foreground mb-4">Create your first panel to get started</p>
+              <Button onClick={() => setIsCreatePanelOpen(true)} size="sm">
+                <Plus className="w-3 h-3 mr-1" />
+                Create First Panel
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {panels.map((panel: PanelConfiguration) => (
+                <Card 
+                  key={panel.id} 
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    selectedPanel?.id === panel.id ? 'border-primary bg-primary/5 shadow-md' : 'hover:border-primary/50'
+                  }`}
+                  onClick={() => setSelectedPanel(panel)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-sm">{panel.panelName}</h3>
+                      <Badge variant={panel.isActive ? "default" : "secondary"} className="text-xs">
+                        {panel.installationStatus}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">{panel.panelDescription || 'No description'}</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Location:</span>
+                        <span className="font-medium">{panel.panelLocation || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Coupler:</span>
+                        <span className="font-medium">{panel.couplerType}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Distance:</span>
+                        <span className="font-medium">{panel.distanceFromPlc ? `${panel.distanceFromPlc}m` : 'N/A'}</span>
+                      </div>
+                      {panel.estimatedCost && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Cost:</span>
+                          <span className="font-medium text-green-600">${panel.estimatedCost}</span>
                         </div>
-                        <CardDescription>{panel.panelDescription}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Location:</span>
-                            <span>{panel.panelLocation || 'Not specified'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Coupler:</span>
-                            <span>{panel.couplerType}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Distance:</span>
-                            <span>{panel.distanceFromPlc ? `${panel.distanceFromPlc}m` : 'Not specified'}</span>
-                          </div>
-                          {panel.estimatedCost && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Est. Cost:</span>
-                              <span>${panel.estimatedCost}</span>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
+                      )}
+                    </div>
+                    {selectedPanel?.id === panel.id && (
+                      <div className="mt-3 pt-3 border-t border-primary/20">
+                        <p className="text-xs text-primary font-medium">✓ Panel selected - Configure instruments below</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
           </Card>
 
           {/* Selected Panel Details */}
