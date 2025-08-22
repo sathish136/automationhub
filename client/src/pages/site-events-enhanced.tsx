@@ -314,8 +314,8 @@ export default function SiteEventsEnhanced() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header title="Site Events & Alerts" subtitle="Monitor industrial automation events and custom site-specific events" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
+      <div className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4 py-4">
+        <div className="space-y-3">
           {/* Header Section */}
           <div className="bg-white p-4 rounded-lg border">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-4">
@@ -325,7 +325,7 @@ export default function SiteEventsEnhanced() {
               </div>
             </div>
 
-            <Tabs defaultValue="system-alerts" className="w-full">
+            <Tabs defaultValue="system-alerts" className="w-full text-xs">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="system-alerts">
                   <Activity className="h-4 w-4 mr-2" />
@@ -338,9 +338,9 @@ export default function SiteEventsEnhanced() {
               </TabsList>
 
               {/* System Alerts Tab */}
-              <TabsContent value="system-alerts" className="space-y-6 mt-6">
+              <TabsContent value="system-alerts" className="space-y-3 mt-3">
                 {/* System Alerts Summary */}
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-2">
                   <div className="text-center">
                     <div className="text-sm font-bold text-red-600 dark:text-red-400">{siteEventsSummary.critical}</div>
                     <div className="text-xs text-gray-500">Critical</div>
@@ -361,21 +361,21 @@ export default function SiteEventsEnhanced() {
 
                 {/* System Alerts Filters */}
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex flex-wrap items-center gap-3">
+                  <CardContent className="p-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <div className="relative flex-1 min-w-0">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
                         <Input
                           placeholder="Search sites or messages..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 h-9"
+                          className="pl-8 h-6 text-xs"
                           data-testid="input-search-events"
                         />
                       </div>
                       
                       <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                        <SelectTrigger className="w-32 h-9" data-testid="select-severity-filter">
+                        <SelectTrigger className="w-28 h-6 text-xs" data-testid="select-severity-filter">
                           <SelectValue placeholder="Severity" />
                         </SelectTrigger>
                         <SelectContent>
@@ -387,7 +387,7 @@ export default function SiteEventsEnhanced() {
                       </Select>
 
                       <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger className="w-40 h-9" data-testid="select-category-filter">
+                        <SelectTrigger className="w-32 h-6 text-xs" data-testid="select-category-filter">
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -401,7 +401,7 @@ export default function SiteEventsEnhanced() {
                       </Select>
 
                       <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-32 h-9" data-testid="select-status-filter">
+                        <SelectTrigger className="w-28 h-6 text-xs" data-testid="select-status-filter">
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -421,7 +421,7 @@ export default function SiteEventsEnhanced() {
                           setCategoryFilter("all");
                           setStatusFilter("all");
                         }}
-                        className="h-9"
+                        className="h-6 px-2 text-xs"
                         data-testid="button-clear-filters"
                       >
                         Clear
@@ -431,13 +431,13 @@ export default function SiteEventsEnhanced() {
                 </Card>
 
                 {/* System Alerts List */}
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {alertsLoading ? (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {[...Array(5)].map((_, i) => (
                         <Card key={i}>
-                          <CardContent className="p-3">
-                            <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <CardContent className="p-2">
+                            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                           </CardContent>
                         </Card>
                       ))}
@@ -446,7 +446,7 @@ export default function SiteEventsEnhanced() {
                     filteredAlerts.map((alert) => (
                       <Card key={alert.id} className={`transition-all ${!alert.isRead ? 'border-l-4 border-l-blue-500 bg-blue-50/30' : ''}`}>
                         <CardContent className="p-3">
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
                                 <Badge className={`${getSeverityColor(alert.severity)} text-white`}>
@@ -497,7 +497,7 @@ export default function SiteEventsEnhanced() {
                                   size="sm"
                                   onClick={() => markAsReadMutation.mutate(alert.id)}
                                   disabled={markAsReadMutation.isPending}
-                                  className="text-xs"
+                                  className="text-xs h-6 px-2"
                                 >
                                   <Eye className="h-3 w-3 mr-1" />
                                   Mark Read
@@ -510,7 +510,7 @@ export default function SiteEventsEnhanced() {
                                   size="sm"
                                   onClick={() => markAsResolvedMutation.mutate(alert.id)}
                                   disabled={markAsResolvedMutation.isPending}
-                                  className="text-xs"
+                                  className="text-xs h-6 px-2"
                                 >
                                   <CheckCircle className="h-3 w-3 mr-1" />
                                   Resolve
@@ -523,10 +523,10 @@ export default function SiteEventsEnhanced() {
                     ))
                   ) : (
                     <Card>
-                      <CardContent className="p-12 text-center">
-                        <Activity className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                        <h3 className="text-sm font-medium text-gray-900 mb-2">No Site Events Found</h3>
-                        <p className="text-gray-600">No PLC tag events or site alerts match your current filters.</p>
+                      <CardContent className="p-6 text-center">
+                        <Activity className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                        <h3 className="text-xs font-medium text-gray-900 mb-1">No Site Events Found</h3>
+                        <p className="text-xs text-gray-600">No PLC tag events or site alerts match your current filters.</p>
                       </CardContent>
                     </Card>
                   )}
