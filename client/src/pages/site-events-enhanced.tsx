@@ -535,92 +535,72 @@ export default function SiteEventsEnhanced() {
 
               {/* Custom Site Events Tab */}
               <TabsContent value="custom-events" className="space-y-3 mt-3">
-                {/* Compact Controls */}
-                <div className="bg-gray-50 border rounded p-2">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Database className="h-3 w-3" />
-                      <span className="font-medium">Site:</span>
+                {/* Custom Events Summary */}
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-red-600 dark:text-red-400">{customEventsSummary.critical}</div>
+                    <div className="text-xs text-gray-500">Critical</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-yellow-600 dark:text-yellow-400">{customEventsSummary.warning}</div>
+                    <div className="text-xs text-gray-500">Warning</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-green-600 dark:text-green-400">{acknowledgedEvents.size}</div>
+                    <div className="text-xs text-gray-500">Acknowledged</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{customEvents?.length || 0}</div>
+                    <div className="text-xs text-gray-500">Total</div>
+                  </div>
+                </div>
+
+                {/* Custom Events Filters */}
+                <Card>
+                  <CardContent className="p-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="relative flex-1 min-w-0">
+                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+                        <Input
+                          placeholder="Search events or messages..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-8 h-6 text-xs"
+                          data-testid="input-search-custom-events"
+                        />
+                      </div>
+                      
                       <Select value={selectedSiteConfig} onValueChange={setSelectedSiteConfig}>
-                        <SelectTrigger className="w-32 h-6 text-xs">
-                          <SelectValue placeholder="All Sites" />
+                        <SelectTrigger className="w-28 h-6 text-xs" data-testid="select-site-filter">
+                          <SelectValue placeholder="Site" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Sites</SelectItem>
                           {siteConfigs?.map(config => (
                             <SelectItem key={config.id} value={config.id}>
-                              {config.siteName || config.deviceName || 'Unnamed Site'}
+                              {config.siteName || config.deviceName || 'Site'}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      
-                      <div className="relative">
-                        <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-2.5 w-2.5" />
-                        <Input
-                          placeholder="Search..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-6 h-6 w-24 text-xs"
-                        />
-                      </div>
-                          
-                      <CompactDateRange
-                        fromDate={fromDate}
-                        toDate={toDate}
-                        onFromDateChange={(date) => {
-                          setFromDate(date);
-                          if (date && toDate) setDateRange("custom");
-                        }}
-                        onToDateChange={(date) => {
-                          setToDate(date);
-                          if (fromDate && date) setDateRange("custom");
-                        }}
-                        onRangeApply={() => {
-                          if (fromDate || toDate) {
-                            setDateRange("custom");
-                          } else {
-                            setDateRange("all");
-                          }
-                        }}
-                        className="w-72"
-                      />
 
-                      <Button variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => { const csvData = customEvents?.map(event => ({ 'Date & Time': new Date(event.date_time).toLocaleString('en-GB'), 'Description': event.description || event.message, 'Site': event.siteName || event.deviceName || 'Site', 'Type': event.type || 'Alert', 'Severity': event.severity || 'Unknown' })) || []; const csvContent = [ Object.keys(csvData[0] || {}).join(','), ...csvData.map(row => Object.values(row).join(',')) ].join('\n'); const blob = new Blob([csvContent], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `site-events-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url); }}>
-                        <Download className="h-2.5 w-2.5" />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSearchTerm("");
+                          setSelectedSiteConfig("all");
+                          setFromDate(null);
+                          setToDate(null);
+                        }}
+                        className="h-6 px-2 text-xs"
+                        data-testid="button-clear-custom-filters"
+                      >
+                        Clear
                       </Button>
                     </div>
-                    
-                    <div className="flex items-center gap-2 ml-auto">
-                      <span className="text-xs">
-                        <span className="font-bold text-red-600">
-                          {customEvents?.filter(event => {
-                            const matchesSearch = !searchTerm || (event.description || event.message).toLowerCase().includes(searchTerm.toLowerCase()) || (event.siteName || '').toLowerCase().includes(searchTerm.toLowerCase());
-                            let matchesDateRange = true;
-                            if (fromDate || toDate) {
-                              const eventDate = new Date(event.date_time);
-                              if (fromDate && toDate) {
-                                const startDate = new Date(fromDate + 'T00:00:00');
-                                const endDate = new Date(toDate + 'T23:59:59');
-                                matchesDateRange = eventDate >= startDate && eventDate <= endDate;
-                              } else if (fromDate) {
-                                const startDate = new Date(fromDate + 'T00:00:00');
-                                matchesDateRange = eventDate >= startDate;
-                              } else if (toDate) {
-                                const endDate = new Date(toDate + 'T23:59:59');
-                                matchesDateRange = eventDate <= endDate;
-                              }
-                            }
-                            return matchesSearch && matchesDateRange;
-                          }).length || 0}
-                        </span> Critical
-                      </span>
-                      <span className="text-xs">
-                        <span className="font-bold text-green-600">{acknowledgedEvents.size}</span> Acknowledged
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
 
 
