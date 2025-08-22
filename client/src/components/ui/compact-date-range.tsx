@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Calendar } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -23,12 +22,23 @@ export function CompactDateRange({
   className = ""
 }: CompactDateRangeProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [showInputs, setShowInputs] = useState(false);
+  const [tempFromDate, setTempFromDate] = useState(fromDate);
+  const [tempToDate, setTempToDate] = useState(toDate);
 
   const formatDisplayDate = (date: string) => {
-    if (!date) return "dd-mm-yyyy";
+    if (!date) return "";
     const d = new Date(date);
-    return d.toLocaleDateString('en-GB'); // dd/mm/yyyy format
+    const day = d.getDate();
+    const month = d.toLocaleDateString('en-GB', { month: 'short' });
+    const year = d.getFullYear().toString().slice(-2);
+    return `${day} ${month} ${year}`;
+  };
+
+  const getDisplayText = () => {
+    if (fromDate && toDate) {
+      return `${formatDisplayDate(fromDate)} - ${formatDisplayDate(toDate)}`;
+    }
+    return "Select date range";
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -36,190 +46,145 @@ export function CompactDateRange({
     
     const dateStr = date.toISOString().split('T')[0];
     
-    if (!fromDate || (fromDate && toDate)) {
+    if (!tempFromDate || (tempFromDate && tempToDate)) {
       // First selection or reset range
-      onFromDateChange(dateStr);
-      onToDateChange("");
-    } else if (fromDate && !toDate) {
+      setTempFromDate(dateStr);
+      setTempToDate("");
+    } else if (tempFromDate && !tempToDate) {
       // Second selection
-      if (date >= new Date(fromDate)) {
-        onToDateChange(dateStr);
+      if (date >= new Date(tempFromDate)) {
+        setTempToDate(dateStr);
       } else {
-        onFromDateChange(dateStr);
-        onToDateChange("");
+        setTempFromDate(dateStr);
+        setTempToDate("");
       }
     }
   };
 
-  const handleApply = () => {
+  const applyDateRange = () => {
+    onFromDateChange(tempFromDate);
+    onToDateChange(tempToDate);
     onRangeApply?.();
     setIsOpen(false);
   };
 
   const quickRanges = [
-    { label: "Today", onClick: () => {
-      const today = new Date().toISOString().split('T')[0];
-      onFromDateChange(today);
-      onToDateChange(today);
-    }},
-    { label: "Yesterday", onClick: () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const dateStr = yesterday.toISOString().split('T')[0];
-      onFromDateChange(dateStr);
-      onToDateChange(dateStr);
-    }},
-    { label: "Last Week", onClick: () => {
-      const today = new Date();
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      onFromDateChange(weekAgo.toISOString().split('T')[0]);
-      onToDateChange(today.toISOString().split('T')[0]);
-    }},
-    { label: "Last Month", onClick: () => {
-      const today = new Date();
-      const monthAgo = new Date();
-      monthAgo.setDate(monthAgo.getDate() - 30);
-      onFromDateChange(monthAgo.toISOString().split('T')[0]);
-      onToDateChange(today.toISOString().split('T')[0]);
-    }},
+    { 
+      label: "Today", 
+      onClick: () => {
+        const today = new Date().toISOString().split('T')[0];
+        setTempFromDate(today);
+        setTempToDate(today);
+      }
+    },
+    { 
+      label: "Yesterday", 
+      onClick: () => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const dateStr = yesterday.toISOString().split('T')[0];
+        setTempFromDate(dateStr);
+        setTempToDate(dateStr);
+      }
+    },
+    { 
+      label: "Last week", 
+      onClick: () => {
+        const today = new Date();
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        setTempFromDate(weekAgo.toISOString().split('T')[0]);
+        setTempToDate(today.toISOString().split('T')[0]);
+      }
+    },
+    { 
+      label: "Last month", 
+      onClick: () => {
+        const today = new Date();
+        const monthAgo = new Date();
+        monthAgo.setDate(monthAgo.getDate() - 30);
+        setTempFromDate(monthAgo.toISOString().split('T')[0]);
+        setTempToDate(today.toISOString().split('T')[0]);
+      }
+    },
+    { 
+      label: "Last quarter", 
+      onClick: () => {
+        const today = new Date();
+        const quarterAgo = new Date();
+        quarterAgo.setDate(quarterAgo.getDate() - 90);
+        setTempFromDate(quarterAgo.toISOString().split('T')[0]);
+        setTempToDate(today.toISOString().split('T')[0]);
+      }
+    },
   ];
 
+  const reset = () => {
+    setTempFromDate("");
+    setTempToDate("");
+    onFromDateChange("");
+    onToDateChange("");
+    onRangeApply?.();
+  };
+
   return (
-    <div className={`w-full max-w-xs ${className}`}>
+    <div className={`w-auto ${className}`}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <div className="w-full cursor-pointer border rounded-lg overflow-hidden shadow-sm bg-white">
-            {/* Purple Gradient Header */}
-            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 text-white px-3 py-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-medium opacity-90 tracking-wider">DATE RANGE</div>
-                  <div className="text-sm font-semibold">Select Date Range</div>
-                </div>
-                <Calendar className="w-4 h-4 opacity-90" />
-              </div>
-            </div>
-            
-            {/* Date Display */}
-            <div className="bg-white px-3 py-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-gray-600 block mb-1">From</label>
-                  <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1">
-                    {formatDisplayDate(fromDate)}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600 block mb-1">To</label>
-                  <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1">
-                    {formatDisplayDate(toDate)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Button
+            variant="outline"
+            className="justify-between h-8 px-3 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            <span>{getDisplayText()}</span>
+            <ChevronDown className="w-4 h-4 ml-2" />
+          </Button>
         </PopoverTrigger>
         
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="p-4">
-            <div className="space-y-4">
-              {/* Quick Range Buttons */}
-              <div className="grid grid-cols-2 gap-2">
+          <div className="flex">
+            {/* Left side - Quick options */}
+            <div className="w-32 p-3 border-r border-gray-200 bg-gray-50">
+              <div className="space-y-1">
                 {quickRanges.map((range) => (
-                  <Button
+                  <button
                     key={range.label}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-7"
-                    onClick={() => {
-                      range.onClick();
-                      handleApply();
-                    }}
+                    className="w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                    onClick={range.onClick}
                   >
                     {range.label}
-                  </Button>
+                  </button>
                 ))}
               </div>
+              <button
+                className="w-full text-left px-2 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded mt-4"
+                onClick={reset}
+              >
+                Reset
+              </button>
+            </div>
+            
+            {/* Right side - Calendar */}
+            <div className="p-3">
+              <CalendarComponent
+                mode="single"
+                selected={tempFromDate ? new Date(tempFromDate) : undefined}
+                onSelect={handleDateSelect}
+                className="rounded-md border-0"
+                disabled={(date) => date > new Date()}
+              />
               
-              {/* Toggle between calendar and inputs */}
-              <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowInputs(!showInputs)}
-                  className="text-xs"
-                >
-                  {showInputs ? "Show Calendar" : "Manual Input"}
-                </Button>
-              </div>
-              
-              {showInputs ? (
-                /* Manual Input Mode */
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-600 block mb-1">From</label>
-                      <Input
-                        type="date"
-                        value={fromDate}
-                        onChange={(e) => onFromDateChange(e.target.value)}
-                        className="text-sm"
-                        data-testid="date-range-from"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-600 block mb-1">To</label>
-                      <Input
-                        type="date"
-                        value={toDate}
-                        onChange={(e) => onToDateChange(e.target.value)}
-                        className="text-sm"
-                        data-testid="date-range-to"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Calendar Mode */
-                <div className="space-y-3">
-                  <div className="text-xs text-gray-600 text-center">
-                    {!fromDate ? "Select start date" : !toDate ? "Select end date" : "Range selected"}
-                  </div>
-                  <CalendarComponent
-                    mode="single"
-                    selected={fromDate ? new Date(fromDate) : undefined}
-                    onSelect={handleDateSelect}
-                    className="rounded-md border"
-                    disabled={(date) => date > new Date()}
-                  />
+              {/* Apply button - only show if dates are selected */}
+              {tempFromDate && (
+                <div className="mt-3 pt-2 border-t">
+                  <Button
+                    onClick={applyDateRange}
+                    size="sm"
+                    className="w-full"
+                  >
+                    Apply
+                  </Button>
                 </div>
               )}
-              
-              <div className="flex gap-2 pt-2 border-t">
-                <Button 
-                  onClick={handleApply} 
-                  size="sm" 
-                  className="flex-1"
-                  disabled={!fromDate && !toDate}
-                  data-testid="date-range-apply"
-                >
-                  Apply
-                </Button>
-                <Button 
-                  onClick={() => {
-                    onFromDateChange("");
-                    onToDateChange("");
-                    onRangeApply?.();
-                    setIsOpen(false);
-                  }} 
-                  variant="outline" 
-                  size="sm"
-                  data-testid="date-range-clear"
-                >
-                  Clear
-                </Button>
-              </div>
             </div>
           </div>
         </PopoverContent>
