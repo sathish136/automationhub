@@ -1,0 +1,24 @@
+Site Running Data Report - kanchan.kanchan_main
+Generated: 22/8/2025
+
+Time Range: Last 7 Days
+
+Site Filter: All Sites
+
+Database: kanchan
+
+Table: kanchan_main
+
+Records: 200
+
+Time Range: Last 7 Days
+
+Date Time	Ro Reco	Ro 1st Stg Dp	Ro 1st Stg Fm	Ro 1st Stg In	Ro 1st Stg Out	Ro 2nd Stg Dp	Ro 2nd Stg Fm	Ro 2nd Stg In	Ro 2nd Stg Out	Ro 3rd Stg Dp	Ro 3rd Stg Fm	Ro 3rd Stg In	Ro 3rd Stg Out	Ro 4th Stg Dp	Ro 4th Stg Fm	Ro 4th Stg In	Ro 4th Stg Out	Ro Feed	Ro Feed Lt	Ro Feed Ph	Ro 1st Reco	Ro 2nd Reco	Ro 3rd Reco	Ro 4th Reco	Ro Running Time	Ro Feed Tot Fm	Ro Stg1 Tot Fm	Ro Stg2 Tot Fm	Ro Stg3 Tot Fm	Ro Stg4 Tot Fm	Ro Feed Tot Fm Day	Ro Stg1 Tot Fm Day	Ro Stg2 Tot Fm Day	Ro Stg3 Tot Fm Day	Ro Stg4 Tot Fm Day	IsRead	IsResolved
+22/8/2025, 3:48:20 pm	85.1	0.6	19.7	14.2	13.6	1.3	12.1	29.5	28.3	0	5.3	44.8	45	-10.4	1.6	49.5	60	45.4	4.8	5.9	46.9	47.6	39.2	25.6	Invalid Date	1097.9	494.7	297.9	128.8	37.3	N/A	N/A	N/A	N/A	N/A	false	false
+22/8/2025, 3:47:12 pm	88.8	0.7	19.3	14.3	13.6	1	12.3	29.5	28.3	-0.4	5.2	44.7	45	-10.4	1.6	49.5	60	46	4.8	5.9	43.2	50.2	37.9	20.3	Invalid Date	1097	494.3	297.7	128.7	37.3	N/A	N/A	N/A	N/A	N/A	false	false
+22/8/2025, 3:46:04 pm	87.6	0.7	20.3	14.2	13.6	1.1	12.4	29.5	28	0	5.1	44.9	45	-10.4	1.6	49.6	60	44.9	4.8	5.9	42.8	49.2	46.5	18.8	Invalid Date	1096.2	493.9	297.4	128.6	37.2	N/A	N/A	N/A	N/A	N/A	false	false
+22/8/2025, 3:44:54 pm	86.9	0.5	20.4	14.3	13.6	0.8	12.1	29.6	28.6	-0.1	5.2	44.9	45.1	-10.6	1.6	49.5	60	45.3	4.8	5.9	46.3	48.7	45.9	21.8	Invalid Date	1095.4	493.6	297.2	128.5	37.2	N/A	N/A	N/A	N/A	N/A	false	false
+22/8/2025, 3:43:43 pm	87.1	0.6	19.8	14.2	13.6	1	12.2	29.5	28.4	-0.2	5.3	44.5	45	-10.5	1.5	49.6	60	44.4	4.8	5.9	45.9	47.2	42.2	28.5	Invalid Date	1094.5	493.2	297	128.4	37.2	N/A	N/A	N/A	N/A	N/A	false	false
+22/8/2025, 3:42:35 pm	88.3	0.6	19.8	14.2	13.7	0.9	12.7	29.5	28.7	-0.1	5.2	45	45.2	-10.3	1.5	49.6	60	45.3	4.8	5.9	47.8	50.8	41	19.4	Invalid Date	1093.6	492.8	296.7	128.3	37.1	N/A	N/A	N/A	N/A	N/A	false	false
+22/8/2025, 3:41:27 pm	87.4	0.6	20	14.2	13.6	0.9	12.6	29.4	28.6	-0.1	5	45	45	-10.4	1.6	49.8	60	44.5	4.8	5.9	43.8	49.4	43.2	19.8	Invalid Date	1092.8	492.4	296.5	128.2	37.1	N/A	N/A	N/A	N/A	N/A	false	false
+22/8/2025, 3:40:20 pm	89.2	0.7	19.2	14.2	13.6	0.8	12.8	29.5	28.4	-0.2	5.4	44.8	45	-10.5	1.6	49.5	60	44.7	4.8	5.9	44.6	49.7	47.3	20.8	Invalid Date	1092	492	
