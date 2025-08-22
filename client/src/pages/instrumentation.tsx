@@ -101,6 +101,14 @@ export default function InstrumentationPage() {
       operationalStatus: 'normal',
       comments: '',
       tags: '',
+      // Communication parameters
+      ipAddress: '',
+      port: undefined,
+      slaveId: undefined,
+      baudRate: '',
+      dataBits: undefined,
+      stopBits: undefined,
+      parity: '',
     },
   });
 
@@ -194,6 +202,14 @@ export default function InstrumentationPage() {
       installationDate: device.installationDate ? new Date(device.installationDate).toISOString().split('T')[0] : '',
       lastCalibration: device.lastCalibration ? new Date(device.lastCalibration).toISOString().split('T')[0] : '',
       nextCalibration: device.nextCalibration ? new Date(device.nextCalibration).toISOString().split('T')[0] : '',
+      // Ensure communication parameters are included
+      ipAddress: device.ipAddress || '',
+      port: device.port || undefined,
+      slaveId: device.slaveId || undefined,
+      baudRate: device.baudRate || '',
+      dataBits: device.dataBits || undefined,
+      stopBits: device.stopBits || undefined,
+      parity: device.parity || '',
     };
     form.reset(formData);
     setDialogOpen(true);
@@ -389,6 +405,196 @@ export default function InstrumentationPage() {
                       </FormItem>
                     )}
                   />
+                </div>
+
+                {/* Communication-specific fields */}
+                {form.watch('communicationType') && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Communication Parameters</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Modbus TCP and Profinet - IP based protocols */}
+                      {(['modbus_tcp', 'profinet'].includes(form.watch('communicationType'))) && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="ipAddress"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>IP Address *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ''} placeholder="e.g., 192.168.1.100" data-testid="input-ip-address" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="port"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Port</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ''} type="number" placeholder="e.g., 502, 34962" data-testid="input-port" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+
+                      {/* Modbus TCP/RTU - Show Unit/Slave ID */}
+                      {(['modbus_tcp', 'modbus_rtu'].includes(form.watch('communicationType'))) && (
+                        <FormField
+                          control={form.control}
+                          name="slaveId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{form.watch('communicationType') === 'modbus_tcp' ? 'Unit ID' : 'Slave ID'}</FormLabel>
+                              <FormControl>
+                                <Input {...field} value={field.value || ''} type="number" placeholder="e.g., 1, 247" data-testid="input-slave-id" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
+                      {/* Serial protocols - RS485, Modbus RTU, HART */}
+                      {(['rs485', 'modbus_rtu', 'hart'].includes(form.watch('communicationType'))) && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="baudRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Baud Rate</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-baud-rate">
+                                      <SelectValue placeholder="Select baud rate" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="9600">9600</SelectItem>
+                                    <SelectItem value="19200">19200</SelectItem>
+                                    <SelectItem value="38400">38400</SelectItem>
+                                    <SelectItem value="57600">57600</SelectItem>
+                                    <SelectItem value="115200">115200</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="dataBits"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Data Bits</FormLabel>
+                                <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-data-bits">
+                                      <SelectValue placeholder="Select data bits" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="7">7</SelectItem>
+                                    <SelectItem value="8">8</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="stopBits"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Stop Bits</FormLabel>
+                                <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-stop-bits">
+                                      <SelectValue placeholder="Select stop bits" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="1">1</SelectItem>
+                                    <SelectItem value="2">2</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="parity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Parity</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-parity">
+                                      <SelectValue placeholder="Select parity" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="even">Even</SelectItem>
+                                    <SelectItem value="odd">Odd</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+
+                      {/* EtherCAT specific fields */}
+                      {form.watch('communicationType') === 'ethercat' && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="slaveId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Station Address</FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value || ''} type="number" placeholder="e.g., 1001" data-testid="input-station-address" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+
+                      {/* 4-20mA specific information */}
+                      {form.watch('communicationType') === '4-20ma' && (
+                        <div className="md:col-span-2">
+                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">4-20mA Analog Signal</h4>
+                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                              Current loop signal where 4mA represents 0% of range and 20mA represents 100% of range.
+                              Ensure proper loop power supply and verify signal isolation requirements.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                   <FormField
                     control={form.control}
