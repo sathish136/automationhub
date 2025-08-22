@@ -1019,9 +1019,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const data = await sqlViewerService.getTableData(req.params.database, req.params.table, options);
       res.json(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error fetching data for table ${req.params.table}:`, error);
-      res.status(500).json({ message: "Failed to fetch table data" });
+      
+      // Return specific error messages for better user experience
+      if (error.message && error.message.includes('not found') || error.message.includes('Invalid column')) {
+        res.status(404).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Connection error: Unable to fetch table data. Please check your database connection." });
+      }
     }
   });
 

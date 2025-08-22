@@ -60,24 +60,42 @@ class SQLViewerService {
     sortColumn?: string;
     sortDirection?: 'asc' | 'desc';
   }): Promise<any[]> {
-    await this.connect();
-    // Sanitize database and table names to prevent SQL injection
-    const sanitizedDatabase = database.replace(/[\[\]';"--]/g, '');
-    const sanitizedTable = table.replace(/[\[\]';"--]/g, '');
-    
-    const limit = options?.limit || 100;
-    let query = `USE [${sanitizedDatabase}]; SELECT TOP ${limit} * FROM [${sanitizedTable}]`;
-    
-    // Add ORDER BY clause if sorting is specified
-    if (options?.sortColumn && options?.sortDirection) {
-      // Validate column name to prevent SQL injection
-      const sanitizedSortColumn = options.sortColumn.replace(/[\[\]';"--]/g, '');
-      query += ` ORDER BY [${sanitizedSortColumn}] ${options.sortDirection.toUpperCase()}`;
+    try {
+      await this.connect();
+      // Sanitize database and table names to prevent SQL injection
+      const sanitizedDatabase = database.replace(/[\[\]';"--]/g, '');
+      const sanitizedTable = table.replace(/[\[\]';"--]/g, '');
+      
+      const limit = options?.limit || 100;
+      let query = `USE [${sanitizedDatabase}]; SELECT TOP ${limit} * FROM [${sanitizedTable}]`;
+      
+      // Add ORDER BY clause if sorting is specified
+      if (options?.sortColumn && options?.sortDirection) {
+        // Validate column name to prevent SQL injection
+        const sanitizedSortColumn = options.sortColumn.replace(/[\[\]';"--]/g, '');
+        query += ` ORDER BY [${sanitizedSortColumn}] ${options.sortDirection.toUpperCase()}`;
+      }
+      
+      query += ';';
+      const result = await this.pool.request().query(query);
+      return result.recordset.map(row => ({ ...row, isRead: false, isResolved: false }));
+    } catch (error: any) {
+      console.error(`Error fetching data for table ${table}:`, error);
+      
+      // Handle specific SQL errors with better messaging
+      if (error.number === 208) {
+        throw new Error(`Table '${table}' not found in database '${database}'. Please check if the table exists.`);
+      }
+      if (error.number === 207) {
+        throw new Error(`Invalid column name in table '${table}'. The table structure may be different than expected.`);
+      }
+      if (error.number === 911) {
+        throw new Error(`Database '${database}' not found. Please check if the database exists.`);
+      }
+      
+      // For other errors, provide a generic message but preserve the original error
+      throw error;
     }
-    
-    query += ';';
-    const result = await this.pool.request().query(query);
-    return result.recordset.map(row => ({ ...row, isRead: false, isResolved: false }));
   }
 }
 
