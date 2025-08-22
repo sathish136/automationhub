@@ -20,7 +20,12 @@ import {
   insertMbrRealtimeDataSchema,
   insertRoRealtimeDataSchema,
   insertInstrumentationSchema,
-  insertPlcIoCalculationSchema
+  insertPlcIoCalculationSchema,
+  insertAutomationProjectSchema,
+  insertBeckhoffProductSchema,
+  insertAutomationPanelSchema,
+  insertCommunicationModuleSchema,
+  insertAutomationDeviceTemplateSchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -1228,6 +1233,396 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Connection error: Unable to fetch table data. Please check your database connection." });
       }
+    }
+  });
+
+  // ==========================================
+  // AUTOMATION WIZARD ROUTES
+  // ==========================================
+
+  // Initialize Beckhoff products catalog on first run
+  app.post("/api/automation/init-beckhoff-catalog", async (req, res) => {
+    try {
+      const sampleProducts = [
+        // Main Controllers
+        {
+          partNumber: "CX2040-0115",
+          productName: "Embedded PC CX2040",
+          productDescription: "High-performance embedded PC with Intel Atom processor",
+          category: "controller",
+          subcategory: "main_controller",
+          ioCount: 0,
+          ioType: "NONE",
+          signalType: "N/A",
+          communicationProtocol: "EtherCAT",
+          powerConsumption: 25.0,
+          supplyVoltage: "24VDC",
+          unitPrice: 1850.00,
+          availabilityStatus: "available",
+          leadTime: 14
+        },
+        // EtherCAT Couplers
+        {
+          partNumber: "EK1100",
+          productName: "EtherCAT Coupler",
+          productDescription: "Basic EtherCAT coupler for connecting I/O terminals",
+          category: "coupler",
+          subcategory: "ethercat_coupler",
+          ioCount: 0,
+          ioType: "COUPLER",
+          signalType: "N/A",
+          communicationProtocol: "EtherCAT",
+          maxDistance: 100,
+          powerConsumption: 1.5,
+          supplyVoltage: "24VDC",
+          unitPrice: 145.00,
+          availabilityStatus: "available",
+          leadTime: 7
+        },
+        {
+          partNumber: "EK1122",
+          productName: "EtherCAT Coupler with ID switch",
+          productDescription: "EtherCAT coupler with integrated ID switch",
+          category: "coupler",
+          subcategory: "ethercat_coupler",
+          ioCount: 0,
+          ioType: "COUPLER",
+          signalType: "N/A",
+          communicationProtocol: "EtherCAT",
+          maxDistance: 100,
+          powerConsumption: 1.8,
+          supplyVoltage: "24VDC",
+          unitPrice: 195.00,
+          availabilityStatus: "available",
+          leadTime: 7
+        },
+        // Digital Input Modules
+        {
+          partNumber: "EL1008",
+          productName: "8-channel digital input",
+          productDescription: "8-channel digital input terminal 24V DC",
+          category: "digital_io",
+          subcategory: "di_module",
+          ioCount: 8,
+          ioType: "DI",
+          signalType: "24VDC",
+          powerConsumption: 2.0,
+          supplyVoltage: "24VDC",
+          unitPrice: 45.00,
+          availabilityStatus: "available",
+          leadTime: 5
+        },
+        {
+          partNumber: "EL1018",
+          productName: "8-channel digital input",
+          productDescription: "8-channel digital input terminal 24V DC, filter 10µs",
+          category: "digital_io",
+          subcategory: "di_module",
+          ioCount: 8,
+          ioType: "DI",
+          signalType: "24VDC",
+          powerConsumption: 2.0,
+          supplyVoltage: "24VDC",
+          unitPrice: 52.00,
+          availabilityStatus: "available",
+          leadTime: 5
+        },
+        // Digital Output Modules
+        {
+          partNumber: "EL2008",
+          productName: "8-channel digital output",
+          productDescription: "8-channel digital output terminal 24V DC, 0.5A",
+          category: "digital_io",
+          subcategory: "do_module",
+          ioCount: 8,
+          ioType: "DO",
+          signalType: "24VDC",
+          maxCurrent: 500,
+          powerConsumption: 2.5,
+          supplyVoltage: "24VDC",
+          unitPrice: 55.00,
+          availabilityStatus: "available",
+          leadTime: 5
+        },
+        {
+          partNumber: "EL2004",
+          productName: "4-channel digital output",
+          productDescription: "4-channel digital output terminal 24V DC, 2A",
+          category: "digital_io",
+          subcategory: "do_module",
+          ioCount: 4,
+          ioType: "DO",
+          signalType: "24VDC",
+          maxCurrent: 2000,
+          powerConsumption: 3.0,
+          supplyVoltage: "24VDC",
+          unitPrice: 65.00,
+          availabilityStatus: "available",
+          leadTime: 5
+        },
+        // Analog Input Modules
+        {
+          partNumber: "EL3004",
+          productName: "4-channel analog input",
+          productDescription: "4-channel analog input terminal 4-20mA, single-ended, 12-bit",
+          category: "analog_io",
+          subcategory: "ai_module",
+          ioCount: 4,
+          ioType: "AI",
+          signalType: "4-20mA",
+          resolution: 12,
+          powerConsumption: 2.0,
+          supplyVoltage: "24VDC",
+          unitPrice: 145.00,
+          availabilityStatus: "available",
+          leadTime: 7
+        },
+        {
+          partNumber: "EL3008",
+          productName: "8-channel analog input",
+          productDescription: "8-channel analog input terminal 4-20mA, single-ended, 12-bit",
+          category: "analog_io",
+          subcategory: "ai_module",
+          ioCount: 8,
+          ioType: "AI",
+          signalType: "4-20mA",
+          resolution: 12,
+          powerConsumption: 2.5,
+          supplyVoltage: "24VDC",
+          unitPrice: 195.00,
+          availabilityStatus: "available",
+          leadTime: 7
+        },
+        // Analog Output Modules
+        {
+          partNumber: "EL4004",
+          productName: "4-channel analog output",
+          productDescription: "4-channel analog output terminal 4-20mA, 12-bit",
+          category: "analog_io",
+          subcategory: "ao_module",
+          ioCount: 4,
+          ioType: "AO",
+          signalType: "4-20mA",
+          resolution: 12,
+          powerConsumption: 3.0,
+          supplyVoltage: "24VDC",
+          unitPrice: 165.00,
+          availabilityStatus: "available",
+          leadTime: 7
+        },
+        // Communication Modules
+        {
+          partNumber: "EL6001",
+          productName: "Serial interface RS232",
+          productDescription: "1-channel serial interface RS232",
+          category: "communication",
+          subcategory: "serial_interface",
+          ioCount: 1,
+          ioType: "COMM",
+          signalType: "RS232",
+          communicationProtocol: "RS232",
+          dataRate: "115200 baud",
+          powerConsumption: 1.5,
+          supplyVoltage: "24VDC",
+          unitPrice: 125.00,
+          availabilityStatus: "available",
+          leadTime: 10
+        },
+        {
+          partNumber: "EL6021",
+          productName: "Serial interface RS422/RS485",
+          productDescription: "1-channel serial interface RS422/RS485",
+          category: "communication",
+          subcategory: "serial_interface",
+          ioCount: 1,
+          ioType: "COMM",
+          signalType: "RS485",
+          communicationProtocol: "RS485",
+          dataRate: "115200 baud",
+          powerConsumption: 1.8,
+          supplyVoltage: "24VDC",
+          unitPrice: 145.00,
+          availabilityStatus: "available",
+          leadTime: 10
+        },
+        // Power Supply Modules
+        {
+          partNumber: "EL9011",
+          productName: "Power supply terminal",
+          productDescription: "Power supply terminal for E-bus 24V DC",
+          category: "power",
+          subcategory: "power_supply",
+          ioCount: 0,
+          ioType: "POWER",
+          signalType: "24VDC",
+          powerConsumption: 0,
+          supplyVoltage: "24VDC",
+          unitPrice: 35.00,
+          availabilityStatus: "available",
+          leadTime: 3
+        },
+        {
+          partNumber: "EL9012",
+          productName: "Power supply terminal with diagnostics",
+          productDescription: "Power supply terminal for E-bus 24V DC with diagnostics",
+          category: "power",
+          subcategory: "power_supply",
+          ioCount: 0,
+          ioType: "POWER",
+          signalType: "24VDC",
+          powerConsumption: 0,
+          supplyVoltage: "24VDC",
+          unitPrice: 55.00,
+          availabilityStatus: "available",
+          leadTime: 3
+        }
+      ];
+
+      // Check if products already exist
+      const existingProducts = await storage.getAllBeckhoffProducts();
+      if (existingProducts.length > 0) {
+        return res.json({ message: "Beckhoff catalog already initialized", count: existingProducts.length });
+      }
+
+      // Insert sample products
+      const results = [];
+      for (const product of sampleProducts) {
+        const productData = insertBeckhoffProductSchema.parse(product);
+        const created = await storage.createBeckhoffProduct(productData);
+        results.push(created);
+      }
+
+      res.json({ message: "Beckhoff catalog initialized successfully", count: results.length, products: results });
+    } catch (error) {
+      console.error("Error initializing Beckhoff catalog:", error);
+      res.status(500).json({ message: "Failed to initialize Beckhoff catalog" });
+    }
+  });
+
+  // Automation Projects endpoints
+  app.get("/api/automation-projects", async (req, res) => {
+    try {
+      const projects = await storage.getAllAutomationProjects();
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching automation projects:", error);
+      res.status(500).json({ message: "Failed to fetch automation projects" });
+    }
+  });
+
+  app.get("/api/automation-projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getAutomationProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: "Automation project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Error fetching automation project:", error);
+      res.status(500).json({ message: "Failed to fetch automation project" });
+    }
+  });
+
+  app.post("/api/automation-projects", async (req, res) => {
+    try {
+      const projectData = insertAutomationProjectSchema.parse(req.body);
+      const project = await storage.createAutomationProject(projectData);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating automation project:", error);
+      res.status(400).json({ message: "Invalid automation project data" });
+    }
+  });
+
+  app.put("/api/automation-projects/:id", async (req, res) => {
+    try {
+      const projectData = insertAutomationProjectSchema.partial().parse(req.body);
+      const project = await storage.updateAutomationProject(req.params.id, projectData);
+      if (!project) {
+        return res.status(404).json({ message: "Automation project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Error updating automation project:", error);
+      res.status(400).json({ message: "Invalid automation project data" });
+    }
+  });
+
+  // Beckhoff Products endpoints
+  app.get("/api/beckhoff-products", async (req, res) => {
+    try {
+      const { category, subcategory, ioType } = req.query;
+      const products = await storage.getBeckhoffProducts({
+        category: category as string,
+        subcategory: subcategory as string,
+        ioType: ioType as string
+      });
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching Beckhoff products:", error);
+      res.status(500).json({ message: "Failed to fetch Beckhoff products" });
+    }
+  });
+
+  app.get("/api/beckhoff-products/:id", async (req, res) => {
+    try {
+      const product = await storage.getBeckhoffProduct(req.params.id);
+      if (!product) {
+        return res.status(404).json({ message: "Beckhoff product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching Beckhoff product:", error);
+      res.status(500).json({ message: "Failed to fetch Beckhoff product" });
+    }
+  });
+
+  // Automation Panels endpoints
+  app.get("/api/automation-panels", async (req, res) => {
+    try {
+      const { projectId } = req.query;
+      const panels = await storage.getAutomationPanels(projectId as string);
+      res.json(panels);
+    } catch (error) {
+      console.error("Error fetching automation panels:", error);
+      res.status(500).json({ message: "Failed to fetch automation panels" });
+    }
+  });
+
+  app.post("/api/automation-panels", async (req, res) => {
+    try {
+      const panelData = insertAutomationPanelSchema.parse(req.body);
+      const panel = await storage.createAutomationPanel(panelData);
+      res.status(201).json(panel);
+    } catch (error) {
+      console.error("Error creating automation panel:", error);
+      res.status(400).json({ message: "Invalid automation panel data" });
+    }
+  });
+
+  // Device Templates endpoints
+  app.get("/api/automation-device-templates", async (req, res) => {
+    try {
+      const { deviceType, category } = req.query;
+      const templates = await storage.getAutomationDeviceTemplates({
+        deviceType: deviceType as string,
+        category: category as string
+      });
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching device templates:", error);
+      res.status(500).json({ message: "Failed to fetch device templates" });
+    }
+  });
+
+  app.post("/api/automation-device-templates", async (req, res) => {
+    try {
+      const templateData = insertAutomationDeviceTemplateSchema.parse(req.body);
+      const template = await storage.createAutomationDeviceTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("Error creating device template:", error);
+      res.status(400).json({ message: "Invalid device template data" });
     }
   });
 

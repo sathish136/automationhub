@@ -18,6 +18,11 @@ import {
   instrumentTemplates,
   panelInstruments,
   beckhoffModuleCalculations,
+  automationProjects,
+  beckhoffProducts,
+  automationPanels,
+  communicationModules,
+  automationDeviceTemplates,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -56,6 +61,16 @@ import {
   type InsertPanelInstrument,
   type BeckhoffModuleCalculation,
   type InsertBeckhoffModuleCalculation,
+  type AutomationProject,
+  type InsertAutomationProject,
+  type BeckhoffProduct,
+  type InsertBeckhoffProduct,
+  type AutomationPanel,
+  type InsertAutomationPanel,
+  type CommunicationModule,
+  type InsertCommunicationModule,
+  type AutomationDeviceTemplate,
+  type InsertAutomationDeviceTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count, isNotNull } from "drizzle-orm";
@@ -176,6 +191,42 @@ export interface IStorage {
   getRoRealtimeData(siteId?: string, limit?: number): Promise<RoRealtimeData[]>;
   createRoRealtimeData(data: InsertRoRealtimeData): Promise<RoRealtimeData>;
   getLatestRoRealtimeData(siteId: string): Promise<RoRealtimeData | undefined>;
+
+  // Automation Projects
+  getAllAutomationProjects(): Promise<AutomationProject[]>;
+  getAutomationProject(id: string): Promise<AutomationProject | undefined>;
+  createAutomationProject(project: InsertAutomationProject): Promise<AutomationProject>;
+  updateAutomationProject(id: string, project: Partial<InsertAutomationProject>): Promise<AutomationProject | undefined>;
+  deleteAutomationProject(id: string): Promise<boolean>;
+
+  // Beckhoff Products
+  getAllBeckhoffProducts(): Promise<BeckhoffProduct[]>;
+  getBeckhoffProducts(filters: { category?: string; subcategory?: string; ioType?: string }): Promise<BeckhoffProduct[]>;
+  getBeckhoffProduct(id: string): Promise<BeckhoffProduct | undefined>;
+  createBeckhoffProduct(product: InsertBeckhoffProduct): Promise<BeckhoffProduct>;
+  updateBeckhoffProduct(id: string, product: Partial<InsertBeckhoffProduct>): Promise<BeckhoffProduct | undefined>;
+  deleteBeckhoffProduct(id: string): Promise<boolean>;
+
+  // Automation Panels
+  getAutomationPanels(projectId?: string): Promise<AutomationPanel[]>;
+  getAutomationPanel(id: string): Promise<AutomationPanel | undefined>;
+  createAutomationPanel(panel: InsertAutomationPanel): Promise<AutomationPanel>;
+  updateAutomationPanel(id: string, panel: Partial<InsertAutomationPanel>): Promise<AutomationPanel | undefined>;
+  deleteAutomationPanel(id: string): Promise<boolean>;
+
+  // Communication Modules
+  getCommunicationModules(projectId?: string): Promise<CommunicationModule[]>;
+  getCommunicationModule(id: string): Promise<CommunicationModule | undefined>;
+  createCommunicationModule(module: InsertCommunicationModule): Promise<CommunicationModule>;
+  updateCommunicationModule(id: string, module: Partial<InsertCommunicationModule>): Promise<CommunicationModule | undefined>;
+  deleteCommunicationModule(id: string): Promise<boolean>;
+
+  // Automation Device Templates
+  getAutomationDeviceTemplates(filters: { deviceType?: string; category?: string }): Promise<AutomationDeviceTemplate[]>;
+  getAutomationDeviceTemplate(id: string): Promise<AutomationDeviceTemplate | undefined>;
+  createAutomationDeviceTemplate(template: InsertAutomationDeviceTemplate): Promise<AutomationDeviceTemplate>;
+  updateAutomationDeviceTemplate(id: string, template: Partial<InsertAutomationDeviceTemplate>): Promise<AutomationDeviceTemplate | undefined>;
+  deleteAutomationDeviceTemplate(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1008,6 +1059,263 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(beckhoffModuleCalculations)
       .where(eq(beckhoffModuleCalculations.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // ==========================================
+  // AUTOMATION WIZARD IMPLEMENTATIONS
+  // ==========================================
+
+  // Automation Projects
+  async getAllAutomationProjects(): Promise<AutomationProject[]> {
+    return await db
+      .select()
+      .from(automationProjects)
+      .orderBy(desc(automationProjects.createdAt));
+  }
+
+  async getAutomationProject(id: string): Promise<AutomationProject | undefined> {
+    const [project] = await db
+      .select()
+      .from(automationProjects)
+      .where(eq(automationProjects.id, id));
+    return project;
+  }
+
+  async createAutomationProject(project: InsertAutomationProject): Promise<AutomationProject> {
+    const [newProject] = await db
+      .insert(automationProjects)
+      .values(project)
+      .returning();
+    return newProject;
+  }
+
+  async updateAutomationProject(id: string, project: Partial<InsertAutomationProject>): Promise<AutomationProject | undefined> {
+    const [updated] = await db
+      .update(automationProjects)
+      .set({ ...project, updatedAt: new Date() })
+      .where(eq(automationProjects.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAutomationProject(id: string): Promise<boolean> {
+    const result = await db
+      .delete(automationProjects)
+      .where(eq(automationProjects.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Beckhoff Products
+  async getAllBeckhoffProducts(): Promise<BeckhoffProduct[]> {
+    return await db
+      .select()
+      .from(beckhoffProducts)
+      .where(eq(beckhoffProducts.isActive, true))
+      .orderBy(beckhoffProducts.category, beckhoffProducts.partNumber);
+  }
+
+  async getBeckhoffProducts(filters: { category?: string; subcategory?: string; ioType?: string }): Promise<BeckhoffProduct[]> {
+    const query = db
+      .select()
+      .from(beckhoffProducts)
+      .where(eq(beckhoffProducts.isActive, true));
+
+    const conditions = [];
+    if (filters.category) {
+      conditions.push(eq(beckhoffProducts.category, filters.category));
+    }
+    if (filters.subcategory) {
+      conditions.push(eq(beckhoffProducts.subcategory, filters.subcategory));
+    }
+    if (filters.ioType) {
+      conditions.push(eq(beckhoffProducts.ioType, filters.ioType));
+    }
+
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions)).orderBy(beckhoffProducts.partNumber);
+    }
+
+    return await query.orderBy(beckhoffProducts.category, beckhoffProducts.partNumber);
+  }
+
+  async getBeckhoffProduct(id: string): Promise<BeckhoffProduct | undefined> {
+    const [product] = await db
+      .select()
+      .from(beckhoffProducts)
+      .where(eq(beckhoffProducts.id, id));
+    return product;
+  }
+
+  async createBeckhoffProduct(product: InsertBeckhoffProduct): Promise<BeckhoffProduct> {
+    const [newProduct] = await db
+      .insert(beckhoffProducts)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+
+  async updateBeckhoffProduct(id: string, product: Partial<InsertBeckhoffProduct>): Promise<BeckhoffProduct | undefined> {
+    const [updated] = await db
+      .update(beckhoffProducts)
+      .set({ ...product, updatedAt: new Date() })
+      .where(eq(beckhoffProducts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBeckhoffProduct(id: string): Promise<boolean> {
+    const result = await db
+      .update(beckhoffProducts)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(beckhoffProducts.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Automation Panels
+  async getAutomationPanels(projectId?: string): Promise<AutomationPanel[]> {
+    const query = db
+      .select()
+      .from(automationPanels)
+      .where(eq(automationPanels.isActive, true));
+
+    if (projectId) {
+      return await query
+        .where(and(eq(automationPanels.projectId, projectId), eq(automationPanels.isActive, true)))
+        .orderBy(automationPanels.hierarchyLevel, automationPanels.panelName);
+    }
+
+    return await query.orderBy(automationPanels.hierarchyLevel, automationPanels.panelName);
+  }
+
+  async getAutomationPanel(id: string): Promise<AutomationPanel | undefined> {
+    const [panel] = await db
+      .select()
+      .from(automationPanels)
+      .where(eq(automationPanels.id, id));
+    return panel;
+  }
+
+  async createAutomationPanel(panel: InsertAutomationPanel): Promise<AutomationPanel> {
+    const [newPanel] = await db
+      .insert(automationPanels)
+      .values(panel)
+      .returning();
+    return newPanel;
+  }
+
+  async updateAutomationPanel(id: string, panel: Partial<InsertAutomationPanel>): Promise<AutomationPanel | undefined> {
+    const [updated] = await db
+      .update(automationPanels)
+      .set({ ...panel, updatedAt: new Date() })
+      .where(eq(automationPanels.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAutomationPanel(id: string): Promise<boolean> {
+    const result = await db
+      .update(automationPanels)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(automationPanels.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Communication Modules
+  async getCommunicationModules(projectId?: string): Promise<CommunicationModule[]> {
+    const query = db.select().from(communicationModules);
+
+    if (projectId) {
+      return await query
+        .where(eq(communicationModules.projectId, projectId))
+        .orderBy(communicationModules.moduleName);
+    }
+
+    return await query.orderBy(communicationModules.moduleName);
+  }
+
+  async getCommunicationModule(id: string): Promise<CommunicationModule | undefined> {
+    const [module] = await db
+      .select()
+      .from(communicationModules)
+      .where(eq(communicationModules.id, id));
+    return module;
+  }
+
+  async createCommunicationModule(module: InsertCommunicationModule): Promise<CommunicationModule> {
+    const [newModule] = await db
+      .insert(communicationModules)
+      .values(module)
+      .returning();
+    return newModule;
+  }
+
+  async updateCommunicationModule(id: string, module: Partial<InsertCommunicationModule>): Promise<CommunicationModule | undefined> {
+    const [updated] = await db
+      .update(communicationModules)
+      .set({ ...module, updatedAt: new Date() })
+      .where(eq(communicationModules.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCommunicationModule(id: string): Promise<boolean> {
+    const result = await db
+      .delete(communicationModules)
+      .where(eq(communicationModules.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Automation Device Templates
+  async getAutomationDeviceTemplates(filters: { deviceType?: string; category?: string }): Promise<AutomationDeviceTemplate[]> {
+    const query = db
+      .select()
+      .from(automationDeviceTemplates)
+      .where(eq(automationDeviceTemplates.isActive, true));
+
+    const conditions = [eq(automationDeviceTemplates.isActive, true)];
+    if (filters.deviceType) {
+      conditions.push(eq(automationDeviceTemplates.deviceType, filters.deviceType));
+    }
+    if (filters.category) {
+      conditions.push(eq(automationDeviceTemplates.category, filters.category));
+    }
+
+    return await query
+      .where(and(...conditions))
+      .orderBy(automationDeviceTemplates.category, automationDeviceTemplates.templateName);
+  }
+
+  async getAutomationDeviceTemplate(id: string): Promise<AutomationDeviceTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(automationDeviceTemplates)
+      .where(eq(automationDeviceTemplates.id, id));
+    return template;
+  }
+
+  async createAutomationDeviceTemplate(template: InsertAutomationDeviceTemplate): Promise<AutomationDeviceTemplate> {
+    const [newTemplate] = await db
+      .insert(automationDeviceTemplates)
+      .values(template)
+      .returning();
+    return newTemplate;
+  }
+
+  async updateAutomationDeviceTemplate(id: string, template: Partial<InsertAutomationDeviceTemplate>): Promise<AutomationDeviceTemplate | undefined> {
+    const [updated] = await db
+      .update(automationDeviceTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(automationDeviceTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAutomationDeviceTemplate(id: string): Promise<boolean> {
+    const result = await db
+      .update(automationDeviceTemplates)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(automationDeviceTemplates.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }

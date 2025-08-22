@@ -327,6 +327,253 @@ export const projectsRelations = relations(projects, ({ one }) => ({
   }),
 }));
 
+// ================================
+// AUTOMATION WIZARD SCHEMA ENHANCEMENTS
+// ================================
+
+// Automation Projects - Main container for automation planning
+export const automationProjects = pgTable("automation_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Project Information
+  projectName: varchar("project_name", { length: 255 }).notNull(),
+  projectDescription: text("project_description"),
+  projectType: varchar("project_type", { length: 50 }).default("greenfield"), // greenfield, brownfield, upgrade
+  
+  // Project Structure
+  mainControllerId: varchar("main_controller_id"), // Reference to main PLC
+  totalPanels: integer("total_panels").default(0),
+  totalDevices: integer("total_devices").default(0),
+  
+  // Planning Status
+  wizardStep: integer("wizard_step").default(1), // Current step in wizard (1-8)
+  isCompleted: boolean("is_completed").default(false),
+  completionDate: timestamp("completion_date"),
+  
+  // Cost and Timeline
+  estimatedBudget: decimal("estimated_budget", { precision: 12, scale: 2 }),
+  actualBudget: decimal("actual_budget", { precision: 12, scale: 2 }),
+  plannedStartDate: timestamp("planned_start_date"),
+  actualStartDate: timestamp("actual_start_date"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_projects_site").on(table.siteId),
+  index("idx_automation_projects_step").on(table.wizardStep),
+]);
+
+// Beckhoff Product Catalog
+export const beckhoffProducts = pgTable("beckhoff_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Product Identification
+  partNumber: varchar("part_number", { length: 50 }).notNull().unique(),
+  productName: varchar("product_name", { length: 255 }).notNull(),
+  productDescription: text("product_description"),
+  
+  // Product Category
+  category: varchar("category", { length: 50 }).notNull(), // controller, coupler, digital_io, analog_io, communication, power
+  subcategory: varchar("subcategory", { length: 50 }), // main_controller, remote_coupler, di_module, do_module, ai_module, ao_module
+  
+  // Technical Specifications
+  ioCount: integer("io_count").default(0), // Number of I/O channels
+  ioType: varchar("io_type", { length: 30 }), // DI, DO, AI, AO, MIXED
+  signalType: varchar("signal_type", { length: 50 }), // 24VDC, 4-20mA, 0-10V, PT100, etc.
+  maxCurrent: decimal("max_current", { precision: 8, scale: 2 }), // mA
+  resolution: integer("resolution"), // bits for analog modules
+  
+  // Physical Properties
+  dimensions: jsonb("dimensions"), // {width, height, depth} in mm
+  weight: decimal("weight", { precision: 6, scale: 3 }), // kg
+  mountingType: varchar("mounting_type", { length: 30 }).default("din_rail"),
+  
+  // Network and Communication
+  communicationProtocol: varchar("communication_protocol", { length: 50 }), // EtherCAT, RS485, Profinet
+  maxDistance: integer("max_distance"), // Maximum cable distance in meters
+  dataRate: varchar("data_rate", { length: 30 }), // Communication speed
+  
+  // Power Requirements
+  powerConsumption: decimal("power_consumption", { precision: 8, scale: 2 }), // Watts
+  supplyVoltage: varchar("supply_voltage", { length: 30 }), // 24VDC, 230VAC
+  
+  // Compatibility and Configuration
+  compatibleCouplers: varchar("compatible_couplers").array().default(sql`ARRAY[]::text[]`), // Array of compatible coupler part numbers
+  configurationSoftware: varchar("configuration_software", { length: 100 }), // TwinCAT, etc.
+  
+  // Commercial Information
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  availabilityStatus: varchar("availability_status", { length: 30 }).default("available"),
+  leadTime: integer("lead_time"), // days
+  
+  // Documentation
+  datasheetUrl: varchar("datasheet_url", { length: 500 }),
+  manualUrl: varchar("manual_url", { length: 500 }),
+  
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_beckhoff_products_part").on(table.partNumber),
+  index("idx_beckhoff_products_category").on(table.category),
+  index("idx_beckhoff_products_subcategory").on(table.subcategory),
+  index("idx_beckhoff_products_io_type").on(table.ioType),
+]);
+
+// Enhanced Automation Panels with hierarchy support
+export const automationPanels = pgTable("automation_panels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => automationProjects.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Panel Hierarchy
+  panelType: varchar("panel_type", { length: 50 }).notNull(), // main_controller, sub_panel, remote_io
+  parentPanelId: varchar("parent_panel_id"), // Self-reference - will add constraint later
+  hierarchyLevel: integer("hierarchy_level").default(1), // 1 = main, 2 = sub, 3 = remote
+  
+  // Panel Information
+  panelName: varchar("panel_name", { length: 100 }).notNull(),
+  panelDescription: text("panel_description"),
+  panelLocation: varchar("panel_location", { length: 255 }),
+  
+  // Physical Configuration
+  cabinetSize: varchar("cabinet_size", { length: 50 }),
+  enclosureRating: varchar("enclosure_rating", { length: 20 }).default("IP54"),
+  
+  // Beckhoff Configuration
+  mainControllerId: varchar("main_controller_id").references(() => beckhoffProducts.id),
+  couplerId: varchar("coupler_id").references(() => beckhoffProducts.id),
+  powerSupplyId: varchar("power_supply_id").references(() => beckhoffProducts.id),
+  
+  // Network Configuration
+  distanceFromMain: integer("distance_from_main"), // meters
+  communicationType: varchar("communication_type", { length: 50 }), // EtherCAT, RS485, Profinet
+  networkAddress: varchar("network_address", { length: 50 }),
+  
+  // I/O Summary (calculated from devices)
+  totalDigitalInputs: integer("total_digital_inputs").default(0),
+  totalDigitalOutputs: integer("total_digital_outputs").default(0),
+  totalAnalogInputs: integer("total_analog_inputs").default(0),
+  totalAnalogOutputs: integer("total_analog_outputs").default(0),
+  
+  // Cost and Status
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }),
+  installationStatus: varchar("installation_status", { length: 30 }).default("planned"),
+  
+  // 3D/2D Visualization
+  position3d: jsonb("position_3d"), // {x, y, z} coordinates
+  panelDrawing: varchar("panel_drawing", { length: 500 }), // Path to drawing file
+  
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_panels_project").on(table.projectId),
+  index("idx_automation_panels_type").on(table.panelType),
+  index("idx_automation_panels_parent").on(table.parentPanelId),
+]);
+
+// Communication Modules (RS485, Profinet, etc.)
+export const communicationModules = pgTable("communication_modules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => automationProjects.id, { onDelete: "cascade" }),
+  panelId: varchar("panel_id").references(() => automationPanels.id),
+  
+  // Module Information
+  moduleName: varchar("module_name", { length: 100 }).notNull(),
+  moduleType: varchar("module_type", { length: 50 }).notNull(), // RS485, Profinet, DeviceNet, CANopen
+  beckhoffProductId: varchar("beckhoff_product_id").references(() => beckhoffProducts.id),
+  
+  // Communication Configuration
+  protocol: varchar("protocol", { length: 50 }).notNull(),
+  baudRate: integer("baud_rate"), // For serial communications
+  parity: varchar("parity", { length: 10 }), // none, even, odd
+  stopBits: integer("stop_bits"),
+  dataBits: integer("data_bits"),
+  
+  // Network Settings
+  networkAddress: varchar("network_address", { length: 50 }),
+  subnetMask: varchar("subnet_mask", { length: 50 }),
+  gatewayAddress: varchar("gateway_address", { length: 50 }),
+  
+  // Connected Devices
+  connectedDevices: jsonb("connected_devices"), // Array of device configurations
+  maxDevices: integer("max_devices"),
+  
+  // Status
+  configurationComplete: boolean("configuration_complete").default(false),
+  testingComplete: boolean("testing_complete").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_comm_modules_project").on(table.projectId),
+  index("idx_comm_modules_panel").on(table.panelId),
+  index("idx_comm_modules_type").on(table.moduleType),
+]);
+
+// Enhanced Device Templates for automation wizard
+export const automationDeviceTemplates = pgTable("automation_device_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Template Information
+  templateName: varchar("template_name", { length: 100 }).notNull(),
+  deviceType: varchar("device_type", { length: 50 }).notNull(), // motor, pump, valve, flow_meter, level_sensor, etc.
+  category: varchar("category", { length: 30 }).notNull(), // actuator, sensor, drive, protection
+  subcategory: varchar("subcategory", { length: 50 }), // centrifugal_pump, ball_valve, magnetic_flow_meter
+  
+  // I/O Requirements
+  digitalInputs: jsonb("digital_inputs"), // {"run_feedback": "24VDC", "trip": "24VDC", "ready": "24VDC"}
+  digitalOutputs: jsonb("digital_outputs"), // {"start": "24VDC", "stop": "24VDC", "reset": "24VDC"}
+  analogInputs: jsonb("analog_inputs"), // {"flow_rate": "4-20mA", "temperature": "PT100"}
+  analogOutputs: jsonb("analog_outputs"), // {"speed_setpoint": "4-20mA"}
+  
+  // Signal Specifications
+  voltageLevel: varchar("voltage_level", { length: 20 }).default("24VDC"),
+  powerRating: decimal("power_rating", { precision: 8, scale: 2 }), // kW
+  
+  // Beckhoff Module Recommendations
+  recommendedModules: jsonb("recommended_modules"), // Specific Beckhoff part numbers
+  moduleQuantities: jsonb("module_quantities"), // How many of each module
+  
+  // Communication Requirements
+  communicationProtocol: varchar("communication_protocol", { length: 50 }), // Modbus, Profibus, etc.
+  communicationModuleId: varchar("communication_module_id").references(() => beckhoffProducts.id),
+  
+  // Tag Generation
+  tagPrefix: varchar("tag_prefix", { length: 20 }), // MOT_, PMP_, VLV_, FT_, LT_
+  tagStructure: text("tag_structure"), // Template for automatic tag generation
+  
+  // Physical Properties
+  typicalInstallation: varchar("typical_installation", { length: 100 }), // Field, Panel, Rack
+  environmentalRating: varchar("environmental_rating", { length: 20 }), // IP65, NEMA 4X
+  
+  // Documentation and Standards
+  description: text("description"),
+  applicationNotes: text("application_notes"),
+  safetyRequirements: text("safety_requirements"),
+  maintenanceNotes: text("maintenance_notes"),
+  
+  // Commercial Information
+  typicalCost: decimal("typical_cost", { precision: 10, scale: 2 }),
+  leadTime: integer("lead_time"), // days
+  
+  // Visualization
+  symbolPath: varchar("symbol_path", { length: 500 }), // Path to 2D symbol
+  model3dPath: varchar("model_3d_path", { length: 500 }), // Path to 3D model
+  
+  isStandard: boolean("is_standard").default(true),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_device_templates_type").on(table.deviceType),
+  index("idx_automation_device_templates_category").on(table.category),
+  index("idx_automation_device_templates_standard").on(table.isStandard),
+]);
+
 // Insert schemas
 export const insertSiteSchema = createInsertSchema(sites).omit({
   id: true,
@@ -765,6 +1012,37 @@ export const insertPlcIoMappingSchema = createInsertSchema(plcIoMappings).omit({
   updatedAt: true,
 });
 
+// Insert schemas for automation wizard tables
+export const insertAutomationProjectSchema = createInsertSchema(automationProjects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBeckhoffProductSchema = createInsertSchema(beckhoffProducts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAutomationPanelSchema = createInsertSchema(automationPanels).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCommunicationModuleSchema = createInsertSchema(communicationModules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAutomationDeviceTemplateSchema = createInsertSchema(automationDeviceTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types for the new tables
 export type MbrRealtimeData = typeof mbrRealtimeData.$inferSelect;
 export type InsertMbrRealtimeData = z.infer<typeof insertMbrRealtimeDataSchema>;
@@ -772,6 +1050,18 @@ export type RoRealtimeData = typeof roRealtimeData.$inferSelect;
 export type InsertRoRealtimeData = z.infer<typeof insertRoRealtimeDataSchema>;
 export type Instrumentation = typeof instrumentation.$inferSelect;
 export type InsertInstrumentation = z.infer<typeof insertInstrumentationSchema>;
+
+// Automation wizard types
+export type AutomationProject = typeof automationProjects.$inferSelect;
+export type InsertAutomationProject = z.infer<typeof insertAutomationProjectSchema>;
+export type BeckhoffProduct = typeof beckhoffProducts.$inferSelect;
+export type InsertBeckhoffProduct = z.infer<typeof insertBeckhoffProductSchema>;
+export type AutomationPanel = typeof automationPanels.$inferSelect;
+export type InsertAutomationPanel = z.infer<typeof insertAutomationPanelSchema>;
+export type CommunicationModule = typeof communicationModules.$inferSelect;
+export type InsertCommunicationModule = z.infer<typeof insertCommunicationModuleSchema>;
+export type AutomationDeviceTemplate = typeof automationDeviceTemplates.$inferSelect;
+export type InsertAutomationDeviceTemplate = z.infer<typeof insertAutomationDeviceTemplateSchema>;
 
 // PLC I/O Types
 export type PlcIoPoint = typeof plcIoPoints.$inferSelect;
