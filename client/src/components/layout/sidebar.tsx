@@ -13,7 +13,10 @@ import {
   Database,
   Gauge,
   Calculator,
+  Menu,
+  ChevronLeft,
 } from "lucide-react";
+import { useSidebar } from "@/contexts/sidebar-context";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -30,16 +33,37 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { isCollapsed, toggleSidebar } = useSidebar();
 
   return (
-    <aside className="w-64 bg-gray-900 text-white flex flex-col fixed left-0 top-0 h-screen z-50">
-      <div className="p-6 border-b border-gray-700">
+    <aside className={cn(
+      "bg-gray-900 text-white flex flex-col fixed left-0 top-0 h-screen z-50 transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className={cn(
+        "border-b border-gray-700 flex items-center justify-between",
+        isCollapsed ? "p-3" : "p-6"
+      )}>
         <div className="flex items-center space-x-3">
           <Monitor className="text-2xl text-primary" />
-          <h1 className="text-lg font-bold" data-testid="app-title">
-            AutomationHub
-          </h1>
+          {!isCollapsed && (
+            <h1 className="text-lg font-bold" data-testid="app-title">
+              AutomationHub
+            </h1>
+          )}
         </div>
+        
+        <button
+          onClick={toggleSidebar}
+          className="p-1 rounded hover:bg-gray-700 transition-colors"
+          data-testid="sidebar-toggle"
+        >
+          {isCollapsed ? (
+            <Menu size={16} />
+          ) : (
+            <ChevronLeft size={16} />
+          )}
+        </button>
       </div>
 
       <nav className="flex-1 p-4 overflow-y-auto">
@@ -53,13 +77,24 @@ export default function Sidebar() {
                 <Link href={item.href}>
                   <span
                     className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors cursor-pointer",
+                      "flex items-center rounded-lg transition-colors cursor-pointer relative group",
                       isActive ? "bg-primary text-white" : "hover:bg-gray-700",
+                      isCollapsed ? "px-2 py-3 justify-center" : "px-4 py-3 space-x-3"
                     )}
                     data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                    title={isCollapsed ? item.name : undefined}
                   >
                     <Icon size={16} />
-                    <span className="text-sm">{item.name}</span>
+                    {!isCollapsed && (
+                      <span className="text-sm">{item.name}</span>
+                    )}
+                    
+                    {/* Tooltip for collapsed state */}
+                    {isCollapsed && (
+                      <div className="absolute left-full ml-3 px-3 py-2 bg-gray-800 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+                        {item.name}
+                      </div>
+                    )}
                   </span>
                 </Link>
               </li>
@@ -68,19 +103,21 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-gray-700">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium">A</span>
-          </div>
-          <div>
-            <p className="text-xs font-medium" data-testid="user-name">
-              Admin User
-            </p>
-            <p className="text-xs text-gray-400">Automation Engineer</p>
+      {!isCollapsed && (
+        <div className="p-4 border-t border-gray-700">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium">A</span>
+            </div>
+            <div>
+              <p className="text-xs font-medium" data-testid="user-name">
+                Admin User
+              </p>
+              <p className="text-xs text-gray-400">Automation Engineer</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 }

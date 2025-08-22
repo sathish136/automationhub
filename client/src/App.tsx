@@ -15,12 +15,17 @@ import InstrumentationPage from "@/pages/instrumentation";
 import PlcCalculationsPage from "@/pages/plc-calculations";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
+import { SidebarProvider, useSidebar } from "@/contexts/sidebar-context";
 
 function Router() {
+  const { isCollapsed } = useSidebar();
+  
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto ml-64">
+      <main className={`flex-1 overflow-auto transition-all duration-300 ${
+        isCollapsed ? "ml-16" : "ml-64"
+      }`}>
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/sites" component={Sites} />
@@ -43,8 +48,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <SidebarProvider>
+          <Toaster />
+          <Router />
+        </SidebarProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
