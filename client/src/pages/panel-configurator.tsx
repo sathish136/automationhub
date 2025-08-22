@@ -156,6 +156,7 @@ const standardTemplates = [
 
 const PanelConfiguratorPage = () => {
   const [selectedSite, setSelectedSite] = useState<string>("");
+  const [selectedController, setSelectedController] = useState<any>(null);
   const [selectedPanel, setSelectedPanel] = useState<PanelConfiguration | null>(null);
   const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
@@ -362,34 +363,55 @@ const PanelConfiguratorPage = () => {
     <div className="container mx-auto py-4 space-y-4">
       {/* Header */}
       <div className="text-center space-y-2 mb-6">
-        <h1 className="text-2xl font-bold text-primary">Panel Configuration Wizard</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-          Create and configure Beckhoff I/O panels in 3 simple steps: Choose site → Create panel → Add instruments
+        <h1 className="text-2xl font-bold text-primary">Automation Planning Wizard</h1>
+        <p className="text-sm text-muted-foreground max-w-3xl mx-auto">
+          Complete automation project planning: Site → Controller → Panel → Instruments → I/O Lists → Tag Generation
         </p>
       </div>
 
       {/* Step Indicator */}
-      <div className="flex justify-center mb-6">
-        <div className="flex items-center space-x-4">
+      <div className="flex justify-center mb-6 overflow-x-auto">
+        <div className="flex items-center space-x-2 min-w-max px-4">
           <div className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
               selectedSite ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}>1</div>
-            <span className="ml-2 text-xs font-medium">Choose Site</span>
+            <span className="ml-1 text-xs font-medium">Site</span>
           </div>
-          <div className="w-8 h-px bg-border"></div>
+          <div className="w-6 h-px bg-border"></div>
           <div className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-              panels.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+              selectedController ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}>2</div>
-            <span className="ml-2 text-xs font-medium">Create Panel</span>
+            <span className="ml-1 text-xs font-medium">Controller</span>
           </div>
-          <div className="w-8 h-px bg-border"></div>
+          <div className="w-6 h-px bg-border"></div>
           <div className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-              selectedPanel ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+              selectedController && panels.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}>3</div>
-            <span className="ml-2 text-xs font-medium">Configure</span>
+            <span className="ml-1 text-xs font-medium">Panel</span>
+          </div>
+          <div className="w-6 h-px bg-border"></div>
+          <div className="flex items-center">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+              selectedPanel ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>4</div>
+            <span className="ml-1 text-xs font-medium">Instruments</span>
+          </div>
+          <div className="w-6 h-px bg-border"></div>
+          <div className="flex items-center">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+              panelInstruments.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>5</div>
+            <span className="ml-1 text-xs font-medium">I/O Lists</span>
+          </div>
+          <div className="w-6 h-px bg-border"></div>
+          <div className="flex items-center">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+              panelInstruments.length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>6</div>
+            <span className="ml-1 text-xs font-medium">Tags</span>
           </div>
         </div>
       </div>
@@ -600,19 +622,142 @@ const PanelConfiguratorPage = () => {
         </CardContent>
       </Card>
 
-      {/* Step 2: Panel Management */}
-      <Card className={selectedSite ? "border-2 border-dashed border-primary/20" : "opacity-75"}>
+      {/* Step 2: Controller Selection */}
+      <Card className={selectedSite && !selectedController ? "border-2 border-dashed border-primary/20" : selectedController ? "border-2 border-green-200 bg-green-50/50" : "opacity-75"}>
+        <CardHeader className="pb-4">
+          <div className="flex items-center space-x-2">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+              selectedController ? 'bg-green-500 text-white' : selectedSite ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}>2</div>
+            <CardTitle className="text-lg">Choose Automation Controller</CardTitle>
+          </div>
+          <CardDescription className="text-sm">
+            {selectedSite ? 
+              'Select the automation platform for your project' : 
+              'Select a site first to choose controller type'
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!selectedSite ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="mb-2">⬆️</div>
+              <p className="text-sm">Please select a site above first</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  vendor: "Beckhoff",
+                  series: "TwinCAT",
+                  logo: "🔧",
+                  description: "EtherCAT I/O system",
+                  protocols: ["EtherCAT", "Modbus TCP", "OPC UA"],
+                  modules: ["Digital I/O", "Analog I/O", "Safety", "Motion"]
+                },
+                {
+                  vendor: "Siemens",
+                  series: "S7-1500",
+                  logo: "⚙️",
+                  description: "PROFINET I/O system",
+                  protocols: ["PROFINET", "Modbus TCP", "OPC UA"],
+                  modules: ["Digital I/O", "Analog I/O", "Safety", "Motion"]
+                },
+                {
+                  vendor: "Allen Bradley",
+                  series: "CompactLogix",
+                  logo: "🏭",
+                  description: "EtherNet/IP I/O system",
+                  protocols: ["EtherNet/IP", "DeviceNet", "ControlNet"],
+                  modules: ["Digital I/O", "Analog I/O", "Safety", "Motion"]
+                },
+                {
+                  vendor: "Schneider Electric",
+                  series: "Modicon M580",
+                  logo: "⚡",
+                  description: "Ethernet I/O system",
+                  protocols: ["Modbus TCP", "EtherNet/IP", "OPC UA"],
+                  modules: ["Digital I/O", "Analog I/O", "Safety"]
+                },
+                {
+                  vendor: "ABB",
+                  series: "AC800M",
+                  logo: "🔋",
+                  description: "PROFIBUS/Ethernet I/O",
+                  protocols: ["PROFIBUS", "PROFINET", "Modbus TCP"],
+                  modules: ["Digital I/O", "Analog I/O", "Safety"]
+                },
+                {
+                  vendor: "Mitsubishi",
+                  series: "iQ-R Series",
+                  logo: "🎯",
+                  description: "CC-Link IE I/O system",
+                  protocols: ["CC-Link IE", "Modbus TCP", "EtherNet/IP"],
+                  modules: ["Digital I/O", "Analog I/O", "Motion"]
+                }
+              ].map((controller) => (
+                <Card 
+                  key={controller.vendor}
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    selectedController?.vendor === controller.vendor ? 'border-primary bg-primary/5 shadow-md' : 'hover:border-primary/50'
+                  }`}
+                  onClick={() => setSelectedController(controller)}
+                >
+                  <CardContent className="p-4">
+                    <div className="text-center mb-3">
+                      <div className="text-2xl mb-2">{controller.logo}</div>
+                      <h3 className="font-bold text-sm">{controller.vendor}</h3>
+                      <p className="text-xs text-muted-foreground">{controller.series}</p>
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground mb-3">{controller.description}</p>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs font-medium mb-1">Protocols:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {controller.protocols.map(protocol => (
+                            <Badge key={protocol} variant="outline" className="text-xs px-1 py-0">
+                              {protocol}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium mb-1">I/O Modules:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {controller.modules.map(module => (
+                            <Badge key={module} variant="secondary" className="text-xs px-1 py-0">
+                              {module}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {selectedController?.vendor === controller.vendor && (
+                      <div className="mt-3 pt-3 border-t border-primary/20">
+                        <p className="text-xs text-green-600 font-medium">✓ Controller selected - Create panels below</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Step 3: Panel Management */}
+      <Card className={selectedController ? "border-2 border-dashed border-primary/20" : "opacity-75"}>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                selectedSite ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-              }`}>2</div>
+                selectedController ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>3</div>
               <CardTitle className="text-lg">Create & Manage Panels</CardTitle>
             </div>
             <Button 
               size="sm" 
-              disabled={!selectedSite}
+              disabled={!selectedController}
               onClick={() => setIsCreatePanelOpen(true)}
               className="h-8 px-3 text-xs"
             >
@@ -621,17 +766,17 @@ const PanelConfiguratorPage = () => {
             </Button>
           </div>
           <CardDescription className="text-sm">
-            {selectedSite ? 
-              'Create new panels or select existing ones to configure' : 
-              'Select a site first to create panels'
+            {selectedController ? 
+              `Create ${selectedController.vendor} panels or select existing ones to configure` : 
+              'Select a controller first to create panels'
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!selectedSite ? (
+          {!selectedController ? (
             <div className="text-center py-12 text-muted-foreground">
               <div className="mb-2">⬆️</div>
-              <p className="text-sm">Please select a site above to view and create panels</p>
+              <p className="text-sm">Please select a controller above to view and create panels</p>
             </div>
           ) : isPanelsLoading ? (
             <div className="text-center py-8">
@@ -643,7 +788,7 @@ const PanelConfiguratorPage = () => {
               <div className="mb-4 text-4xl">📋</div>
               <h3 className="text-sm font-medium mb-2">No panels yet</h3>
               <p className="text-xs text-muted-foreground mb-4">Create your first panel to get started</p>
-              <Button onClick={() => setIsCreatePanelOpen(true)} size="sm">
+              <Button onClick={() => setIsCreatePanelOpen(true)} size="sm" disabled={!selectedController}>
                 <Plus className="w-3 h-3 mr-1" />
                 Create First Panel
               </Button>
@@ -939,6 +1084,232 @@ const PanelConfiguratorPage = () => {
                             </Card>
                           );
                         })}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Step 5: I/O List Generation */}
+              {panelInstruments.length > 0 && (
+                <Card className="border-2 border-dashed border-orange-200 bg-orange-50/50">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold">5</div>
+                      <div>
+                        <CardTitle className="text-lg">I/O Assignment List</CardTitle>
+                        <CardDescription className="text-sm">
+                          {selectedController?.vendor} I/O module assignments and wiring documentation
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="bg-blue-50 p-3 rounded-md">
+                          <h4 className="font-medium text-blue-800 mb-2">Digital Inputs</h4>
+                          <p className="text-xs text-blue-600">{ioCalculation?.totalDI || 0} points</p>
+                          <p className="text-xs text-muted-foreground">Status feedback, sensors</p>
+                        </div>
+                        <div className="bg-green-50 p-3 rounded-md">
+                          <h4 className="font-medium text-green-800 mb-2">Digital Outputs</h4>
+                          <p className="text-xs text-green-600">{ioCalculation?.totalDO || 0} points</p>
+                          <p className="text-xs text-muted-foreground">Control outputs, alarms</p>
+                        </div>
+                        <div className="bg-orange-50 p-3 rounded-md">
+                          <h4 className="font-medium text-orange-800 mb-2">Analog Inputs</h4>
+                          <p className="text-xs text-orange-600">{ioCalculation?.totalAI || 0} points</p>
+                          <p className="text-xs text-muted-foreground">Measurements, sensors</p>
+                        </div>
+                        <div className="bg-purple-50 p-3 rounded-md">
+                          <h4 className="font-medium text-purple-800 mb-2">Analog Outputs</h4>
+                          <p className="text-xs text-purple-600">{ioCalculation?.totalAO || 0} points</p>
+                          <p className="text-xs text-muted-foreground">Control signals, setpoints</p>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3 flex items-center">
+                          📋 I/O Assignment Table for {selectedController?.vendor}
+                        </h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs border border-gray-200 rounded-md">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="border p-2 text-left">Module</th>
+                                <th className="border p-2 text-left">Channel</th>
+                                <th className="border p-2 text-left">Tag Name</th>
+                                <th className="border p-2 text-left">Description</th>
+                                <th className="border p-2 text-left">Type</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {panelInstruments.slice(0, 6).map((instrument, idx) => {
+                                const template = templates.find(t => t.id === instrument.templateId);
+                                if (!template?.signalTypes) return null;
+                                const signalTypes = template.signalTypes as any;
+                                
+                                return (
+                                  <>
+                                    {signalTypes.DI?.map((signal: string, sigIdx: number) => (
+                                      <tr key={`${idx}-di-${sigIdx}`} className="hover:bg-blue-50">
+                                        <td className="border p-2 font-mono">
+                                          {selectedController?.vendor === 'Beckhoff' ? 'EL1008' : 
+                                           selectedController?.vendor === 'Siemens' ? 'SM1221' : 
+                                           selectedController?.vendor === 'Allen Bradley' ? '1769-IA16' : 'DI-Module'}
+                                        </td>
+                                        <td className="border p-2">{sigIdx + 1}</td>
+                                        <td className="border p-2 font-mono text-blue-600">
+                                          {instrument.instrumentTag}_{signal.toUpperCase()}
+                                        </td>
+                                        <td className="border p-2">{signal.replace(/_/g, ' ')}</td>
+                                        <td className="border p-2">
+                                          <Badge variant="outline" className="text-xs">DI</Badge>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                    {signalTypes.DO?.map((signal: string, sigIdx: number) => (
+                                      <tr key={`${idx}-do-${sigIdx}`} className="hover:bg-green-50">
+                                        <td className="border p-2 font-mono">
+                                          {selectedController?.vendor === 'Beckhoff' ? 'EL2008' : 
+                                           selectedController?.vendor === 'Siemens' ? 'SM1222' : 
+                                           selectedController?.vendor === 'Allen Bradley' ? '1769-OA16' : 'DO-Module'}
+                                        </td>
+                                        <td className="border p-2">{sigIdx + 1}</td>
+                                        <td className="border p-2 font-mono text-green-600">
+                                          {instrument.instrumentTag}_{signal.toUpperCase()}
+                                        </td>
+                                        <td className="border p-2">{signal.replace(/_/g, ' ')}</td>
+                                        <td className="border p-2">
+                                          <Badge variant="outline" className="text-xs">DO</Badge>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          * Showing first 6 instruments. Complete I/O list available for download.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Step 6: Tag List Generation */}
+              {panelInstruments.length > 0 && (
+                <Card className="border-2 border-dashed border-purple-200 bg-purple-50/50">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-bold">6</div>
+                        <div>
+                          <CardTitle className="text-lg">PLC Tag Generation</CardTitle>
+                          <CardDescription className="text-sm">
+                            Generate {selectedController?.vendor} PLC tags and variable declarations
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" className="h-8 text-xs">
+                          📥 Export CSV
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs">
+                          📋 Copy Tags
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Tag Summary */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">📊 Tag Summary</h4>
+                          <div className="bg-white p-3 rounded-md border space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Total Tags:</span>
+                              <Badge className="bg-purple-100 text-purple-800">
+                                {(ioCalculation?.totalDI || 0) + (ioCalculation?.totalDO || 0) + 
+                                 (ioCalculation?.totalAI || 0) + (ioCalculation?.totalAO || 0)}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Boolean Tags:</span>
+                              <span className="font-mono">{(ioCalculation?.totalDI || 0) + (ioCalculation?.totalDO || 0)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Analog Tags:</span>
+                              <span className="font-mono">{(ioCalculation?.totalAI || 0) + (ioCalculation?.totalAO || 0)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Controller:</span>
+                              <span className="font-medium">{selectedController?.vendor} {selectedController?.series}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Programming Format */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">💻 Programming Format</h4>
+                          <div className="bg-gray-900 text-green-400 p-3 rounded-md text-xs font-mono">
+                            <div className="mb-2 text-gray-400">// {selectedController?.vendor} Variable Declarations</div>
+                            {panelInstruments.slice(0, 3).map((instrument) => {
+                              const template = templates.find(t => t.id === instrument.templateId);
+                              if (!template?.signalTypes) return null;
+                              const signalTypes = template.signalTypes as any;
+                              
+                              return (
+                                <div key={instrument.id} className="space-y-1">
+                                  {signalTypes.DI?.slice(0, 2).map((signal: string) => (
+                                    <div key={signal}>
+                                      <span className="text-blue-400">BOOL</span> {instrument.instrumentTag}_{signal.toUpperCase()}; 
+                                      <span className="text-gray-500"> // {signal.replace(/_/g, ' ')}</span>
+                                    </div>
+                                  ))}
+                                  {signalTypes.DO?.slice(0, 1).map((signal: string) => (
+                                    <div key={signal}>
+                                      <span className="text-green-400">BOOL</span> {instrument.instrumentTag}_{signal.toUpperCase()}; 
+                                      <span className="text-gray-500"> // {signal.replace(/_/g, ' ')}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                            <div className="text-gray-500 mt-2">// ... {((ioCalculation?.totalDI || 0) + (ioCalculation?.totalDO || 0) - 9)} more tags</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">🏷️ Complete Tag List</h4>
+                          <Badge variant="secondary" className="text-xs">
+                            Ready for {selectedController?.vendor} programming
+                          </Badge>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
+                          <div className="text-green-600 text-2xl mb-2">✅</div>
+                          <h3 className="font-medium text-green-800 mb-1">Automation Planning Complete!</h3>
+                          <p className="text-sm text-green-600 mb-3">
+                            Your {selectedController?.vendor} automation project is ready with {panelInstruments.length} instruments, 
+                            {(ioCalculation?.totalDI || 0) + (ioCalculation?.totalDO || 0) + (ioCalculation?.totalAI || 0) + (ioCalculation?.totalAO || 0)} I/O points, 
+                            and complete tag definitions.
+                          </p>
+                          <div className="flex justify-center space-x-2">
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                              📄 Generate Report
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              📧 Email Documentation
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
