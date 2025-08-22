@@ -1055,13 +1055,14 @@ const SQLViewerPage: React.FC = () => {
                                                 try {
                                                   const date = new Date(value);
                                                   if (!isNaN(date.getTime())) {
-                                                    return date.toLocaleString('en-GB', {
+                                                    return date.toLocaleString('en-IN', {
                                                       day: '2-digit',
                                                       month: '2-digit', 
                                                       year: 'numeric',
                                                       hour: '2-digit',
                                                       minute: '2-digit',
-                                                      second: '2-digit'
+                                                      second: '2-digit',
+                                                      timeZone: 'Asia/Kolkata'
                                                     });
                                                   }
                                                 } catch (e) {
@@ -1078,6 +1079,8 @@ const SQLViewerPage: React.FC = () => {
                                                 // Add appropriate units based on column name
                                                 if (columnLower.includes('flow') || columnLower.includes('totalizer')) {
                                                   return `${formattedValue} m³/hr`;
+                                                } else if (columnLower.includes('level') || columnLower.includes('tank')) {
+                                                  return `${formattedValue} m`;
                                                 } else if (columnLower.includes('freq') || columnLower.includes('frequency')) {
                                                   return `${formattedValue} Hz`;
                                                 } else if (columnLower.includes('recovery') || columnLower.includes('percent') || columnLower.includes('%')) {
@@ -1480,13 +1483,14 @@ const SQLViewerPage: React.FC = () => {
                           </div>
                           {/* Date & Time Column */}
                           <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '150px', width: 'auto' }}>
-                            <div className="text-xs">{row.date_time.toLocaleString('en-GB', {
+                            <div className="text-xs">{row.date_time.toLocaleString('en-IN', {
                               day: '2-digit',
                               month: '2-digit', 
                               year: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit',
-                              second: '2-digit'
+                              second: '2-digit',
+                              timeZone: 'Asia/Kolkata'
                             })}</div>
                           </div>
                           <div className="px-2 py-0.5 text-xs font-mono border-r border-gray-200 dark:border-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: 'auto' }}>
