@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,12 @@ export function CompactDateRange({
   const [isOpen, setIsOpen] = useState(false);
   const [tempFromDate, setTempFromDate] = useState(fromDate);
   const [tempToDate, setTempToDate] = useState(toDate);
+
+  // Sync temp state with props when they change
+  useEffect(() => {
+    setTempFromDate(fromDate);
+    setTempToDate(toDate);
+  }, [fromDate, toDate]);
 
   const formatDisplayDate = (date: string) => {
     if (!date) return "";
@@ -73,8 +79,10 @@ export function CompactDateRange({
       label: "Today", 
       onClick: () => {
         const today = new Date().toISOString().split('T')[0];
-        setTempFromDate(today);
-        setTempToDate(today);
+        onFromDateChange(today);
+        onToDateChange(today);
+        onRangeApply?.();
+        setIsOpen(false);
       }
     },
     { 
@@ -83,8 +91,10 @@ export function CompactDateRange({
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const dateStr = yesterday.toISOString().split('T')[0];
-        setTempFromDate(dateStr);
-        setTempToDate(dateStr);
+        onFromDateChange(dateStr);
+        onToDateChange(dateStr);
+        onRangeApply?.();
+        setIsOpen(false);
       }
     },
     { 
@@ -93,8 +103,10 @@ export function CompactDateRange({
         const today = new Date();
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        setTempFromDate(weekAgo.toISOString().split('T')[0]);
-        setTempToDate(today.toISOString().split('T')[0]);
+        onFromDateChange(weekAgo.toISOString().split('T')[0]);
+        onToDateChange(today.toISOString().split('T')[0]);
+        onRangeApply?.();
+        setIsOpen(false);
       }
     },
     { 
@@ -103,8 +115,10 @@ export function CompactDateRange({
         const today = new Date();
         const monthAgo = new Date();
         monthAgo.setDate(monthAgo.getDate() - 30);
-        setTempFromDate(monthAgo.toISOString().split('T')[0]);
-        setTempToDate(today.toISOString().split('T')[0]);
+        onFromDateChange(monthAgo.toISOString().split('T')[0]);
+        onToDateChange(today.toISOString().split('T')[0]);
+        onRangeApply?.();
+        setIsOpen(false);
       }
     },
     { 
@@ -113,18 +127,19 @@ export function CompactDateRange({
         const today = new Date();
         const quarterAgo = new Date();
         quarterAgo.setDate(quarterAgo.getDate() - 90);
-        setTempFromDate(quarterAgo.toISOString().split('T')[0]);
-        setTempToDate(today.toISOString().split('T')[0]);
+        onFromDateChange(quarterAgo.toISOString().split('T')[0]);
+        onToDateChange(today.toISOString().split('T')[0]);
+        onRangeApply?.();
+        setIsOpen(false);
       }
     },
   ];
 
   const reset = () => {
-    setTempFromDate("");
-    setTempToDate("");
     onFromDateChange("");
     onToDateChange("");
     onRangeApply?.();
+    setIsOpen(false);
   };
 
   return (
