@@ -3,8 +3,6 @@ import Header from "@/components/layout/header";
 import MetricsCards from "@/components/dashboard/metrics-cards";
 import SiteStatusOverview from "@/components/dashboard/site-status-overview";
 import RecentAlerts from "@/components/dashboard/recent-alerts";
-import QuickActions from "@/components/dashboard/quick-actions";
-import EquipmentStatus from "@/components/dashboard/equipment-status";
 
 export default function Dashboard() {
   const { data: metrics, isLoading: metricsLoading } = useQuery<{
@@ -38,17 +36,9 @@ export default function Dashboard() {
           {/* Sidebar Content */}
           <div className="space-y-6">
             <RecentAlerts />
-            <QuickActions />
           </div>
         </div>
 
-        {/* Equipment Status Section */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <EquipmentStatus />
-          <div className="space-y-6">
-            {/* VFD status will be part of EquipmentStatus component */}
-          </div>
-        </div>
       </div>
     </div>
   );
