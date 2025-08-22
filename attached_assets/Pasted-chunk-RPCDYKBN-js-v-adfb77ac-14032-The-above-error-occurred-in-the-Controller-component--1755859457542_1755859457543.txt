@@ -1,0 +1,38 @@
+chunk-RPCDYKBN.js?v=adfb77ac:14032 
+ The above error occurred in the <Controller> component:
+
+    at Controller (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.d…nner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=adfb77ac:298:35)
+    at FormField (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.dev/src/components/ui/form.tsx:33:6)
+    at form
+    at FormProvider (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.d…nner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=adfb77ac:102:11)
+    at div
+    at div
+    at div
+    at _c9 (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at div
+    at div
+    at AutomationWizardPage (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.dev/src/pages/automation-wizard.tsx:66:41)
+    at Route (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=adfb77ac:323:16)
+    at Switch (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.d…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=adfb77ac:379:17)
+    at main
+    at div
+    at Router (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.dev/src/App.tsx?v=jLh-vKXT1KL2zz0v4tiN4:40:27)
+    at SidebarProvider (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.dev/src/contexts/sidebar-context.tsx:20:35)
+    at Provider (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.d…unner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=adfb77ac:38:15)
+    at TooltipProvider (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.d…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=adfb77ac:63:5)
+    at QueryClientProvider (https://5d7dd2b8-193e-48e4-8be6-e9f705dcc85a-00-zp48mju70wnx.sisko.replit.d…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=adfb77ac:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-RPCDYKBN.js?v=adfb77ac:9129 
+ Uncaught TypeError: sites.map is not a function
+    at Object.render (automation-wizard.tsx:326:46)
+[NEW] Explain Console errors by using Copilot in Edge: click 
+ to explain an error. Learn more
+Don't show again
+﻿
+

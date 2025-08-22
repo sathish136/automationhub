@@ -72,7 +72,7 @@ export default function AutomationWizardPage() {
   });
 
   // Fetch sites for project creation
-  const { data: sites = [] } = useQuery<Site[]>({
+  const { data: sites = [], isLoading: sitesLoading, error: sitesError } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
     queryFn: () => apiRequest({ url: "/api/sites" }),
   });
@@ -274,7 +274,7 @@ export default function AutomationWizardPage() {
                         <div className="mb-8">
                           <h3 className="text-lg font-semibold mb-4">Existing Projects</h3>
                           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {automationProjects.map((project) => (
+                            {Array.isArray(automationProjects) && automationProjects.map((project) => (
                               <Card 
                                 key={project.id} 
                                 className="cursor-pointer hover:shadow-md transition-shadow"
@@ -323,11 +323,16 @@ export default function AutomationWizardPage() {
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {sites.map((site) => (
+                                      {Array.isArray(sites) && sites.map((site) => (
                                         <SelectItem key={site.id} value={site.id}>
                                           {site.name} ({site.location})
                                         </SelectItem>
                                       ))}
+                                      {(!Array.isArray(sites) || sites.length === 0) && (
+                                        <SelectItem value="" disabled>
+                                          {sitesLoading ? "Loading sites..." : "No sites available"}
+                                        </SelectItem>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   <FormMessage />
