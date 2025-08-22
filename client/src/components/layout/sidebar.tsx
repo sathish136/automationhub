@@ -15,20 +15,25 @@ import {
   Calculator,
   Menu,
   ChevronLeft,
+  Cpu,
+  Table,
+  HardDrive,
+  FileText,
+  AlertTriangle,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Project Details", href: "/project-details", icon: FolderOpen },
+  { name: "Project Config", href: "/project-details", icon: FileText },
   { name: "Site Monitoring", href: "/sites", icon: Building },
-  { name: "Site Events", href: "/site-events", icon: Bell },
-  { name: "ADS Monitor", href: "/site-database", icon: Database },
-  { name: "SQL Viewer", href: "/sql-viewer", icon: Database },
-  { name: "Program & HMI Backups", href: "/backups", icon: Save },
+  { name: "Alert Events", href: "/site-events", icon: AlertTriangle },
+  { name: "ADS Monitor", href: "/site-database", icon: Cpu },
+  { name: "SQL Viewer", href: "/sql-viewer", icon: Table },
+  { name: "System Backups", href: "/backups", icon: HardDrive },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
-  { name: "PLC I/O Calculations", href: "/plc-calculations", icon: Calculator },
+  { name: "PLC Calculations", href: "/plc-calculations", icon: Calculator },
 ];
 
 export default function Sidebar() {
