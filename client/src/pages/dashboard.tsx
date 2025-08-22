@@ -6,7 +6,6 @@ import RecentAlerts from "@/components/dashboard/recent-alerts";
 import QuickActions from "@/components/dashboard/quick-actions";
 import EquipmentStatus from "@/components/dashboard/equipment-status";
 
-
 export default function Dashboard() {
   const { data: metrics, isLoading: metricsLoading } = useQuery<{
     totalSites: number;
@@ -20,11 +19,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        title="Dashboard Overview" 
-        subtitle="Real-time monitoring of all automation sites" 
+      <Header
+        title="Dashboard Overview"
+        subtitle="Real-time monitoring of all automation sites"
       />
-      
+
       <div className="p-6">
         {/* Key Metrics Cards */}
         <MetricsCards metrics={metrics} isLoading={metricsLoading} />
@@ -50,8 +49,6 @@ export default function Dashboard() {
             {/* VFD status will be part of EquipmentStatus component */}
           </div>
         </div>
-
-
       </div>
     </div>
   );
