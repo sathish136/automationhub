@@ -30,7 +30,7 @@ import {
   TrendingUp,
   Eye
 } from 'lucide-react';
-import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Brush } from 'recharts';
 import { CompactDateRange } from '@/components/ui/compact-date-range';
 
 interface DatabaseInfo {
@@ -381,10 +381,9 @@ const SQLViewerPage: React.FC = () => {
     
     return dataToChart.map(row => {
       const chartRow: any = {
-        timestamp: row.date_time ? new Date(row.date_time).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
+        timestamp: row.date_time ? new Date(row.date_time).toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit'
         }) : '',
         fullTimestamp: row.date_time ? new Date(row.date_time).toLocaleString('en-GB') : '',
       };
@@ -1154,6 +1153,12 @@ const SQLViewerPage: React.FC = () => {
                                               name={metric.replace(/_/g, ' ').toUpperCase()}
                                             />
                                           ))}
+                                          <Brush 
+                                            dataKey="timestamp" 
+                                            height={30} 
+                                            stroke="#8884d8"
+                                            fill="rgba(136, 132, 216, 0.1)"
+                                          />
                                         </RechartsLineChart>
                                       ) : (
                                         <BarChart data={getChartData()} margin={{ top: 15, right: 20, left: 15, bottom: 60 }}>
@@ -1192,6 +1197,12 @@ const SQLViewerPage: React.FC = () => {
                                               radius={[2, 2, 0, 0]}
                                             />
                                           ))}
+                                          <Brush 
+                                            dataKey="timestamp" 
+                                            height={30} 
+                                            stroke="#8884d8"
+                                            fill="rgba(136, 132, 216, 0.1)"
+                                          />
                                         </BarChart>
                                       )}
                                     </ResponsiveContainer>
