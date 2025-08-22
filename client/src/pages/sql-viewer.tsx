@@ -249,7 +249,16 @@ const SQLViewerPage: React.FC = () => {
         setTableData(data);
         
         if (data.length > 0) {
-          setColumns(Object.keys(data[0]));
+          let cols = Object.keys(data[0]);
+          // Move date/time columns to the front
+          const dateTimeColumns = cols.filter(col => 
+            /date|time|created|modified|timestamp/i.test(col)
+          );
+          const otherColumns = cols.filter(col => 
+            !/date|time|created|modified|timestamp/i.test(col)
+          );
+          cols = [...dateTimeColumns, ...otherColumns];
+          setColumns(cols);
         } else {
           setColumns([]);
         }
@@ -1034,7 +1043,7 @@ const SQLViewerPage: React.FC = () => {
                                           >
                                             {(() => {
                                               const value = row[column];
-                                              if (!value) return '';
+                                              if (value === null || value === undefined) return '';
                                               
                                               // Check if this looks like a date/time column and value
                                               const isDateColumn = /date|time|created|modified|timestamp/i.test(column);
@@ -1057,6 +1066,30 @@ const SQLViewerPage: React.FC = () => {
                                                   }
                                                 } catch (e) {
                                                   // If date parsing fails, show original value
+                                                }
+                                              }
+                                              
+                                              // Format numeric values with units and rounding
+                                              const numValue = parseFloat(value);
+                                              if (!isNaN(numValue) && typeof value !== 'boolean') {
+                                                const columnLower = column.toLowerCase();
+                                                let formattedValue = numValue.toFixed(2);
+                                                
+                                                // Add appropriate units based on column name
+                                                if (columnLower.includes('flow') || columnLower.includes('totalizer')) {
+                                                  return `${formattedValue} m³/hr`;
+                                                } else if (columnLower.includes('freq') || columnLower.includes('frequency')) {
+                                                  return `${formattedValue} Hz`;
+                                                } else if (columnLower.includes('recovery') || columnLower.includes('percent') || columnLower.includes('%')) {
+                                                  return `${formattedValue}%`;
+                                                } else if (columnLower.includes('energy')) {
+                                                  return `${formattedValue} kWh`;
+                                                } else if (columnLower.includes('temp') || columnLower.includes('temperature')) {
+                                                  return `${formattedValue}°C`;
+                                                } else if (columnLower.includes('pressure')) {
+                                                  return `${formattedValue} bar`;
+                                                } else {
+                                                  return formattedValue;
                                                 }
                                               }
                                               
