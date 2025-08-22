@@ -1032,17 +1032,36 @@ const SQLViewerPage: React.FC = () => {
                                             className="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-100"
                                             title={String(row[column] || '')}
                                           >
-                                            {column === 'date_time' 
-                                              ? new Date(row[column]).toLocaleString('en-GB', {
-                                                  day: '2-digit',
-                                                  month: '2-digit', 
-                                                  year: 'numeric',
-                                                  hour: '2-digit',
-                                                  minute: '2-digit',
-                                                  second: '2-digit'
-                                                })
-                                              : String(row[column] || '')
-                                            }
+                                            {(() => {
+                                              const value = row[column];
+                                              if (!value) return '';
+                                              
+                                              // Check if this looks like a date/time column and value
+                                              const isDateColumn = /date|time|created|modified|timestamp/i.test(column);
+                                              const isDateValue = typeof value === 'string' && 
+                                                (value.includes('T') || value.includes('-')) && 
+                                                !isNaN(Date.parse(value));
+                                              
+                                              if (isDateColumn || isDateValue) {
+                                                try {
+                                                  const date = new Date(value);
+                                                  if (!isNaN(date.getTime())) {
+                                                    return date.toLocaleString('en-GB', {
+                                                      day: '2-digit',
+                                                      month: '2-digit', 
+                                                      year: 'numeric',
+                                                      hour: '2-digit',
+                                                      minute: '2-digit',
+                                                      second: '2-digit'
+                                                    });
+                                                  }
+                                                } catch (e) {
+                                                  // If date parsing fails, show original value
+                                                }
+                                              }
+                                              
+                                              return String(value);
+                                            })()}
                                           </td>
                                         ))}
                                       </tr>
