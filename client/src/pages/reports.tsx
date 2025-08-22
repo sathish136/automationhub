@@ -30,6 +30,7 @@ import type { Site, Instrumentation } from '@shared/schema';
 const REPORT_TYPES = [
   { value: 'site_summary', label: 'Site Summary Report', icon: Building, description: 'Overall site performance and status' },
   { value: 'uptime_analysis', label: 'Uptime Analysis', icon: TrendingUp, description: 'Site availability and downtime analysis' },
+  { value: 'site_running_data', label: 'Site Running Data Report', icon: Activity, description: 'Real-time site operational data and metrics' },
   { value: 'alert_summary', label: 'Alert Summary', icon: AlertTriangle, description: 'Alert trends and resolution times' },
   { value: 'instrumentation_status', label: 'Instrumentation Status', icon: Gauge, description: 'Device status and maintenance schedules' },
   { value: 'performance_metrics', label: 'Performance Metrics', icon: Activity, description: 'System performance and KPIs' },
@@ -37,6 +38,8 @@ const REPORT_TYPES = [
 ];
 
 const TIME_RANGES = [
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
   { value: 'last_7_days', label: 'Last 7 Days' },
   { value: 'last_30_days', label: 'Last 30 Days' },
   { value: 'last_3_months', label: 'Last 3 Months' },
@@ -55,6 +58,8 @@ export default function ReportsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [reportHtml, setReportHtml] = useState<string>('');
   const [reportTitle, setReportTitle] = useState<string>('');
+  const [selectedDatabase, setSelectedDatabase] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>('');
 
   const { toast } = useToast();
 
@@ -66,6 +71,18 @@ export default function ReportsPage() {
   // Fetch instrumentation for status reports
   const { data: devices = [] } = useQuery<Instrumentation[]>({
     queryKey: ['/api/instrumentation'],
+  });
+
+  // Fetch databases for site running data reports
+  const { data: databases = [] } = useQuery<string[]>({
+    queryKey: ['/api/sql-viewer/databases'],
+    enabled: selectedReportType === 'site_running_data',
+  });
+
+  // Fetch tables for selected database
+  const { data: tables = [] } = useQuery<string[]>({
+    queryKey: ['/api/sql-viewer/databases', selectedDatabase, 'tables'],
+    enabled: selectedReportType === 'site_running_data' && !!selectedDatabase,
   });
 
   // Utility function to generate report header
@@ -387,6 +404,103 @@ export default function ReportsPage() {
     `;
   };
 
+  const generateSiteRunningDataReport = async () => {
+    if (!selectedDatabase || !selectedTable) {
+      throw new Error('Please select both database and table for site running data report');
+    }
+
+    try {
+      // Calculate date range based on selected time range
+      let limit = 100;
+      let sortColumn = 'date_time';
+      let sortDirection = 'desc' as const;
+
+      switch (selectedTimeRange) {
+        case 'today':
+          limit = 50;
+          break;
+        case 'yesterday':
+          limit = 50;
+          break;
+        case 'last_7_days':
+          limit = 200;
+          break;
+        case 'last_30_days':
+          limit = 500;
+          break;
+        case 'last_3_months':
+          limit = 1000;
+          break;
+        default:
+          limit = 300;
+      }
+
+      const response = await apiRequest(
+        `/api/sql-viewer/databases/${selectedDatabase}/tables/${selectedTable}?limit=${limit}&sortColumn=${sortColumn}&sortDirection=${sortDirection}`, 
+        'GET'
+      );
+      const data = await response.json();
+
+      if (!data || data.length === 0) {
+        throw new Error(`No data found in ${selectedDatabase}.${selectedTable}`);
+      }
+
+      // Get column names from first row
+      const columns = Object.keys(data[0]);
+      
+      // Generate table headers
+      let headerRow = '<tr>';
+      columns.forEach(column => {
+        const displayName = column.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        headerRow += `<th>${displayName}</th>`;
+      });
+      headerRow += '</tr>';
+
+      // Generate table rows
+      let tableRows = '';
+      data.forEach((row: any) => {
+        tableRows += '<tr>';
+        columns.forEach(column => {
+          let cellValue = row[column];
+          
+          // Format date_time columns
+          if (column.toLowerCase().includes('date') || column.toLowerCase().includes('time')) {
+            if (cellValue) {
+              cellValue = new Date(cellValue).toLocaleString();
+            }
+          }
+          
+          // Handle null/undefined values
+          if (cellValue === null || cellValue === undefined) {
+            cellValue = 'N/A';
+          }
+          
+          tableRows += `<td>${cellValue}</td>`;
+        });
+        tableRows += '</tr>';
+      });
+
+      return generateReportHeader(`Site Running Data Report - ${selectedDatabase}.${selectedTable}`) + `
+        <div style="margin-bottom: 20px; font-size: 14px; color: #666;">
+          <p><strong>Database:</strong> ${selectedDatabase}</p>
+          <p><strong>Table:</strong> ${selectedTable}</p>
+          <p><strong>Records:</strong> ${data.length}</p>
+          <p><strong>Time Range:</strong> ${TIME_RANGES.find(r => r.value === selectedTimeRange)?.label || selectedTimeRange}</p>
+        </div>
+        <table>
+          <thead>
+            ${headerRow}
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      `;
+    } catch (error) {
+      throw new Error(`Failed to fetch site running data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   const handleGenerateReport = async () => {
     if (!selectedReportType) {
       toast({
@@ -410,6 +524,9 @@ export default function ReportsPage() {
           break;
         case 'uptime_analysis':
           html = await generateUptimeAnalysisReport();
+          break;
+        case 'site_running_data':
+          html = await generateSiteRunningDataReport();
           break;
         case 'instrumentation_status':
           html = await generateInstrumentationStatusReport();
@@ -485,7 +602,14 @@ export default function ReportsPage() {
                             ? 'ring-2 ring-primary bg-primary/5'
                             : 'hover:bg-muted/50'
                         }`}
-                        onClick={() => setSelectedReportType(type.value)}
+                        onClick={() => {
+                          setSelectedReportType(type.value);
+                          // Reset database/table selection when changing report types
+                          if (type.value !== 'site_running_data') {
+                            setSelectedDatabase('');
+                            setSelectedTable('');
+                          }
+                        }}
                         data-testid={`card-report-${type.value}`}
                       >
                         <CardContent className="p-4">
@@ -505,6 +629,50 @@ export default function ReportsPage() {
                 </div>
               </div>
 
+              {/* Database and Table Selection for Site Running Data */}
+              {selectedReportType === 'site_running_data' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <Label htmlFor="database-select">Database</Label>
+                    <Select value={selectedDatabase} onValueChange={(value) => {
+                      setSelectedDatabase(value);
+                      setSelectedTable(''); // Reset table when database changes
+                    }}>
+                      <SelectTrigger data-testid="select-database">
+                        <SelectValue placeholder="Select database" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {databases.map((database) => (
+                          <SelectItem key={database} value={database}>
+                            {database}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="table-select">Table</Label>
+                    <Select 
+                      value={selectedTable} 
+                      onValueChange={setSelectedTable}
+                      disabled={!selectedDatabase}
+                    >
+                      <SelectTrigger data-testid="select-table">
+                        <SelectValue placeholder="Select table" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tables.map((table) => (
+                          <SelectItem key={table} value={table}>
+                            {table}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
               {/* Time Range */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -523,22 +691,24 @@ export default function ReportsPage() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="site-filter">Site Filter</Label>
-                  <Select value={selectedSite} onValueChange={setSelectedSite}>
-                    <SelectTrigger data-testid="select-site-filter">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Sites</SelectItem>
-                      {sites.map((site) => (
-                        <SelectItem key={site.id} value={site.id}>
-                          {site.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {selectedReportType !== 'site_running_data' && (
+                  <div>
+                    <Label htmlFor="site-filter">Site Filter</Label>
+                    <Select value={selectedSite} onValueChange={setSelectedSite}>
+                      <SelectTrigger data-testid="select-site-filter">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {sites.map((site) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* Custom Date Range */}
