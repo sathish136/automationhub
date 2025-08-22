@@ -220,40 +220,101 @@ export default function SiteEvents() {
       {/* Events List */}
       <div className="space-y-4">
         {customEventsLoading ? (
-          <p>Loading events...</p>
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-2">
+                  <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : selectedSiteConfig === "all" || !selectedSiteConfig ? (
           <Card>
             <CardContent className="p-6 text-center text-gray-500">
-              <p>Please select a site database to view events.</p>
+              <div className="space-y-2">
+                <Database className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                <p>Please select a site database to view events.</p>
+                <p className="text-sm">Configure the external database connection to view live data from your industrial systems.</p>
+              </div>
             </CardContent>
           </Card>
         ) : displayedEvents.length > 0 ? (
-          <Card>
-            <CardContent>
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">S.No</th>
-                    <th scope="col" className="px-6 py-3">Date & Time</th>
-                    <th scope="col" className="px-6 py-3">Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayedEvents.map((event: CustomSiteEvent, index: number) => (
-                    <tr key={event.id || index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                      <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{index + 1}</td>
-                      <td className="px-6 py-4">{new Date(event.date_time).toLocaleString()}</td>
-                      <td className="px-6 py-4">{event.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            {displayedEvents.map((event: CustomSiteEvent, index: number) => (
+              <Card key={event.id || index} className="transition-all">
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className={`${getSeverityColor(event.severity || 'info')} text-white`}>
+                          <div className="flex items-center gap-1">
+                            {getPlcCategoryIcon(event.type || '', event.description || '')}
+                            <span className="text-xs font-medium capitalize">{event.severity || 'info'}</span>
+                          </div>
+                        </Badge>
+                        
+                        <Badge variant="outline" className="text-xs">
+                          {getPlcCategory(event.type || '', event.description || '')}
+                        </Badge>
+                        
+                        <Badge variant="secondary" className="text-xs">
+                          {event.site || 'Unknown Site'}
+                        </Badge>
+                        
+                        {event.equipment && (
+                          <Badge variant="outline" className="text-xs">
+                            {event.equipment}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                        {event.message || event.description || 'Site Event'}
+                      </h3>
+                      <p className="text-xs text-gray-600 mb-2">{event.description}</p>
+                      
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(event.date_time).toLocaleString()}
+                        </div>
+                        {event.tag_value && (
+                          <div className="flex items-center gap-1">
+                            <Activity className="h-3 w-3" />
+                            Value: {event.tag_value}
+                          </div>
+                        )}
+                        {event.setpoint && (
+                          <div className="flex items-center gap-1">
+                            <Settings className="h-3 w-3" />
+                            Setpoint: {event.setpoint}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {event.note && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 italic">
+                          Note: {event.note}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="text-xs text-gray-500 text-right">
+                        #{index + 1}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
           <Card>
             <CardContent className="p-6 text-center text-gray-500">
               <div className="space-y-2">
+                <Database className="h-8 w-8 mx-auto text-gray-300 mb-2" />
                 <p>No events found for the selected site database.</p>
                 <p className="text-sm">Configure the external database connection to view live data from your industrial systems.</p>
               </div>

@@ -590,8 +590,8 @@ export default function SiteEventsEnhanced() {
                         onClick={() => {
                           setSearchTerm("");
                           setSelectedSiteConfig("all");
-                          setFromDate(null);
-                          setToDate(null);
+                          setFromDate("");
+                          setToDate("");
                         }}
                         className="h-6 px-2 text-xs"
                         data-testid="button-clear-custom-filters"
