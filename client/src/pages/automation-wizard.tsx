@@ -74,25 +74,25 @@ export default function AutomationWizardPage() {
   // Fetch sites for project creation
   const { data: sites = [], isLoading: sitesLoading, error: sitesError } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
-    queryFn: () => apiRequest({ url: "/api/sites" }),
   });
 
   // Fetch automation projects
   const { data: automationProjects = [], isLoading: projectsLoading } = useQuery<AutomationProject[]>({
     queryKey: ["/api/automation-projects"],
-    queryFn: () => apiRequest({ url: "/api/automation-projects" }),
   });
 
   // Fetch Beckhoff products
   const { data: beckhoffProducts = [], isLoading: productsLoading } = useQuery<BeckhoffProduct[]>({
     queryKey: ["/api/beckhoff-products"],
-    queryFn: () => apiRequest({ url: "/api/beckhoff-products" }),
     enabled: isCatalogInitialized,
   });
 
   // Initialize Beckhoff catalog mutation
   const initializeCatalogMutation = useMutation({
-    mutationFn: () => apiRequest({ url: "/api/automation/init-beckhoff-catalog", method: "POST" }),
+    mutationFn: async () => {
+      const response = await apiRequest("/api/automation/init-beckhoff-catalog", "POST");
+      return response.json();
+    },
     onSuccess: (data) => {
       toast({
         title: "Catalog Initialized",
@@ -112,15 +112,13 @@ export default function AutomationWizardPage() {
 
   // Create automation project mutation
   const createProjectMutation = useMutation({
-    mutationFn: (data: z.infer<typeof projectSchema>) => 
-      apiRequest({ 
-        url: "/api/automation-projects", 
-        method: "POST", 
-        data: {
-          ...data,
-          wizardStep: 2, // Move to next step after creation
-        }
-      }),
+    mutationFn: async (data: z.infer<typeof projectSchema>) => {
+      const response = await apiRequest("/api/automation-projects", "POST", {
+        ...data,
+        wizardStep: 2, // Move to next step after creation
+      });
+      return response.json();
+    },
     onSuccess: (project) => {
       toast({
         title: "Project Created",
@@ -323,13 +321,14 @@ export default function AutomationWizardPage() {
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {Array.isArray(sites) && sites.map((site) => (
-                                        <SelectItem key={site.id} value={site.id}>
-                                          {site.name} ({site.location})
-                                        </SelectItem>
-                                      ))}
-                                      {(!Array.isArray(sites) || sites.length === 0) && (
-                                        <SelectItem value="" disabled>
+                                      {Array.isArray(sites) && sites.length > 0 ? (
+                                        sites.map((site) => (
+                                          <SelectItem key={site.id} value={site.id}>
+                                            {site.name} ({site.location})
+                                          </SelectItem>
+                                        ))
+                                      ) : (
+                                        <SelectItem value="no-sites" disabled>
                                           {sitesLoading ? "Loading sites..." : "No sites available"}
                                         </SelectItem>
                                       )}
