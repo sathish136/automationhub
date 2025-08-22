@@ -422,6 +422,141 @@ export const beckhoffProducts = pgTable("beckhoff_products", {
   index("idx_beckhoff_products_io_type").on(table.ioType),
 ]);
 
+// ================================
+// MULTI-VENDOR AUTOMATION SUPPORT
+// ================================
+
+// Automation Vendors - Support multiple vendors (Beckhoff, Siemens, Allen-Bradley, etc.)
+export const automationVendors = pgTable("automation_vendors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Vendor Information
+  vendorName: varchar("vendor_name", { length: 100 }).notNull().unique(),
+  vendorDisplayName: varchar("vendor_display_name", { length: 100 }).notNull(),
+  vendorDescription: text("vendor_description"),
+  
+  // Vendor Details
+  country: varchar("country", { length: 50 }),
+  website: varchar("website", { length: 255 }),
+  supportEmail: varchar("support_email", { length: 255 }),
+  
+  // Visual
+  logoUrl: varchar("logo_url", { length: 500 }),
+  primaryColor: varchar("primary_color", { length: 7 }), // Hex color
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  isPreferred: boolean("is_preferred").default(false), // Highlight preferred vendors
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_vendors_name").on(table.vendorName),
+  index("idx_automation_vendors_active").on(table.isActive),
+]);
+
+// Generic Automation Products - Replaces beckhoffProducts with multi-vendor support
+export const automationProducts = pgTable("automation_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorId: varchar("vendor_id").notNull().references(() => automationVendors.id, { onDelete: "cascade" }),
+  
+  // Product Identification
+  partNumber: varchar("part_number", { length: 100 }).notNull(),
+  productName: varchar("product_name", { length: 255 }).notNull(),
+  productDisplayName: varchar("product_display_name", { length: 255 }).notNull(), // User-friendly name
+  productDescription: text("product_description"),
+  detailedDescription: text("detailed_description"), // More comprehensive description
+  
+  // Product Category
+  category: varchar("category", { length: 50 }).notNull(), // controller, io_module, communication, power, sensor, actuator
+  subcategory: varchar("subcategory", { length: 50 }), // plc_controller, hmi_panel, di_module, do_module, ai_module, ao_module
+  productFamily: varchar("product_family", { length: 100 }), // S7-1200, CompactLogix, CX-series, etc.
+  
+  // Technical Specifications
+  ioCount: integer("io_count").default(0), // Number of I/O channels
+  ioType: varchar("io_type", { length: 30 }), // DI, DO, AI, AO, MIXED
+  signalType: varchar("signal_type", { length: 50 }), // 24VDC, 4-20mA, 0-10V, PT100, etc.
+  signalRange: varchar("signal_range", { length: 100 }), // e.g., "0-24V DC", "4-20mA", "0-10V"
+  maxCurrent: decimal("max_current", { precision: 8, scale: 2 }), // mA
+  resolution: integer("resolution"), // bits for analog modules
+  accuracy: varchar("accuracy", { length: 50 }), // e.g., "±0.1%", "±1 LSB"
+  
+  // Physical Properties
+  dimensions: jsonb("dimensions"), // {width, height, depth} in mm
+  weight: decimal("weight", { precision: 6, scale: 3 }), // kg
+  mountingType: varchar("mounting_type", { length: 50 }).default("din_rail"),
+  operatingTemperature: varchar("operating_temperature", { length: 50 }), // e.g., "-25°C to +60°C"
+  protectionRating: varchar("protection_rating", { length: 10 }), // IP20, IP65, etc.
+  
+  // Network and Communication
+  communicationProtocol: varchar("communication_protocol", { length: 50 }), // EtherCAT, PROFINET, EtherNet/IP
+  maxDistance: integer("max_distance"), // Maximum cable distance in meters
+  dataRate: varchar("data_rate", { length: 30 }), // Communication speed
+  networkPorts: integer("network_ports").default(0),
+  
+  // Power Requirements
+  powerConsumption: decimal("power_consumption", { precision: 8, scale: 2 }), // Watts
+  supplyVoltage: varchar("supply_voltage", { length: 50 }), // 24VDC, 230VAC
+  currentConsumption: decimal("current_consumption", { precision: 8, scale: 3 }), // A
+  
+  // Software and Configuration
+  configurationSoftware: varchar("configuration_software", { length: 100 }), // TwinCAT, TIA Portal, Studio 5000
+  programmingLanguages: varchar("programming_languages").array().default(sql`ARRAY[]::text[]`), // IEC 61131-3 languages
+  supportedProtocols: varchar("supported_protocols").array().default(sql`ARRAY[]::text[]`), // Array of supported protocols
+  compatibleProducts: varchar("compatible_products").array().default(sql`ARRAY[]::text[]`), // Compatible part numbers
+  
+  // Commercial Information
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  availabilityStatus: varchar("availability_status", { length: 30 }).default("available"),
+  leadTime: integer("lead_time"), // days
+  minimumOrderQuantity: integer("minimum_order_quantity").default(1),
+  
+  // Documentation and Support
+  datasheetUrl: varchar("datasheet_url", { length: 500 }),
+  manualUrl: varchar("manual_url", { length: 500 }),
+  videoUrl: varchar("video_url", { length: 500 }), // Product demo/tutorial videos
+  supportLevel: varchar("support_level", { length: 30 }).default("standard"), // basic, standard, premium
+  
+  // User Experience
+  difficultyLevel: varchar("difficulty_level", { length: 20 }).default("intermediate"), // beginner, intermediate, advanced
+  popularityScore: integer("popularity_score").default(0), // For sorting/recommendations
+  userRating: decimal("user_rating", { precision: 3, scale: 2 }), // 0.00 to 5.00
+  
+  // Features and Benefits
+  keyFeatures: varchar("key_features").array().default(sql`ARRAY[]::text[]`), // Array of key features
+  benefits: varchar("benefits").array().default(sql`ARRAY[]::text[]`), // Array of benefits
+  applicationAreas: varchar("application_areas").array().default(sql`ARRAY[]::text[]`), // Typical applications
+  
+  isActive: boolean("is_active").default(true),
+  isFeatured: boolean("is_featured").default(false), // Highlight featured products
+  isRecommended: boolean("is_recommended").default(false), // Recommended products
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_products_vendor").on(table.vendorId),
+  index("idx_automation_products_part").on(table.partNumber),
+  index("idx_automation_products_category").on(table.category),
+  index("idx_automation_products_subcategory").on(table.subcategory),
+  index("idx_automation_products_io_type").on(table.ioType),
+  index("idx_automation_products_family").on(table.productFamily),
+  index("idx_automation_products_featured").on(table.isFeatured),
+  index("idx_automation_products_recommended").on(table.isRecommended),
+]);
+
+// Relations for vendor and product tables
+export const automationVendorsRelations = relations(automationVendors, ({ many }) => ({
+  products: many(automationProducts),
+}));
+
+export const automationProductsRelations = relations(automationProducts, ({ one }) => ({
+  vendor: one(automationVendors, {
+    fields: [automationProducts.vendorId],
+    references: [automationVendors.id],
+  }),
+}));
+
 // Enhanced Automation Panels with hierarchy support
 export const automationPanels = pgTable("automation_panels", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -442,10 +577,10 @@ export const automationPanels = pgTable("automation_panels", {
   cabinetSize: varchar("cabinet_size", { length: 50 }),
   enclosureRating: varchar("enclosure_rating", { length: 20 }).default("IP54"),
   
-  // Beckhoff Configuration
-  mainControllerId: varchar("main_controller_id").references(() => beckhoffProducts.id),
-  couplerId: varchar("coupler_id").references(() => beckhoffProducts.id),
-  powerSupplyId: varchar("power_supply_id").references(() => beckhoffProducts.id),
+  // Product Configuration (Generic - supports all vendors)
+  mainControllerId: varchar("main_controller_id").references(() => automationProducts.id),
+  couplerId: varchar("coupler_id").references(() => automationProducts.id),
+  powerSupplyId: varchar("power_supply_id").references(() => automationProducts.id),
   
   // Network Configuration
   distanceFromMain: integer("distance_from_main"), // meters
@@ -484,7 +619,7 @@ export const communicationModules = pgTable("communication_modules", {
   // Module Information
   moduleName: varchar("module_name", { length: 100 }).notNull(),
   moduleType: varchar("module_type", { length: 50 }).notNull(), // RS485, Profinet, DeviceNet, CANopen
-  beckhoffProductId: varchar("beckhoff_product_id").references(() => beckhoffProducts.id),
+  automationProductId: varchar("automation_product_id").references(() => automationProducts.id),
   
   // Communication Configuration
   protocol: varchar("protocol", { length: 50 }).notNull(),
@@ -1019,6 +1154,19 @@ export const insertAutomationProjectSchema = createInsertSchema(automationProjec
   updatedAt: true,
 });
 
+// Insert schemas for vendor and product tables
+export const insertAutomationVendorSchema = createInsertSchema(automationVendors).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAutomationProductSchema = createInsertSchema(automationProducts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertBeckhoffProductSchema = createInsertSchema(beckhoffProducts).omit({
   id: true,
   createdAt: true,
@@ -1054,6 +1202,13 @@ export type InsertInstrumentation = z.infer<typeof insertInstrumentationSchema>;
 // Automation wizard types
 export type AutomationProject = typeof automationProjects.$inferSelect;
 export type InsertAutomationProject = z.infer<typeof insertAutomationProjectSchema>;
+// Export types for vendor and product tables
+export type AutomationVendor = typeof automationVendors.$inferSelect;
+export type InsertAutomationVendor = z.infer<typeof insertAutomationVendorSchema>;
+
+export type AutomationProduct = typeof automationProducts.$inferSelect;
+export type InsertAutomationProduct = z.infer<typeof insertAutomationProductSchema>;
+
 export type BeckhoffProduct = typeof beckhoffProducts.$inferSelect;
 export type InsertBeckhoffProduct = z.infer<typeof insertBeckhoffProductSchema>;
 export type AutomationPanel = typeof automationPanels.$inferSelect;

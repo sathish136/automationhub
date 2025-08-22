@@ -22,6 +22,8 @@ import {
   insertInstrumentationSchema,
   insertPlcIoCalculationSchema,
   insertAutomationProjectSchema,
+  insertAutomationVendorSchema,
+  insertAutomationProductSchema,
   insertBeckhoffProductSchema,
   insertAutomationPanelSchema,
   insertCommunicationModuleSchema,
@@ -1499,6 +1501,281 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Initialize Automation Vendors and Products
+  app.post("/api/automation/init-vendors-catalog", async (req, res) => {
+    try {
+      // Check if vendors already exist
+      const existingVendors = await storage.getAllAutomationVendors();
+      if (existingVendors.length > 0) {
+        return res.json({ message: "Vendors catalog already initialized", count: existingVendors.length });
+      }
+
+      // Define sample vendors
+      const sampleVendors = [
+        {
+          vendorName: "BECKHOFF",
+          vendorDisplayName: "Beckhoff Automation",
+          vendorDescription: "German automation company specializing in PC-based control technology and EtherCAT",
+          website: "https://www.beckhoff.com",
+          supportEmail: "support@beckhoff.com",
+          logoUrl: "/vendor-logos/beckhoff.png",
+          country: "Germany",
+          isPreferred: true
+        },
+        {
+          vendorName: "SIEMENS", 
+          vendorDisplayName: "Siemens",
+          vendorDescription: "Global industrial automation and digitalization leader with comprehensive portfolio",
+          website: "https://www.siemens.com",
+          supportEmail: "support@siemens.com",
+          logoUrl: "/vendor-logos/siemens.png",
+          country: "Germany",
+          isPreferred: true
+        },
+        {
+          vendorName: "ROCKWELL",
+          vendorDisplayName: "Rockwell Automation (Allen-Bradley)",
+          vendorDescription: "Leading provider of industrial automation and information solutions", 
+          website: "https://www.rockwellautomation.com",
+          supportEmail: "support@rockwellautomation.com",
+          logoUrl: "/vendor-logos/rockwell.png",
+          country: "USA",
+          isPreferred: true
+        },
+        {
+          vendorName: "SCHNEIDER",
+          vendorDisplayName: "Schneider Electric",
+          vendorDescription: "Global specialist in energy management and automation solutions",
+          website: "https://www.schneider-electric.com",
+          supportEmail: "support@schneider-electric.com",
+          logoUrl: "/vendor-logos/schneider.png",
+          country: "France",
+          isPreferred: true
+        },
+        {
+          vendorName: "ABB",
+          vendorDisplayName: "ABB",
+          vendorDescription: "Technology leader in electrification and automation solutions",
+          website: "https://www.abb.com",
+          supportEmail: "support@abb.com",
+          logoUrl: "/vendor-logos/abb.png",
+          country: "Switzerland",
+          isPreferred: false
+        },
+        {
+          vendorName: "MITSUBISHI",
+          vendorDisplayName: "Mitsubishi Electric",
+          vendorDescription: "Japanese multinational with comprehensive automation and control solutions",
+          website: "https://www.mitsubishielectric.com",
+          supportEmail: "support@mitsubishi.com",
+          logoUrl: "/vendor-logos/mitsubishi.png",
+          country: "Japan",
+          isPreferred: false
+        }
+      ];
+
+      // Insert sample vendors
+      const vendorResults = [];
+      const vendorMap = new Map();
+      
+      for (const vendor of sampleVendors) {
+        console.log("Processing vendor:", JSON.stringify(vendor, null, 2));
+        const vendorData = insertAutomationVendorSchema.parse(vendor);
+        const created = await storage.createAutomationVendor(vendorData);
+        vendorResults.push(created);
+        vendorMap.set(created.vendorName, created.id);
+      }
+
+      // Define sample products for each vendor
+      const sampleProducts = [
+        // Beckhoff Products
+        {
+          vendorId: vendorMap.get("BECKHOFF"),
+          partNumber: "CX5130",
+          productName: "CX5130",
+          productDisplayName: "CX5130 Embedded PC",
+          productDescription: "Compact embedded PC with Intel Atom processor, perfect for small to medium automation tasks",
+          category: "controller",
+          subcategory: "embedded_pc",
+          productFamily: "CX Series",
+          ioType: "CONTROLLER",
+          ioCount: 0,
+          technicalSpecs: {
+            processor: "Intel Atom E3825",
+            memory: "2 GB DDR3L",
+            storage: "16 GB CFast",
+            interfaces: ["2x Ethernet", "4x USB 2.0", "2x RS232"]
+          },
+          unitPrice: "650.00",
+          currency: "USD",
+          isRecommended: true,
+          isFeatured: true
+        },
+        {
+          vendorId: vendorMap.get("BECKHOFF"),
+          productCode: "EL1008",
+          productDisplayName: "8-Channel Digital Input 24V",
+          productDescription: "Reliable 8-channel digital input terminal for 24V DC signals with LED status indicators",
+          category: "digital_io",
+          subcategory: "digital_input",
+          productFamily: "EtherCAT Terminals",
+          ioType: "DI",
+          ioCount: 8,
+          signalType: "24VDC",
+          technicalSpecs: {
+            channels: "8 x 24V DC",
+            inputFilter: "3.0 ms",
+            connection: "Push-in terminals"
+          },
+          unitPrice: 45.00,
+          currency: "USD",
+          isRecommended: true
+        },
+        {
+          vendorId: vendorMap.get("BECKHOFF"),
+          productCode: "EL2008", 
+          productDisplayName: "8-Channel Digital Output 24V",
+          productDescription: "High-performance 8-channel digital output terminal for switching 24V DC loads up to 0.5A per channel",
+          category: "digital_io",
+          subcategory: "digital_output",
+          productFamily: "EtherCAT Terminals",
+          ioType: "DO",
+          ioCount: 8,
+          signalType: "24VDC",
+          technicalSpecs: {
+            channels: "8 x 24V DC, 0.5A",
+            shortCircuitProtection: true,
+            connection: "Push-in terminals"
+          },
+          unitPrice: 55.00,
+          currency: "USD",
+          isRecommended: true
+        },
+        // Siemens Products
+        {
+          vendorId: vendorMap.get("SIEMENS"),
+          productCode: "6ES7516-3AN02-0AB0",
+          productDisplayName: "SIMATIC S7-1500 CPU 1516-3 PN/DP",
+          productDescription: "High-performance CPU with integrated PROFINET interface for demanding automation tasks",
+          category: "controller",
+          subcategory: "main_controller",
+          productFamily: "SIMATIC S7-1500",
+          ioType: "CONTROLLER",
+          ioCount: 0,
+          technicalSpecs: {
+            workMemory: "1 MB",
+            loadMemory: "8 MB",
+            interfaces: ["PROFINET", "PROFIBUS DP"],
+            execution: "High-speed processing"
+          },
+          unitPrice: 1850.00,
+          currency: "USD",
+          isRecommended: true,
+          isFeatured: true
+        },
+        {
+          vendorId: vendorMap.get("SIEMENS"),
+          productCode: "6ES7134-6HD00-0BA1",
+          productDisplayName: "ET 200SP 8DI x 24V DC Standard",
+          productDescription: "Compact 8-channel digital input module for 24V DC sensors with high channel density",
+          category: "digital_io",
+          subcategory: "digital_input",
+          productFamily: "SIMATIC ET 200SP",
+          ioType: "DI",
+          ioCount: 8,
+          signalType: "24VDC",
+          technicalSpecs: {
+            channels: "8 x 24V DC",
+            inputDelay: "3.2 ms",
+            connection: "Push-in terminals"
+          },
+          unitPrice: 85.00,
+          currency: "USD",
+          isRecommended: true
+        },
+        // Rockwell Products
+        {
+          vendorId: vendorMap.get("ROCKWELL"),
+          productCode: "1756-L85E",
+          productDisplayName: "ControlLogix 5580 Controller",
+          productDescription: "High-performance controller with integrated Ethernet/IP for large-scale automation systems",
+          category: "controller",
+          subcategory: "main_controller",
+          productFamily: "ControlLogix 5580",
+          ioType: "CONTROLLER",
+          ioCount: 0,
+          technicalSpecs: {
+            memory: "5 MB user memory",
+            interfaces: ["Dual Ethernet/IP"],
+            scanTime: "Sub-millisecond"
+          },
+          unitPrice: 4200.00,
+          currency: "USD",
+          isRecommended: true,
+          isFeatured: true
+        },
+        {
+          vendorId: vendorMap.get("ROCKWELL"),
+          productCode: "1734-IB8",
+          productDisplayName: "POINT I/O 8-Point DC Input",
+          productDescription: "Flexible 8-point 24V DC input module with removable terminal blocks",
+          category: "digital_io", 
+          subcategory: "digital_input",
+          productFamily: "POINT I/O",
+          ioType: "DI",
+          ioCount: 8,
+          signalType: "24VDC",
+          technicalSpecs: {
+            channels: "8 x 24V DC",
+            inputFilter: "Programmable",
+            connection: "Removable terminal blocks"
+          },
+          unitPrice: 125.00,
+          currency: "USD",
+          isRecommended: true
+        },
+        // Schneider Electric Products  
+        {
+          vendorId: vendorMap.get("SCHNEIDER"),
+          productCode: "BMXP582040",
+          productDisplayName: "Modicon M580 CPU",
+          productDescription: "High-end CPU with dual Ethernet ports for critical process applications",
+          category: "controller",
+          subcategory: "main_controller", 
+          productFamily: "Modicon M580",
+          ioType: "CONTROLLER",
+          ioCount: 0,
+          technicalSpecs: {
+            memory: "32 MB RAM",
+            interfaces: ["Dual Ethernet", "Modbus TCP"],
+            safety: "SIL 3 certified"
+          },
+          unitPrice: 2800.00,
+          currency: "USD",
+          isRecommended: true
+        }
+      ];
+
+      // Insert sample products
+      const productResults = [];
+      for (const product of sampleProducts) {
+        const productData = insertAutomationProductSchema.parse(product);
+        const created = await storage.createAutomationProduct(productData);
+        productResults.push(created);
+      }
+
+      res.json({ 
+        message: "Automation vendors and products catalog initialized successfully", 
+        vendors: vendorResults.length, 
+        products: productResults.length,
+        vendorNames: vendorResults.map(v => v.vendorDisplayName)
+      });
+    } catch (error) {
+      console.error("Error initializing automation catalog:", error);
+      res.status(500).json({ message: "Failed to initialize automation catalog" });
+    }
+  });
+
   // Automation Projects endpoints
   app.get("/api/automation-projects", async (req, res) => {
     try {
@@ -1574,6 +1851,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching Beckhoff product:", error);
       res.status(500).json({ message: "Failed to fetch Beckhoff product" });
+    }
+  });
+
+  // Automation Vendors endpoints
+  app.get("/api/automation-vendors", async (req, res) => {
+    try {
+      const vendors = await storage.getAllAutomationVendors();
+      res.json(vendors);
+    } catch (error) {
+      console.error("Error fetching automation vendors:", error);
+      res.status(500).json({ message: "Failed to fetch automation vendors" });
+    }
+  });
+
+  app.get("/api/automation-vendors/:id", async (req, res) => {
+    try {
+      const vendor = await storage.getAutomationVendor(req.params.id);
+      if (!vendor) {
+        return res.status(404).json({ message: "Automation vendor not found" });
+      }
+      res.json(vendor);
+    } catch (error) {
+      console.error("Error fetching automation vendor:", error);
+      res.status(500).json({ message: "Failed to fetch automation vendor" });
+    }
+  });
+
+  app.post("/api/automation-vendors", async (req, res) => {
+    try {
+      const vendorData = insertAutomationVendorSchema.parse(req.body);
+      const vendor = await storage.createAutomationVendor(vendorData);
+      res.status(201).json(vendor);
+    } catch (error) {
+      console.error("Error creating automation vendor:", error);
+      res.status(400).json({ message: "Invalid automation vendor data" });
+    }
+  });
+
+  app.put("/api/automation-vendors/:id", async (req, res) => {
+    try {
+      const vendorData = insertAutomationVendorSchema.partial().parse(req.body);
+      const vendor = await storage.updateAutomationVendor(req.params.id, vendorData);
+      if (!vendor) {
+        return res.status(404).json({ message: "Automation vendor not found" });
+      }
+      res.json(vendor);
+    } catch (error) {
+      console.error("Error updating automation vendor:", error);
+      res.status(400).json({ message: "Invalid automation vendor data" });
+    }
+  });
+
+  // Automation Products endpoints
+  app.get("/api/automation-products", async (req, res) => {
+    try {
+      const { vendorId, category, subcategory, ioType, productFamily } = req.query;
+      const products = await storage.getAutomationProducts({
+        vendorId: vendorId as string,
+        category: category as string,
+        subcategory: subcategory as string,
+        ioType: ioType as string,
+        productFamily: productFamily as string
+      });
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching automation products:", error);
+      res.status(500).json({ message: "Failed to fetch automation products" });
+    }
+  });
+
+  app.get("/api/automation-products/:id", async (req, res) => {
+    try {
+      const product = await storage.getAutomationProduct(req.params.id);
+      if (!product) {
+        return res.status(404).json({ message: "Automation product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching automation product:", error);
+      res.status(500).json({ message: "Failed to fetch automation product" });
+    }
+  });
+
+  app.post("/api/automation-products", async (req, res) => {
+    try {
+      const productData = insertAutomationProductSchema.parse(req.body);
+      const product = await storage.createAutomationProduct(productData);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating automation product:", error);
+      res.status(400).json({ message: "Invalid automation product data" });
+    }
+  });
+
+  app.put("/api/automation-products/:id", async (req, res) => {
+    try {
+      const productData = insertAutomationProductSchema.partial().parse(req.body);
+      const product = await storage.updateAutomationProduct(req.params.id, productData);
+      if (!product) {
+        return res.status(404).json({ message: "Automation product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating automation product:", error);
+      res.status(400).json({ message: "Invalid automation product data" });
     }
   });
 

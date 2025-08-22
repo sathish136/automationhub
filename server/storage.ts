@@ -19,6 +19,8 @@ import {
   panelInstruments,
   beckhoffModuleCalculations,
   automationProjects,
+  automationVendors,
+  automationProducts,
   beckhoffProducts,
   automationPanels,
   communicationModules,
@@ -63,6 +65,10 @@ import {
   type InsertBeckhoffModuleCalculation,
   type AutomationProject,
   type InsertAutomationProject,
+  type AutomationVendor,
+  type InsertAutomationVendor,
+  type AutomationProduct,
+  type InsertAutomationProduct,
   type BeckhoffProduct,
   type InsertBeckhoffProduct,
   type AutomationPanel,
@@ -199,7 +205,22 @@ export interface IStorage {
   updateAutomationProject(id: string, project: Partial<InsertAutomationProject>): Promise<AutomationProject | undefined>;
   deleteAutomationProject(id: string): Promise<boolean>;
 
-  // Beckhoff Products
+  // Automation Vendors
+  getAllAutomationVendors(): Promise<AutomationVendor[]>;
+  getAutomationVendor(id: string): Promise<AutomationVendor | undefined>;
+  createAutomationVendor(vendor: InsertAutomationVendor): Promise<AutomationVendor>;
+  updateAutomationVendor(id: string, vendor: Partial<InsertAutomationVendor>): Promise<AutomationVendor | undefined>;
+  deleteAutomationVendor(id: string): Promise<boolean>;
+
+  // Automation Products
+  getAllAutomationProducts(): Promise<AutomationProduct[]>;
+  getAutomationProducts(filters: { vendorId?: string; category?: string; subcategory?: string; ioType?: string; productFamily?: string }): Promise<AutomationProduct[]>;
+  getAutomationProduct(id: string): Promise<AutomationProduct | undefined>;
+  createAutomationProduct(product: InsertAutomationProduct): Promise<AutomationProduct>;
+  updateAutomationProduct(id: string, product: Partial<InsertAutomationProduct>): Promise<AutomationProduct | undefined>;
+  deleteAutomationProduct(id: string): Promise<boolean>;
+
+  // Beckhoff Products (Legacy - keeping for backward compatibility)
   getAllBeckhoffProducts(): Promise<BeckhoffProduct[]>;
   getBeckhoffProducts(filters: { category?: string; subcategory?: string; ioType?: string }): Promise<BeckhoffProduct[]>;
   getBeckhoffProduct(id: string): Promise<BeckhoffProduct | undefined>;
@@ -1169,6 +1190,120 @@ export class DatabaseStorage implements IStorage {
       .update(beckhoffProducts)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(beckhoffProducts.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Automation Vendors
+  async getAllAutomationVendors(): Promise<AutomationVendor[]> {
+    return await db
+      .select()
+      .from(automationVendors)
+      .where(eq(automationVendors.isActive, true))
+      .orderBy(automationVendors.vendorDisplayName);
+  }
+
+  async getAutomationVendor(id: string): Promise<AutomationVendor | undefined> {
+    const [vendor] = await db
+      .select()
+      .from(automationVendors)
+      .where(eq(automationVendors.id, id));
+    return vendor;
+  }
+
+  async createAutomationVendor(vendor: InsertAutomationVendor): Promise<AutomationVendor> {
+    const [newVendor] = await db
+      .insert(automationVendors)
+      .values(vendor)
+      .returning();
+    return newVendor;
+  }
+
+  async updateAutomationVendor(id: string, vendor: Partial<InsertAutomationVendor>): Promise<AutomationVendor | undefined> {
+    const [updated] = await db
+      .update(automationVendors)
+      .set({ ...vendor, updatedAt: new Date() })
+      .where(eq(automationVendors.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAutomationVendor(id: string): Promise<boolean> {
+    const result = await db
+      .update(automationVendors)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(automationVendors.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Automation Products
+  async getAllAutomationProducts(): Promise<AutomationProduct[]> {
+    return await db
+      .select()
+      .from(automationProducts)
+      .where(eq(automationProducts.isActive, true))
+      .orderBy(automationProducts.category, automationProducts.productDisplayName);
+  }
+
+  async getAutomationProducts(filters: { vendorId?: string; category?: string; subcategory?: string; ioType?: string; productFamily?: string }): Promise<AutomationProduct[]> {
+    const query = db
+      .select()
+      .from(automationProducts)
+      .where(eq(automationProducts.isActive, true));
+
+    const conditions = [];
+    if (filters.vendorId) {
+      conditions.push(eq(automationProducts.vendorId, filters.vendorId));
+    }
+    if (filters.category) {
+      conditions.push(eq(automationProducts.category, filters.category));
+    }
+    if (filters.subcategory) {
+      conditions.push(eq(automationProducts.subcategory, filters.subcategory));
+    }
+    if (filters.ioType) {
+      conditions.push(eq(automationProducts.ioType, filters.ioType));
+    }
+    if (filters.productFamily) {
+      conditions.push(eq(automationProducts.productFamily, filters.productFamily));
+    }
+
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions)).orderBy(automationProducts.productDisplayName);
+    }
+
+    return await query.orderBy(automationProducts.category, automationProducts.productDisplayName);
+  }
+
+  async getAutomationProduct(id: string): Promise<AutomationProduct | undefined> {
+    const [product] = await db
+      .select()
+      .from(automationProducts)
+      .where(eq(automationProducts.id, id));
+    return product;
+  }
+
+  async createAutomationProduct(product: InsertAutomationProduct): Promise<AutomationProduct> {
+    const [newProduct] = await db
+      .insert(automationProducts)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+
+  async updateAutomationProduct(id: string, product: Partial<InsertAutomationProduct>): Promise<AutomationProduct | undefined> {
+    const [updated] = await db
+      .update(automationProducts)
+      .set({ ...product, updatedAt: new Date() })
+      .where(eq(automationProducts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAutomationProduct(id: string): Promise<boolean> {
+    const result = await db
+      .update(automationProducts)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(automationProducts.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 

@@ -52,6 +52,8 @@ import { apiRequest } from "@/lib/queryClient";
 import type { 
   AutomationProject, 
   InsertAutomationProject, 
+  AutomationVendor,
+  AutomationProduct,
   BeckhoffProduct,
   Site 
 } from "@shared/schema";
@@ -138,7 +140,7 @@ const WIZARD_STEPS = [
 export default function AutomationWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [currentProject, setCurrentProject] = useState<AutomationProject | null>(null);
-  const [selectedController, setSelectedController] = useState<BeckhoffProduct | null>(null);
+  const [selectedController, setSelectedController] = useState<AutomationProduct | null>(null);
   const [panels, setPanels] = useState<any[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [communicationSetup, setCommunicationSetup] = useState<any[]>([]);
@@ -187,22 +189,36 @@ export default function AutomationWizardPage() {
     queryKey: ["/api/automation-projects"],
   });
 
-  // Fetch Beckhoff products
-  const { data: beckhoffProducts = [], isLoading: productsLoading } = useQuery<BeckhoffProduct[]>({
+  // Fetch automation vendors
+  const { data: automationVendors = [], isLoading: vendorsLoading } = useQuery<AutomationVendor[]>({
+    queryKey: ["/api/automation-vendors"],
+    enabled: isCatalogInitialized,
+  });
+
+  // Fetch automation products
+  const { data: automationProducts = [], isLoading: productsLoading } = useQuery<AutomationProduct[]>({
+    queryKey: ["/api/automation-products"],
+    enabled: isCatalogInitialized,
+  });
+
+  // Keep Beckhoff products for backward compatibility
+  const { data: beckhoffProducts = [], isLoading: beckhoffLoading } = useQuery<BeckhoffProduct[]>({
     queryKey: ["/api/beckhoff-products"],
     enabled: isCatalogInitialized,
   });
 
-  // Initialize Beckhoff catalog
+  // Initialize automation catalog with multiple vendors
   const initCatalogMutation = useMutation({
-    mutationFn: () => apiRequest("/api/automation/init-beckhoff-catalog", { method: "POST" }),
+    mutationFn: () => apiRequest("/api/automation/init-vendors-catalog", { method: "POST" }),
     onSuccess: () => {
       setIsCatalogInitialized(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/automation-vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/automation-products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/beckhoff-products"] });
-      toast({ title: "Beckhoff catalog initialized successfully" });
+      toast({ title: "Automation vendor catalog initialized successfully" });
     },
     onError: () => {
-      toast({ title: "Failed to initialize catalog", variant: "destructive" });
+      toast({ title: "Failed to initialize automation catalog", variant: "destructive" });
     },
   });
 
@@ -542,7 +558,7 @@ export default function AutomationWizardPage() {
                   Main Controller Selection
                 </CardTitle>
                 <CardDescription>
-                  Choose the primary Beckhoff controller for your automation project
+                  Choose the primary automation controller from various vendors for your project
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -553,64 +569,116 @@ export default function AutomationWizardPage() {
                       disabled={initCatalogMutation.isPending}
                       data-testid="button-init-catalog"
                     >
-                      {initCatalogMutation.isPending ? "Initializing..." : "Initialize Catalog"}
+                      {initCatalogMutation.isPending ? "Initializing Vendor Catalog..." : "Initialize Automation Vendors"}
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {Array.isArray(beckhoffProducts) && beckhoffProducts
-                      .filter(product => product.category === "controller")
-                      .map((controller) => (
-                        <Card 
-                          key={controller.id}
-                          className={`cursor-pointer transition-colors ${
-                            selectedController?.id === controller.id 
-                              ? "ring-2 ring-primary bg-accent/50" 
-                              : "hover:bg-accent/50"
-                          }`}
-                          onClick={() => setSelectedController(controller)}
-                          data-testid={`card-controller-${controller.partNumber}`}
-                        >
-                          <CardContent className="p-4">
-                            <div className="space-y-3">
+                  <div className="space-y-6">
+                    {/* Group products by vendor */}
+                    {Array.isArray(automationVendors) && automationVendors
+                      .filter(vendor => {
+                        // Only show vendors that have controller products
+                        return automationProducts.some(product => 
+                          product.vendorId === vendor.id && product.category === "controller"
+                        );
+                      })
+                      .map((vendor) => {
+                        const vendorControllers = automationProducts.filter(
+                          product => product.vendorId === vendor.id && product.category === "controller"
+                        );
+                        
+                        return (
+                          <div key={vendor.id} className="space-y-3">
+                            <div className="flex items-center gap-3 border-b pb-2">
+                              <div className="w-12 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                {vendor.vendorCode.substring(0, 3)}
+                              </div>
                               <div>
-                                <h3 className="font-semibold">{controller.productName}</h3>
-                                <Badge variant="secondary">{controller.partNumber}</Badge>
+                                <h3 className="font-semibold text-base">{vendor.vendorDisplayName}</h3>
+                                <p className="text-xs text-muted-foreground">{vendor.country}</p>
                               </div>
-                              
-                              <p className="text-sm text-muted-foreground">
-                                {controller.productDescription}
-                              </p>
-                              
-                              <div className="space-y-1 text-sm">
-                                <div className="flex justify-between">
-                                  <span>Protocol:</span>
-                                  <span className="font-medium">{controller.communicationProtocol}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Power:</span>
-                                  <span className="font-medium">{controller.powerConsumption}W</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Supply:</span>
-                                  <span className="font-medium">{controller.supplyVoltage}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Price:</span>
-                                  <span className="font-semibold text-green-600">${controller.unitPrice}</span>
-                                </div>
-                              </div>
-                              
-                              {selectedController?.id === controller.id && (
-                                <div className="flex items-center gap-2 text-primary">
-                                  <CheckCircle className="h-4 w-4" />
-                                  <span className="text-sm font-medium">Selected</span>
-                                </div>
+                              {vendor.isRecommended && (
+                                <Badge variant="default" className="ml-auto">Recommended</Badge>
                               )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                              {vendorControllers.map((controller) => (
+                                <Card 
+                                  key={controller.id}
+                                  className={`cursor-pointer transition-colors ${
+                                    selectedController?.id === controller.id 
+                                      ? "ring-2 ring-primary bg-accent/50" 
+                                      : "hover:bg-accent/50"
+                                  }`}
+                                  onClick={() => setSelectedController(controller)}
+                                  data-testid={`card-controller-${controller.productCode}`}
+                                >
+                                  <CardContent className="p-4">
+                                    <div className="space-y-3">
+                                      <div>
+                                        <h3 className="font-semibold">{controller.productDisplayName}</h3>
+                                        <Badge variant="secondary">{controller.productCode}</Badge>
+                                      </div>
+                                      
+                                      <p className="text-sm text-muted-foreground">
+                                        {controller.productDescription}
+                                      </p>
+                                      
+                                      {controller.productFamily && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {controller.productFamily}
+                                        </Badge>
+                                      )}
+                                      
+                                      <div className="space-y-1 text-sm">
+                                        {controller.technicalSpecs && (
+                                          <>
+                                            <div className="flex justify-between">
+                                              <span>Specs:</span>
+                                              <span className="font-medium text-right max-w-[120px] truncate">
+                                                {typeof controller.technicalSpecs === 'object' 
+                                                  ? Object.values(controller.technicalSpecs)[0] || 'See details'
+                                                  : controller.technicalSpecs
+                                                }
+                                              </span>
+                                            </div>
+                                          </>
+                                        )}
+                                        <div className="flex justify-between">
+                                          <span>Category:</span>
+                                          <span className="font-medium">{controller.subcategory}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Price:</span>
+                                          <span className="font-semibold text-green-600">
+                                            ${controller.unitPrice} {controller.currency}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      {selectedController?.id === controller.id && (
+                                        <div className="flex items-center gap-2 text-primary">
+                                          <CheckCircle className="h-4 w-4" />
+                                          <span className="text-sm font-medium">Selected</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    
+                    {/* Show message if no vendors/products available */}
+                    {(!automationVendors || automationVendors.length === 0) && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <div className="text-sm">No automation vendors available.</div>
+                        <div className="text-xs mt-1">Please initialize the vendor catalog first.</div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
