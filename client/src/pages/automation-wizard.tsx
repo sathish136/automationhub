@@ -169,9 +169,9 @@ export default function AutomationWizardPage() {
     setCurrentStep(project.wizardStep || 2);
   };
 
-  const getMainControllers = () => beckhoffProducts.filter(p => p.category === "controller" && p.subcategory === "main_controller");
-  const getCouplers = () => beckhoffProducts.filter(p => p.category === "coupler");
-  const getIOModules = (type: string) => beckhoffProducts.filter(p => p.category === "digital_io" || p.category === "analog_io");
+  const getMainControllers = () => Array.isArray(beckhoffProducts) ? beckhoffProducts.filter(p => p.category === "controller" && p.subcategory === "main_controller") : [];
+  const getCouplers = () => Array.isArray(beckhoffProducts) ? beckhoffProducts.filter(p => p.category === "coupler") : [];
+  const getIOModules = (type: string) => Array.isArray(beckhoffProducts) ? beckhoffProducts.filter(p => p.category === "digital_io" || p.category === "analog_io") : [];
 
   const currentStepData = WIZARD_STEPS.find(step => step.id === currentStep);
   const progressPercentage = (currentStep / WIZARD_STEPS.length) * 100;
