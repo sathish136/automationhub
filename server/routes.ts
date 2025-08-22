@@ -965,6 +965,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Panel Configuration Routes
+  app.get("/api/panel-configurations", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const panels = await storage.getPanelConfigurations(siteId);
+      res.json(panels);
+    } catch (error) {
+      console.error("Error fetching panel configurations:", error);
+      res.status(500).json({ message: "Failed to fetch panel configurations" });
+    }
+  });
+
+  app.post("/api/panel-configurations", async (req, res) => {
+    try {
+      const panel = await storage.createPanelConfiguration(req.body);
+      res.status(201).json(panel);
+    } catch (error) {
+      console.error("Error creating panel configuration:", error);
+      res.status(400).json({ message: "Invalid panel configuration data" });
+    }
+  });
+
+  app.patch("/api/panel-configurations/:id", async (req, res) => {
+    try {
+      const panel = await storage.updatePanelConfiguration(req.params.id, req.body);
+      if (!panel) {
+        return res.status(404).json({ message: "Panel configuration not found" });
+      }
+      res.json(panel);
+    } catch (error) {
+      console.error("Error updating panel configuration:", error);
+      res.status(500).json({ message: "Failed to update panel configuration" });
+    }
+  });
+
+  app.delete("/api/panel-configurations/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePanelConfiguration(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Panel configuration not found" });
+      }
+      res.json({ message: "Panel configuration deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting panel configuration:", error);
+      res.status(500).json({ message: "Failed to delete panel configuration" });
+    }
+  });
+
+  // Instrument Template Routes
+  app.get("/api/instrument-templates", async (req, res) => {
+    try {
+      const templates = await storage.getInstrumentTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching instrument templates:", error);
+      res.status(500).json({ message: "Failed to fetch instrument templates" });
+    }
+  });
+
+  app.post("/api/instrument-templates", async (req, res) => {
+    try {
+      const template = await storage.createInstrumentTemplate(req.body);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("Error creating instrument template:", error);
+      res.status(400).json({ message: "Invalid instrument template data" });
+    }
+  });
+
+  app.patch("/api/instrument-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.updateInstrumentTemplate(req.params.id, req.body);
+      if (!template) {
+        return res.status(404).json({ message: "Instrument template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error updating instrument template:", error);
+      res.status(500).json({ message: "Failed to update instrument template" });
+    }
+  });
+
+  app.delete("/api/instrument-templates/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteInstrumentTemplate(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Instrument template not found" });
+      }
+      res.json({ message: "Instrument template deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting instrument template:", error);
+      res.status(500).json({ message: "Failed to delete instrument template" });
+    }
+  });
+
+  // Panel Instrument Routes
+  app.get("/api/panel-instruments/:panelId", async (req, res) => {
+    try {
+      const instruments = await storage.getPanelInstruments(req.params.panelId);
+      res.json(instruments);
+    } catch (error) {
+      console.error("Error fetching panel instruments:", error);
+      res.status(500).json({ message: "Failed to fetch panel instruments" });
+    }
+  });
+
+  app.post("/api/panel-instruments", async (req, res) => {
+    try {
+      const instrument = await storage.createPanelInstrument(req.body);
+      res.status(201).json(instrument);
+    } catch (error) {
+      console.error("Error creating panel instrument:", error);
+      res.status(400).json({ message: "Invalid panel instrument data" });
+    }
+  });
+
+  app.patch("/api/panel-instruments/:id", async (req, res) => {
+    try {
+      const instrument = await storage.updatePanelInstrument(req.params.id, req.body);
+      if (!instrument) {
+        return res.status(404).json({ message: "Panel instrument not found" });
+      }
+      res.json(instrument);
+    } catch (error) {
+      console.error("Error updating panel instrument:", error);
+      res.status(500).json({ message: "Failed to update panel instrument" });
+    }
+  });
+
+  app.delete("/api/panel-instruments/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deletePanelInstrument(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Panel instrument not found" });
+      }
+      res.json({ message: "Panel instrument deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting panel instrument:", error);
+      res.status(500).json({ message: "Failed to delete panel instrument" });
+    }
+  });
+
+  // Beckhoff Module Calculation Routes
+  app.get("/api/beckhoff-calculations", async (req, res) => {
+    try {
+      const panelId = req.query.panelId as string;
+      const calculations = await storage.getBeckhoffModuleCalculations(panelId);
+      res.json(calculations);
+    } catch (error) {
+      console.error("Error fetching Beckhoff calculations:", error);
+      res.status(500).json({ message: "Failed to fetch Beckhoff calculations" });
+    }
+  });
+
+  app.post("/api/beckhoff-calculations", async (req, res) => {
+    try {
+      const calculation = await storage.createBeckhoffModuleCalculation(req.body);
+      res.status(201).json(calculation);
+    } catch (error) {
+      console.error("Error creating Beckhoff calculation:", error);
+      res.status(400).json({ message: "Invalid Beckhoff calculation data" });
+    }
+  });
+
+  app.patch("/api/beckhoff-calculations/:id", async (req, res) => {
+    try {
+      const calculation = await storage.updateBeckhoffModuleCalculation(req.params.id, req.body);
+      if (!calculation) {
+        return res.status(404).json({ message: "Beckhoff calculation not found" });
+      }
+      res.json(calculation);
+    } catch (error) {
+      console.error("Error updating Beckhoff calculation:", error);
+      res.status(500).json({ message: "Failed to update Beckhoff calculation" });
+    }
+  });
+
+  app.delete("/api/beckhoff-calculations/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteBeckhoffModuleCalculation(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Beckhoff calculation not found" });
+      }
+      res.json({ message: "Beckhoff calculation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting Beckhoff calculation:", error);
+      res.status(500).json({ message: "Failed to delete Beckhoff calculation" });
+    }
+  });
+
   // Site Events Configuration
   app.get("/api/site-events/configurations", async (req, res) => {
     try {

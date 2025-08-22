@@ -35,6 +35,7 @@ const navigation = [
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
   { name: "PLC Calculations", href: "/plc-calculations", icon: Calculator },
+  { name: "Panel Configurator", href: "/panel-configurator", icon: Sliders },
   { name: "Reports", href: "/reports", icon: BarChart3 },
 ];
 

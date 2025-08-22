@@ -790,3 +790,194 @@ export const insertSiteEventConfigSchema = z.object({
 });
 
 export type SiteEventConfig = z.infer<typeof insertSiteEventConfigSchema>;
+
+// Panel Configuration System for Beckhoff Equipment
+export const panelConfigurations = pgTable("panel_configurations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Panel Information
+  panelName: varchar("panel_name", { length: 100 }).notNull(),
+  panelDescription: text("panel_description"),
+  panelLocation: varchar("panel_location", { length: 255 }),
+  panelType: varchar("panel_type", { length: 50 }).default("control"), // control, distribution, motor_starter
+  
+  // Physical Configuration
+  cabinetSize: varchar("cabinet_size", { length: 50 }), // 400x600, 600x800, etc.
+  mountingType: varchar("mounting_type", { length: 30 }).default("wall"), // wall, floor, pole
+  enclosureRating: varchar("enclosure_rating", { length: 20 }).default("IP54"), // IP54, IP65, etc.
+  
+  // Beckhoff Configuration
+  couplerType: varchar("coupler_type", { length: 50 }).notNull(), // EK1100, EK1122, EK1501, etc.
+  powerSupply: varchar("power_supply", { length: 50 }).default("EL9011"), // EL9011, EL9012, etc.
+  distanceFromPlc: integer("distance_from_plc"), // meters
+  
+  // Status and Planning
+  isActive: boolean("is_active").default(true),
+  installationStatus: varchar("installation_status", { length: 30 }).default("planned"), // planned, in_progress, completed
+  
+  // Cost and Planning
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_panels_site").on(table.siteId),
+  index("idx_panels_coupler").on(table.couplerType),
+  index("idx_panels_distance").on(table.distanceFromPlc),
+]);
+
+// Instrument Configuration Templates
+export const instrumentTemplates = pgTable("instrument_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Template Information
+  templateName: varchar("template_name", { length: 100 }).notNull(),
+  instrumentType: varchar("instrument_type", { length: 50 }).notNull(), // motor, valve, sensor, pump, etc.
+  category: varchar("category", { length: 30 }).notNull(), // drive, protection, control
+  
+  // I/O Requirements
+  digitalInputs: integer("digital_inputs").default(0), // Number of DI required
+  digitalOutputs: integer("digital_outputs").default(0), // Number of DO required
+  analogInputs: integer("analog_inputs").default(0), // Number of AI required
+  analogOutputs: integer("analog_outputs").default(0), // Number of AO required
+  
+  // Specific Signal Types
+  signalTypes: jsonb("signal_types"), // {"DI": ["run_feedback", "trip", "ready"], "DO": ["start", "stop"]}
+  voltageLevel: varchar("voltage_level", { length: 20 }).default("24VDC"), // 24VDC, 230VAC, etc.
+  
+  // Beckhoff Module Recommendations
+  recommendedModules: jsonb("recommended_modules"), // Suggested Beckhoff modules
+  moduleCount: jsonb("module_count"), // How many of each module type
+  
+  // Tag Naming Convention
+  tagPrefix: varchar("tag_prefix", { length: 20 }), // MOT_, VLV_, PMP_, etc.
+  tagStructure: text("tag_structure"), // Template for tag generation
+  
+  // Documentation
+  description: text("description"),
+  notes: text("notes"),
+  isStandard: boolean("is_standard").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_templates_type").on(table.instrumentType),
+  index("idx_templates_category").on(table.category),
+]);
+
+// Panel Instruments - Links panels to their instruments
+export const panelInstruments = pgTable("panel_instruments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  panelId: varchar("panel_id").notNull().references(() => panelConfigurations.id, { onDelete: "cascade" }),
+  templateId: varchar("template_id").references(() => instrumentTemplates.id),
+  
+  // Instrument Details
+  instrumentName: varchar("instrument_name", { length: 100 }).notNull(),
+  instrumentTag: varchar("instrument_tag", { length: 50 }).notNull().unique(),
+  description: text("description"),
+  location: varchar("location", { length: 255 }),
+  
+  // Configuration Override
+  customIoRequirements: jsonb("custom_io_requirements"), // Override template if needed
+  specificModules: jsonb("specific_modules"), // Specific module selections
+  
+  // Operational Details
+  isEmergencyStop: boolean("is_emergency_stop").default(false),
+  isSafetyRelated: boolean("is_safety_related").default(false),
+  operatingVoltage: varchar("operating_voltage", { length: 20 }).default("24VDC"),
+  
+  // Status
+  installationStatus: varchar("installation_status", { length: 30 }).default("planned"),
+  commissioningStatus: varchar("commissioning_status", { length: 30 }).default("pending"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_panel_instruments_panel").on(table.panelId),
+  index("idx_panel_instruments_template").on(table.templateId),
+  index("idx_panel_instruments_tag").on(table.instrumentTag),
+]);
+
+// Beckhoff Module Calculations
+export const beckhoffModuleCalculations = pgTable("beckhoff_module_calculations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  panelId: varchar("panel_id").notNull().references(() => panelConfigurations.id, { onDelete: "cascade" }),
+  
+  // Calculation Summary
+  calculationName: varchar("calculation_name", { length: 100 }).notNull(),
+  totalDigitalInputs: integer("total_digital_inputs").default(0),
+  totalDigitalOutputs: integer("total_digital_outputs").default(0),
+  totalAnalogInputs: integer("total_analog_inputs").default(0),
+  totalAnalogOutputs: integer("total_analog_outputs").default(0),
+  
+  // Module Requirements
+  requiredModules: jsonb("required_modules"), // Calculated module list with quantities
+  couplerSelection: varchar("coupler_selection", { length: 50 }), // Selected based on distance/requirements
+  powerModules: jsonb("power_modules"), // Power supply modules needed
+  
+  // Cost Calculation
+  totalModuleCost: decimal("total_module_cost", { precision: 10, scale: 2 }),
+  installationCost: decimal("installation_cost", { precision: 10, scale: 2 }),
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }),
+  
+  // Technical Details
+  maxDistance: integer("max_distance"), // Maximum cable distance supported
+  powerConsumption: decimal("power_consumption", { precision: 8, scale: 2 }), // Watts
+  networkLoad: decimal("network_load", { precision: 5, scale: 2 }), // Percentage
+  
+  // Generated Documentation
+  moduleList: text("module_list"), // Formatted module list
+  wiringDiagram: text("wiring_diagram"), // ASCII or text-based wiring info
+  tagList: text("tag_list"), // Generated tag names
+  
+  // Status
+  isApproved: boolean("is_approved").default(false),
+  approvedBy: varchar("approved_by", { length: 255 }),
+  approvedAt: timestamp("approved_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_module_calc_panel").on(table.panelId),
+  index("idx_module_calc_approved").on(table.isApproved),
+]);
+
+// Insert schemas for new tables
+export const insertPanelConfigurationSchema = createInsertSchema(panelConfigurations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertInstrumentTemplateSchema = createInsertSchema(instrumentTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPanelInstrumentSchema = createInsertSchema(panelInstruments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBeckhoffModuleCalculationSchema = createInsertSchema(beckhoffModuleCalculations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Export types for new tables
+export type PanelConfiguration = typeof panelConfigurations.$inferSelect;
+export type InsertPanelConfiguration = z.infer<typeof insertPanelConfigurationSchema>;
+
+export type InstrumentTemplate = typeof instrumentTemplates.$inferSelect;
+export type InsertInstrumentTemplate = z.infer<typeof insertInstrumentTemplateSchema>;
+
+export type PanelInstrument = typeof panelInstruments.$inferSelect;
+export type InsertPanelInstrument = z.infer<typeof insertPanelInstrumentSchema>;
+
+export type BeckhoffModuleCalculation = typeof beckhoffModuleCalculations.$inferSelect;
+export type InsertBeckhoffModuleCalculation = z.infer<typeof insertBeckhoffModuleCalculationSchema>;

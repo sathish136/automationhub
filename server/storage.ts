@@ -13,6 +13,11 @@ import {
   mbrRealtimeData,
   roRealtimeData,
   instrumentation,
+  plcIoCalculations,
+  panelConfigurations,
+  instrumentTemplates,
+  panelInstruments,
+  beckhoffModuleCalculations,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -41,9 +46,16 @@ import {
   type InsertRoRealtimeData,
   type Instrumentation,
   type InsertInstrumentation,
-  plcIoCalculations,
   type PlcIoCalculation,
   type InsertPlcIoCalculation,
+  type PanelConfiguration,
+  type InsertPanelConfiguration,
+  type InstrumentTemplate,
+  type InsertInstrumentTemplate,
+  type PanelInstrument,
+  type InsertPanelInstrument,
+  type BeckhoffModuleCalculation,
+  type InsertBeckhoffModuleCalculation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count, isNotNull } from "drizzle-orm";
@@ -857,6 +869,145 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(plcIoCalculations)
       .where(eq(plcIoCalculations.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Panel Configuration Management
+  async getPanelConfigurations(siteId?: string): Promise<PanelConfiguration[]> {
+    const query = db.select().from(panelConfigurations);
+    
+    if (siteId && siteId !== "all") {
+      return await query
+        .where(eq(panelConfigurations.siteId, siteId))
+        .orderBy(desc(panelConfigurations.createdAt));
+    }
+    
+    return await query.orderBy(desc(panelConfigurations.createdAt));
+  }
+
+  async createPanelConfiguration(panel: InsertPanelConfiguration): Promise<PanelConfiguration> {
+    const [newPanel] = await db
+      .insert(panelConfigurations)
+      .values(panel)
+      .returning();
+    return newPanel;
+  }
+
+  async updatePanelConfiguration(id: string, panel: Partial<InsertPanelConfiguration>): Promise<PanelConfiguration | undefined> {
+    const [updated] = await db
+      .update(panelConfigurations)
+      .set({ ...panel, updatedAt: new Date() })
+      .where(eq(panelConfigurations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePanelConfiguration(id: string): Promise<boolean> {
+    const result = await db
+      .delete(panelConfigurations)
+      .where(eq(panelConfigurations.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Instrument Template Management
+  async getInstrumentTemplates(): Promise<InstrumentTemplate[]> {
+    return await db
+      .select()
+      .from(instrumentTemplates)
+      .orderBy(instrumentTemplates.instrumentType, instrumentTemplates.templateName);
+  }
+
+  async createInstrumentTemplate(template: InsertInstrumentTemplate): Promise<InstrumentTemplate> {
+    const [newTemplate] = await db
+      .insert(instrumentTemplates)
+      .values(template)
+      .returning();
+    return newTemplate;
+  }
+
+  async updateInstrumentTemplate(id: string, template: Partial<InsertInstrumentTemplate>): Promise<InstrumentTemplate | undefined> {
+    const [updated] = await db
+      .update(instrumentTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(instrumentTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteInstrumentTemplate(id: string): Promise<boolean> {
+    const result = await db
+      .delete(instrumentTemplates)
+      .where(eq(instrumentTemplates.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Panel Instrument Management
+  async getPanelInstruments(panelId: string): Promise<PanelInstrument[]> {
+    return await db
+      .select()
+      .from(panelInstruments)
+      .where(eq(panelInstruments.panelId, panelId))
+      .orderBy(panelInstruments.instrumentName);
+  }
+
+  async createPanelInstrument(instrument: InsertPanelInstrument): Promise<PanelInstrument> {
+    const [newInstrument] = await db
+      .insert(panelInstruments)
+      .values(instrument)
+      .returning();
+    return newInstrument;
+  }
+
+  async updatePanelInstrument(id: string, instrument: Partial<InsertPanelInstrument>): Promise<PanelInstrument | undefined> {
+    const [updated] = await db
+      .update(panelInstruments)
+      .set({ ...instrument, updatedAt: new Date() })
+      .where(eq(panelInstruments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePanelInstrument(id: string): Promise<boolean> {
+    const result = await db
+      .delete(panelInstruments)
+      .where(eq(panelInstruments.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Beckhoff Module Calculation Management
+  async getBeckhoffModuleCalculations(panelId?: string): Promise<BeckhoffModuleCalculation[]> {
+    const query = db.select().from(beckhoffModuleCalculations);
+    
+    if (panelId) {
+      return await query
+        .where(eq(beckhoffModuleCalculations.panelId, panelId))
+        .orderBy(desc(beckhoffModuleCalculations.createdAt));
+    }
+    
+    return await query.orderBy(desc(beckhoffModuleCalculations.createdAt));
+  }
+
+  async createBeckhoffModuleCalculation(calculation: InsertBeckhoffModuleCalculation): Promise<BeckhoffModuleCalculation> {
+    const [newCalculation] = await db
+      .insert(beckhoffModuleCalculations)
+      .values(calculation)
+      .returning();
+    return newCalculation;
+  }
+
+  async updateBeckhoffModuleCalculation(id: string, calculation: Partial<InsertBeckhoffModuleCalculation>): Promise<BeckhoffModuleCalculation | undefined> {
+    const [updated] = await db
+      .update(beckhoffModuleCalculations)
+      .set({ ...calculation, updatedAt: new Date() })
+      .where(eq(beckhoffModuleCalculations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBeckhoffModuleCalculation(id: string): Promise<boolean> {
+    const result = await db
+      .delete(beckhoffModuleCalculations)
+      .where(eq(beckhoffModuleCalculations.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }
