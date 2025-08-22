@@ -224,7 +224,7 @@ const PanelConfiguratorPage = () => {
       cabinetSize: "",
       mountingType: "wall",
       enclosureRating: "IP54",
-      couplerType: "",
+      couplerType: "EK1100",
       powerSupply: "EL9011",
       distanceFromPlc: undefined,
       estimatedCost: undefined,
@@ -261,6 +261,14 @@ const PanelConfiguratorPage = () => {
       setIsCreatePanelOpen(false);
       panelForm.reset();
       toast({ title: "Panel Created", description: "Panel configuration created successfully." });
+    },
+    onError: (error: any) => {
+      console.error("Error creating panel:", error);
+      toast({ 
+        title: "Error Creating Panel", 
+        description: error.message || "Failed to create panel configuration",
+        variant: "destructive"
+      });
     },
   });
 
@@ -364,10 +372,13 @@ const PanelConfiguratorPage = () => {
             </DialogHeader>
             <Form {...panelForm}>
               <form onSubmit={panelForm.handleSubmit((data) => {
-                // Auto-select coupler based on distance
+                // Auto-select coupler based on distance, or use default
                 if (data.distanceFromPlc) {
                   data.couplerType = getCouplerRecommendation(data.distanceFromPlc);
+                } else if (!data.couplerType) {
+                  data.couplerType = "EK1100"; // Default coupler
                 }
+                console.log("Form data:", data); // Debug log
                 createPanelMutation.mutate(data);
               })} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
