@@ -534,7 +534,7 @@ export default function SiteEventsEnhanced() {
               </TabsContent>
 
               {/* Custom Site Events Tab */}
-              <TabsContent value="custom-events" className="space-y-2 mt-2">
+              <TabsContent value="custom-events" className="space-y-3 mt-3">
                 {/* Compact Controls */}
                 <div className="bg-gray-50 border rounded p-2">
                   <div className="flex items-center justify-between gap-2 text-xs">
@@ -591,7 +591,7 @@ export default function SiteEventsEnhanced() {
                       </Button>
                     </div>
                     
-                    <div className="flex items-center gap-3 ml-auto">
+                    <div className="flex items-center gap-2 ml-auto">
                       <span className="text-xs">
                         <span className="font-bold text-red-600">
                           {customEvents?.filter(event => {
@@ -613,10 +613,10 @@ export default function SiteEventsEnhanced() {
                             }
                             return matchesSearch && matchesDateRange;
                           }).length || 0}
-                        </span> Alerts
+                        </span> Critical
                       </span>
                       <span className="text-xs">
-                        <span className="font-bold text-green-600">{acknowledgedEvents.size}</span> ACK
+                        <span className="font-bold text-green-600">{acknowledgedEvents.size}</span> Acknowledged
                       </span>
                     </div>
                   </div>
@@ -624,22 +624,19 @@ export default function SiteEventsEnhanced() {
 
 
 
-                {/* Equipment Alerts List - 75% Space for Data */}
-                <div className="bg-white rounded border flex-1">
-                  <div className="border-b p-1">
-                    <h3 className="text-xs font-semibold text-gray-900">Equipment Alerts</h3>
-                    <p className="text-xs text-gray-500">Real-time equipment status from monitoring sites</p>
-                  </div>
-                  
-                  <div className="p-1">
+                {/* Equipment Alerts List */}
+                <Card>
+                  <CardContent className="p-2">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Equipment Alerts</h3>
+                    <p className="text-xs text-gray-500 mb-2">Real-time equipment status from monitoring sites</p>
                     {customEventsLoading ? (
-                      <div className="space-y-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <div key={i} className="h-6 bg-gray-100 rounded animate-pulse" />
+                      <div className="space-y-1">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" />
                         ))}
                       </div>
                     ) : customEvents && customEvents.length > 0 ? (
-                      <div className="space-y-0.5 max-h-[calc(100vh-180px)] overflow-y-auto">
+                      <div className="space-y-1 max-h-[calc(100vh-180px)] overflow-y-auto">
                         {customEvents
                           .filter(event => {
                             // Search filter
@@ -692,7 +689,7 @@ export default function SiteEventsEnhanced() {
                                     {isAcknowledged ? 'ACK' : 'Alert'}
                                   </Badge>
                                   <span className="font-medium text-gray-900 flex-1 truncate">{event.description || event.message}</span>
-                                  <span className="text-blue-600 bg-blue-100 px-1 py-0 rounded font-medium">{event.siteName || event.deviceName || 'Site'}</span>
+                                  <span className="text-blue-600 bg-blue-100 px-1 py-0 rounded font-medium text-xs">{event.siteName || event.deviceName || 'Site'}</span>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   <div className="text-gray-500 flex items-center gap-0.5">
@@ -700,10 +697,10 @@ export default function SiteEventsEnhanced() {
                                     {new Date(event.date_time).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                   </div>
                                   {!isAcknowledged && (
-                                    <button className="px-1 py-0.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors" onClick={() => { const newAcknowledged = new Set(acknowledgedEvents); newAcknowledged.add(eventKey); setAcknowledgedEvents(newAcknowledged); toast({ title: "Alert Acknowledged", description: `${event.description || event.message} by Admin@${event.siteName || event.deviceName || 'Site'}` }); }}>ACK</button>
+                                    <button className="px-1 py-0 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-xs" onClick={() => { const newAcknowledged = new Set(acknowledgedEvents); newAcknowledged.add(eventKey); setAcknowledgedEvents(newAcknowledged); toast({ title: "Alert Acknowledged", description: `${event.description || event.message} by Admin@${event.siteName || event.deviceName || 'Site'}` }); }}>ACK</button>
                                   )}
                                   {isAcknowledged && (
-                                    <span className="text-green-600 font-medium">✓ Admin@{event.siteName || event.deviceName || 'Site'}</span>
+                                    <span className="text-green-600 font-medium text-xs">✓ Admin@{event.siteName || event.deviceName || 'Site'}</span>
                                   )}
                                 </div>
                               </div>
@@ -711,14 +708,14 @@ export default function SiteEventsEnhanced() {
                           })}
                       </div>
                     ) : (
-                      <div className="text-center py-4">
-                        <Database className="h-6 w-6 mx-auto text-gray-300 mb-1" />
+                      <div className="text-center py-3">
+                        <Database className="h-4 w-4 mx-auto text-gray-300 mb-1" />
                         <h3 className="text-xs font-medium text-gray-900">No Equipment Alerts</h3>
                         <p className="text-xs text-gray-600">All systems running normally</p>
                       </div>
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
