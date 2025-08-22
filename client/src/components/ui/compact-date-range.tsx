@@ -47,25 +47,7 @@ export function CompactDateRange({
     return "Select date range";
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
-    
-    const dateStr = date.toISOString().split('T')[0];
-    
-    if (!tempFromDate || (tempFromDate && tempToDate)) {
-      // First selection or reset range
-      setTempFromDate(dateStr);
-      setTempToDate("");
-    } else if (tempFromDate && !tempToDate) {
-      // Second selection
-      if (date >= new Date(tempFromDate)) {
-        setTempToDate(dateStr);
-      } else {
-        setTempFromDate(dateStr);
-        setTempToDate("");
-      }
-    }
-  };
+  // This function is no longer needed as we're using range mode directly
 
   const applyDateRange = () => {
     onFromDateChange(tempFromDate);
@@ -180,10 +162,31 @@ export function CompactDateRange({
             
             {/* Right side - Calendar */}
             <div className="p-3">
+              <div className="text-xs text-gray-600 mb-2 text-center">
+                {!tempFromDate ? "Select start date" : 
+                 !tempToDate ? "Select end date" : 
+                 "Date range selected"}
+              </div>
+              
               <CalendarComponent
-                mode="single"
-                selected={tempFromDate ? new Date(tempFromDate) : undefined}
-                onSelect={handleDateSelect}
+                mode="range"
+                selected={{
+                  from: tempFromDate ? new Date(tempFromDate) : undefined,
+                  to: tempToDate ? new Date(tempToDate) : undefined,
+                }}
+                onSelect={(range) => {
+                  if (range?.from) {
+                    setTempFromDate(range.from.toISOString().split('T')[0]);
+                  } else {
+                    setTempFromDate("");
+                  }
+                  
+                  if (range?.to) {
+                    setTempToDate(range.to.toISOString().split('T')[0]);
+                  } else {
+                    setTempToDate("");
+                  }
+                }}
                 className="rounded-md border-0"
                 disabled={(date) => date > new Date()}
               />
