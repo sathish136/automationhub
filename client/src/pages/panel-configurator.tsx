@@ -172,6 +172,14 @@ const PanelConfiguratorPage = () => {
   // Fetch panel configurations
   const { data: panels = [], isLoading: isPanelsLoading } = useQuery<PanelConfiguration[]>({
     queryKey: ["/api/panel-configurations", selectedSite],
+    queryFn: async () => {
+      const url = selectedSite && selectedSite !== "all" 
+        ? `/api/panel-configurations?siteId=${selectedSite}`
+        : "/api/panel-configurations";
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch panels");
+      return response.json();
+    },
   });
 
   // Fetch instrument templates
@@ -528,13 +536,16 @@ const PanelConfiguratorPage = () => {
         </CardContent>
       </Card>
 
-      {selectedSite && (
-        <>
-          {/* Panels Grid */}
-          <Card>
+      {/* Panels Grid */}
+      <Card>
             <CardHeader>
               <CardTitle>Panel Configurations</CardTitle>
-              <CardDescription>Manage panel configurations for the selected site</CardDescription>
+              <CardDescription>
+                {selectedSite ? 
+                  `Manage panel configurations for the selected site` : 
+                  'Manage all panel configurations (select a site above to filter)'
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {isPanelsLoading ? (
@@ -838,8 +849,6 @@ const PanelConfiguratorPage = () => {
               )}
             </>
           )}
-        </>
-      )}
     </div>
   );
 };
