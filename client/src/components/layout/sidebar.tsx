@@ -82,7 +82,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 p-2 overflow-y-auto">
+      <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-1">
           {navigation.map((item) => {
             const isActive = location === item.href;
@@ -93,16 +93,18 @@ export default function Sidebar() {
                 <Link href={item.href}>
                   <span
                     className={cn(
-                      "flex items-center rounded-md transition-colors cursor-pointer relative group",
-                      isActive ? "bg-primary text-white" : "hover:bg-gray-700",
-                      isCollapsed ? "px-2 py-2 justify-center" : "px-3 py-2 space-x-2"
+                      "flex items-center transition-colors cursor-pointer relative group",
+                      isActive 
+                        ? "bg-blue-500 text-white rounded-full mx-2 px-4 py-3" 
+                        : "hover:bg-gray-700 px-4 py-3 mx-2",
+                      isCollapsed ? "justify-center" : "space-x-3"
                     )}
                     data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
                     title={isCollapsed ? item.name : undefined}
                   >
-                    <Icon size={14} />
+                    <Icon size={16} />
                     {!isCollapsed && (
-                      <span className="text-sm font-medium">{item.name}</span>
+                      <span className="text-base font-medium">{item.name}</span>
                     )}
                     
                     {/* Tooltip for collapsed state */}
@@ -122,44 +124,25 @@ export default function Sidebar() {
       {/* User info and logout section */}
       <div className="p-2 border-t border-gray-700">
         {!isCollapsed ? (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <User size={12} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" data-testid="user-name">
-                    {user?.fullName || user?.firstName || user?.email || 'User'}
-                  </p>
-                  <p className="text-sm text-gray-400 truncate">
-                    {user?.email}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={logout}
-                className="w-5 h-5 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center"
-                data-testid="logout-button"
-                title="Logout"
-              >
-                <LogOut size={8} className="text-white" />
-              </button>
+          <div className="flex items-center space-x-3 mx-3">
+            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              A
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-medium text-white" data-testid="user-name">
+                {user?.fullName || user?.firstName || 'Admin User'}
+              </p>
+              <p className="text-sm text-gray-400">
+                Automation Engineer
+              </p>
             </div>
           </div>
         ) : (
-          <button
-            onClick={logout}
-            className="w-6 h-6 hover:bg-gray-700 rounded transition-colors group relative mx-auto"
-            data-testid="logout-button-collapsed"
-            title="Logout"
-          >
-            <LogOut size={10} className="mx-auto text-red-400" />
-            {/* Tooltip for collapsed state */}
-            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-              Logout
+          <div className="flex justify-center">
+            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              A
             </div>
-          </button>
+          </div>
         )}
       </div>
     </aside>
