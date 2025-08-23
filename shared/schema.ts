@@ -439,6 +439,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
   fullName: varchar("full_name", { length: 255 }), // computed field
+  photoUrl: varchar("photo_url", { length: 500 }), // profile photo URL
   
   // Account status
   isActive: boolean("is_active").default(true),
@@ -915,6 +916,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required").optional(),
   lastName: z.string().min(1, "Last name is required").optional(),
+  photoUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
 });
 
 export const insertRoleSchema = createInsertSchema(roles).omit({

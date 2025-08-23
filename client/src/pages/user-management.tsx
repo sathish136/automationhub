@@ -29,6 +29,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   fullName?: string;
+  photoUrl?: string;
   isActive: boolean;
   createdAt: string;
   roles?: Role[];
@@ -47,6 +48,7 @@ interface UserFormData {
   password: string;
   firstName?: string;
   lastName?: string;
+  photoUrl?: string;
   roleId?: string;
 }
 
@@ -59,6 +61,7 @@ export default function UserManagement() {
     password: '',
     firstName: '',
     lastName: '',
+    photoUrl: '',
     roleId: ''
   });
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -160,7 +163,7 @@ export default function UserManagement() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setShowCreateUser(false);
-      setFormData({ email: '', password: '', firstName: '', lastName: '', roleId: '' });
+      setFormData({ email: '', password: '', firstName: '', lastName: '', photoUrl: '', roleId: '' });
     },
     onError: (error: any) => {
       console.error("Create user error:", error);
@@ -483,6 +486,17 @@ export default function UserManagement() {
               </div>
               
               <div>
+                <Label htmlFor="photoUrl">Profile Photo URL</Label>
+                <Input
+                  id="photoUrl"
+                  value={formData.photoUrl}
+                  onChange={handleChange('photoUrl')}
+                  placeholder="https://example.com/photo.jpg"
+                  data-testid="input-user-photo"
+                />
+              </div>
+              
+              <div>
                 <Label htmlFor="role">Role</Label>
                 <Select value={formData.roleId} onValueChange={(value) => setFormData(prev => ({ ...prev, roleId: value }))}>
                   <SelectTrigger data-testid="select-user-role">
@@ -548,6 +562,19 @@ export default function UserManagement() {
                     <tr key={user.id} className="border-b hover:bg-gray-50" data-testid={`user-row-${user.id}`}>
                       <td className="p-2">
                         <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
+                            {user.photoUrl ? (
+                              <img 
+                                src={user.photoUrl} 
+                                alt={`${user.firstName} ${user.lastName}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                                {user.firstName?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
                           <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
                             {user.isActive ? (
                               <UserCheck className="w-3 h-3 text-green-600" />
@@ -762,6 +789,16 @@ export default function UserManagement() {
                   value={editFormData.lastName || ''}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, lastName: e.target.value }))}
                   placeholder="Doe"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-photoUrl">Profile Photo URL</Label>
+                <Input
+                  id="edit-photoUrl"
+                  value={editFormData.photoUrl || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, photoUrl: e.target.value }))}
+                  placeholder="https://example.com/photo.jpg"
                 />
               </div>
               

@@ -125,8 +125,18 @@ export default function Sidebar() {
       <div className="p-2 border-t border-gray-700">
         {!isCollapsed ? (
           <div className="flex items-center space-x-3 mx-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-              A
+            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-blue-500">
+              {user?.photoUrl ? (
+                <img 
+                  src={user.photoUrl} 
+                  alt={user?.fullName || user?.firstName || 'User'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                  {user?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white" data-testid="user-name">
@@ -139,8 +149,18 @@ export default function Sidebar() {
           </div>
         ) : (
           <div className="flex justify-center">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-              A
+            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-blue-500">
+              {user?.photoUrl ? (
+                <img 
+                  src={user.photoUrl} 
+                  alt={user?.fullName || user?.firstName || 'User'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                  {user?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                </div>
+              )}
             </div>
           </div>
         )}
