@@ -337,13 +337,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Role ID is required" });
       }
 
+      // Check if user already has this role
+      const existingRoles = await storage.getUserRoles(req.params.userId);
+      const hasRole = existingRoles.some(userRole => userRole.roleId === roleId);
+      
+      if (hasRole) {
+        return res.status(409).json({ message: "User already has this role assigned" });
+      }
+
       const userRole = await storage.assignUserRole({
         userId: req.params.userId,
         roleId,
       });
       res.status(201).json(userRole);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error assigning role:", error);
+      
+      // Handle duplicate key constraint specifically
+      if (error.code === '23505') {
+        return res.status(409).json({ message: "User already has this role assigned" });
+      }
+      
       res.status(400).json({ message: "Failed to assign role" });
     }
   });

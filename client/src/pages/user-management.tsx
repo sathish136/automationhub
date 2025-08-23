@@ -321,9 +321,19 @@ export default function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
     },
     onError: (error: any) => {
+      let errorMessage = "Failed to assign role.";
+      
+      if (error.message) {
+        if (error.message.includes("already has this role")) {
+          errorMessage = "This user already has that role assigned.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error Assigning Role",
-        description: error.message || "Failed to assign role.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
