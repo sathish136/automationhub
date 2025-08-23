@@ -104,7 +104,7 @@ export default function Sidebar() {
                   >
                     <Icon size={16} />
                     {!isCollapsed && (
-                      <span className="text-base font-medium">{item.name}</span>
+                      <span className="text-sm font-medium">{item.name}</span>
                     )}
                     
                     {/* Tooltip for collapsed state */}
@@ -129,10 +129,10 @@ export default function Sidebar() {
               A
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-medium text-white" data-testid="user-name">
+              <p className="text-sm font-medium text-white" data-testid="user-name">
                 {user?.fullName || user?.firstName || 'Admin User'}
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-xs text-gray-400">
                 Automation Engineer
               </p>
             </div>
