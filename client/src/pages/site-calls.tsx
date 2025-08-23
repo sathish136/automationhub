@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -147,12 +147,9 @@ export default function SiteCallsPage() {
   // Create site call mutation
   const createCallMutation = useMutation({
     mutationFn: (data: SiteCallFormData) => 
-      apiRequest("/api/site-calls", { 
-        method: "POST", 
-        body: JSON.stringify({
-          ...data,
-          callNumber: callNumberData?.callNumber,
-        }) 
+      apiRequest("/api/site-calls", "POST", {
+        ...data,
+        callNumber: (callNumberData as any)?.callNumber,
       }),
     onSuccess: () => {
       setIsCreateDialogOpen(false);
@@ -168,10 +165,7 @@ export default function SiteCallsPage() {
   // Update call status mutation
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status, engineerRemarks }: { id: string; status: string; engineerRemarks?: string }) =>
-      apiRequest(`/api/site-calls/${id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status, engineerRemarks }),
-      }),
+      apiRequest(`/api/site-calls/${id}/status`, "PATCH", { status, engineerRemarks }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/site-calls"] });
       toast({ title: "Call status updated successfully" });
@@ -184,10 +178,7 @@ export default function SiteCallsPage() {
   // Assign engineer mutation
   const assignEngineerMutation = useMutation({
     mutationFn: ({ id, assignedEngineer }: { id: string; assignedEngineer: string }) =>
-      apiRequest(`/api/site-calls/${id}/assign`, {
-        method: "PATCH",
-        body: JSON.stringify({ assignedEngineer }),
-      }),
+      apiRequest(`/api/site-calls/${id}/assign`, "PATCH", { assignedEngineer }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/site-calls"] });
       toast({ title: "Engineer assigned successfully" });
@@ -587,7 +578,7 @@ export default function SiteCallsPage() {
                             <Eye className="h-3 w-3" />
                           </Button>
                           <Select
-                            value={call.callStatus}
+                            value={call.callStatus || undefined}
                             onValueChange={(status) => handleStatusChange(call.id, status)}
                           >
                             <SelectTrigger className="w-24 h-6 text-xs">
@@ -683,15 +674,15 @@ export default function SiteCallsPage() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Reported At</Label>
-                      <div>{formatDateTime(selectedCall.reportedAt)}</div>
+                      <div>{formatDateTime(selectedCall.reportedAt?.toISOString() || null)}</div>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Assigned At</Label>
-                      <div>{formatDateTime(selectedCall.assignedAt)}</div>
+                      <div>{formatDateTime(selectedCall.assignedAt?.toISOString() || null)}</div>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Resolved At</Label>
-                      <div>{formatDateTime(selectedCall.resolvedAt)}</div>
+                      <div>{formatDateTime(selectedCall.resolvedAt?.toISOString() || null)}</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -789,6 +780,7 @@ export default function SiteCallsPage() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }
