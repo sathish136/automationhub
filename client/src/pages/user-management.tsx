@@ -31,6 +31,7 @@ interface User {
   fullName?: string;
   isActive: boolean;
   createdAt: string;
+  roles?: Role[];
 }
 
 interface Role {
@@ -46,6 +47,7 @@ interface UserFormData {
   password: string;
   firstName?: string;
   lastName?: string;
+  roleId?: string;
 }
 
 export default function UserManagement() {
@@ -56,12 +58,50 @@ export default function UserManagement() {
     email: '',
     password: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    roleId: ''
   });
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showRoleManager, setShowRoleManager] = useState(false);
 
-  // Fetch users
+  // Fetch users with auth token and their roles
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
+    queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const users = await response.json();
+      
+      // Fetch roles for each user
+      const usersWithRoles = await Promise.all(
+        users.map(async (user: User) => {
+          try {
+            const rolesResponse = await fetch(`/api/users/${user.id}/roles`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+            if (rolesResponse.ok) {
+              const userRoles = await rolesResponse.json();
+              return { ...user, roles: userRoles };
+            }
+            return { ...user, roles: [] };
+          } catch (error) {
+            console.warn(`Failed to fetch roles for user ${user.id}:`, error);
+            return { ...user, roles: [] };
+          }
+        })
+      );
+      
+      return usersWithRoles;
+    },
   });
 
   // Fetch roles
@@ -73,7 +113,9 @@ export default function UserManagement() {
   const createUserMutation = useMutation({
     mutationFn: async (userData: UserFormData) => {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/users', {
+      
+      // Create user first
+      const userResponse = await fetch('/api/users', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -82,12 +124,33 @@ export default function UserManagement() {
         body: JSON.stringify(userData),
       });
       
-      if (!response.ok) {
-        const error = await response.json();
+      if (!userResponse.ok) {
+        const error = await userResponse.json();
         throw new Error(error.message || 'Failed to create user');
       }
       
-      return response.json();
+      const newUser = await userResponse.json();
+      
+      // Assign role if selected
+      if (userData.roleId && userData.roleId !== '') {
+        const roleResponse = await fetch('/api/user-roles', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: newUser.id,
+            roleId: userData.roleId,
+          }),
+        });
+        
+        if (!roleResponse.ok) {
+          console.warn('Failed to assign role, but user was created successfully');
+        }
+      }
+      
+      return newUser;
     },
     onSuccess: () => {
       toast({
@@ -96,7 +159,7 @@ export default function UserManagement() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setShowCreateUser(false);
-      setFormData({ email: '', password: '', firstName: '', lastName: '' });
+      setFormData({ email: '', password: '', firstName: '', lastName: '', roleId: '' });
     },
     onError: (error: any) => {
       console.error("Create user error:", error);
@@ -195,6 +258,7 @@ export default function UserManagement() {
       password: formData.password,
       firstName: formData.firstName?.trim() || undefined,
       lastName: formData.lastName?.trim() || undefined,
+      roleId: formData.roleId || undefined,
     };
     
     createUserMutation.mutate(userData);
@@ -212,6 +276,81 @@ export default function UserManagement() {
       deleteUserMutation.mutate(userId);
     }
   };
+
+  const handleManageRoles = (user: User) => {
+    setSelectedUser(user);
+    setShowRoleManager(true);
+  };
+
+  // Role assignment mutation
+  const assignRoleMutation = useMutation({
+    mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/user-roles', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, roleId }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to assign role');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Role Assigned",
+        description: "Role has been assigned successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Assigning Role",
+        description: error.message || "Failed to assign role.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Role removal mutation
+  const removeRoleMutation = useMutation({
+    mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/user-roles/${userId}/${roleId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to remove role');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Role Removed",
+        description: "Role has been removed successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Removing Role",
+        description: error.message || "Failed to remove role.",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -284,6 +423,22 @@ export default function UserManagement() {
                 />
               </div>
               
+              <div>
+                <Label htmlFor="role">Role</Label>
+                <Select value={formData.roleId} onValueChange={(value) => setFormData(prev => ({ ...prev, roleId: value }))}>
+                  <SelectTrigger data-testid="select-user-role">
+                    <SelectValue placeholder="Select a role (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.displayName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
@@ -348,10 +503,29 @@ export default function UserManagement() {
                           Created: {new Date(user.createdAt).toLocaleDateString()}
                         </span>
                       </div>
+                      {user.roles && user.roles.length > 0 && (
+                        <div className="flex items-center gap-1 mt-2">
+                          <span className="text-xs text-gray-500">Roles:</span>
+                          {user.roles.map((role) => (
+                            <Badge key={role.id} variant="outline" className="text-xs">
+                              {role.displayName}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
                   <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManageRoles(user)}
+                      data-testid={`button-manage-roles-${user.id}`}
+                    >
+                      <Users className="w-4 h-4 mr-1" />
+                      Roles
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -395,6 +569,80 @@ export default function UserManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Role Management Dialog */}
+      <Dialog open={showRoleManager} onOpenChange={setShowRoleManager}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              Manage Roles for {selectedUser?.fullName || selectedUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-2">Current Roles</h4>
+                {selectedUser.roles && selectedUser.roles.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedUser.roles.map((role) => (
+                      <div key={role.id} className="flex items-center justify-between p-2 border rounded">
+                        <div>
+                          <span className="font-medium">{role.displayName}</span>
+                          <span className="text-sm text-gray-500 ml-2">({role.name})</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeRoleMutation.mutate({ userId: selectedUser.id, roleId: role.id })}
+                          disabled={removeRoleMutation.isPending}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No roles assigned</p>
+                )}
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium mb-2">Assign New Role</h4>
+                <div className="flex gap-2">
+                  <Select onValueChange={(roleId) => {
+                    if (roleId) {
+                      assignRoleMutation.mutate({ userId: selectedUser.id, roleId });
+                    }
+                  }}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select a role to assign" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles
+                        .filter(role => !selectedUser.roles?.some(userRole => userRole.id === role.id))
+                        .map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            {role.displayName}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRoleManager(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -135,16 +135,14 @@ export default function Sidebar() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={logout}
-              className="w-full bg-red-600 hover:bg-red-700 border-red-600 text-white"
+              className="w-full p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center justify-center"
               data-testid="logout-button"
+              title="Logout"
             >
-              <LogOut size={14} className="mr-2" />
-              Logout
-            </Button>
+              <LogOut size={16} className="text-white" />
+            </button>
           </div>
         ) : (
           <button
