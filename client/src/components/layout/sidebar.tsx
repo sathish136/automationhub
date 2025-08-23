@@ -40,7 +40,6 @@ const navigation = [
   { name: "System Backups", href: "/backups", icon: HardDrive },
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
-  { name: "PLC Calculations", href: "/plc-calculations", icon: Calculator },
   { name: "Site Calls", href: "/site-calls", icon: Phone },
   { name: "Automation Wizard", href: "/automation-wizard", icon: Zap },
   { name: "Reports", href: "/reports", icon: BarChart3 },
@@ -59,12 +58,12 @@ export default function Sidebar() {
     )}>
       <div className={cn(
         "border-b border-gray-700 flex items-center justify-between",
-        isCollapsed ? "p-3" : "p-6"
+        isCollapsed ? "p-2" : "p-4"
       )}>
-        <div className="flex items-center space-x-3">
-          <Monitor className="text-2xl text-primary" />
+        <div className="flex items-center space-x-2">
+          <Monitor className="text-lg text-primary" />
           {!isCollapsed && (
-            <h1 className="text-lg font-bold" data-testid="app-title">
+            <h1 className="text-sm font-bold" data-testid="app-title">
               AutomationHub
             </h1>
           )}
@@ -76,15 +75,15 @@ export default function Sidebar() {
           data-testid="sidebar-toggle"
         >
           {isCollapsed ? (
-            <Menu size={16} />
+            <Menu size={14} />
           ) : (
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} />
           )}
         </button>
       </div>
 
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <ul className="space-y-2">
+      <nav className="flex-1 p-2 overflow-y-auto">
+        <ul className="space-y-1">
           {navigation.map((item) => {
             const isActive = location === item.href;
             const Icon = item.icon;
@@ -94,21 +93,21 @@ export default function Sidebar() {
                 <Link href={item.href}>
                   <span
                     className={cn(
-                      "flex items-center rounded-lg transition-colors cursor-pointer relative group",
+                      "flex items-center rounded-md transition-colors cursor-pointer relative group",
                       isActive ? "bg-primary text-white" : "hover:bg-gray-700",
-                      isCollapsed ? "px-2 py-3 justify-center" : "px-4 py-3 space-x-3"
+                      isCollapsed ? "px-2 py-2 justify-center" : "px-3 py-2 space-x-2"
                     )}
                     data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
                     title={isCollapsed ? item.name : undefined}
                   >
-                    <Icon size={16} />
+                    <Icon size={14} />
                     {!isCollapsed && (
-                      <span className="text-sm">{item.name}</span>
+                      <span className="text-xs font-medium">{item.name}</span>
                     )}
                     
                     {/* Tooltip for collapsed state */}
                     {isCollapsed && (
-                      <div className="absolute left-full ml-3 px-3 py-2 bg-gray-800 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
                         {item.name}
                       </div>
                     )}
@@ -121,13 +120,13 @@ export default function Sidebar() {
       </nav>
 
       {/* User info and logout section */}
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-2 border-t border-gray-700">
         {!isCollapsed ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <User size={16} />
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <User size={12} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate" data-testid="user-name">
@@ -140,24 +139,24 @@ export default function Sidebar() {
               </div>
               <button
                 onClick={logout}
-                className="w-6 h-6 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center"
+                className="w-5 h-5 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center"
                 data-testid="logout-button"
                 title="Logout"
               >
-                <LogOut size={10} className="text-white" />
+                <LogOut size={8} className="text-white" />
               </button>
             </div>
           </div>
         ) : (
           <button
             onClick={logout}
-            className="w-8 h-8 hover:bg-gray-700 rounded transition-colors group relative mx-auto"
+            className="w-6 h-6 hover:bg-gray-700 rounded transition-colors group relative mx-auto"
             data-testid="logout-button-collapsed"
             title="Logout"
           >
-            <LogOut size={12} className="mx-auto text-red-400" />
+            <LogOut size={10} className="mx-auto text-red-400" />
             {/* Tooltip for collapsed state */}
-            <div className="absolute left-full ml-3 px-3 py-2 bg-gray-800 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
               Logout
             </div>
           </button>
