@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/auth-context";
 import { Settings } from "lucide-react";
 
 interface LoginData {
@@ -15,49 +13,15 @@ interface LoginData {
 }
 
 export default function Login() {
-  const [, setLocation] = useLocation();
+  const { login } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginData) => {
-      const response = await apiRequest('/api/auth/login', 'POST', data);
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      const displayName = data.user.fullName || data.user.firstName || data.user.email;
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${displayName}!`,
-      });
-      // Store auth token or user info if needed
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('userRoles', JSON.stringify(data.roles));
-      setLocation('/');
-    },
-    onError: (error: any) => {
-      console.error("Login error:", error);
-      let errorMessage = "Invalid credentials. Please try again.";
-      
-      // Parse error message from API response
-      if (error.message) {
-        // Remove status code prefix if present (e.g., "401: Invalid email or password")
-        errorMessage = error.message.replace(/^\d+:\s*/, '');
-      }
-      
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
@@ -81,13 +45,31 @@ export default function Login() {
       return;
     }
     
-    // Trim whitespace from email
-    const loginData = {
-      email: formData.email.trim().toLowerCase(),
-      password: formData.password
-    };
+    setIsLoading(true);
     
-    loginMutation.mutate(loginData);
+    try {
+      await login(formData.email.trim().toLowerCase(), formData.password);
+      
+      toast({
+        title: "Login Successful",
+        description: "Welcome to AutomationHub!",
+      });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      let errorMessage = "Invalid credentials. Please try again.";
+      
+      if (error.message) {
+        errorMessage = error.message.replace(/^\d+:\s*/, '');
+      }
+      
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (field: keyof LoginData) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +106,7 @@ export default function Login() {
                 placeholder="Enter your email"
                 className="mt-1"
                 data-testid="input-email"
-                disabled={loginMutation.isPending}
+                disabled={isLoading}
               />
             </div>
             
@@ -140,26 +122,18 @@ export default function Login() {
                 placeholder="Enter your password"
                 className="mt-1"
                 data-testid="input-password"
-                disabled={loginMutation.isPending}
+                disabled={isLoading}
               />
             </div>
             
             <Button
               type="submit"
               className="w-full"
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
               data-testid="button-login"
             >
-              {loginMutation.isPending ? "Signing in..." : "Sign In"}
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
-            
-            {loginMutation.error && (
-              <div className="text-center mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">
-                  Having trouble logging in? Check your credentials or contact your administrator.
-                </p>
-              </div>
-            )}
             
             <div className="text-center mt-4">
               <p className="text-xs text-gray-600">

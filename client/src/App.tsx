@@ -17,32 +17,57 @@ import AutomationWizardPage from "@/pages/automation-wizard";
 import ReportsPage from "@/pages/reports";
 import UserManagement from "@/pages/user-management";
 import NotFound from "@/pages/not-found";
+import Login from "@/pages/login";
 import Sidebar from "@/components/layout/sidebar";
 import { SidebarProvider, useSidebar } from "@/contexts/sidebar-context";
+import { AuthProvider, useAuth } from "@/contexts/auth-context";
+
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+  
+  return <Component />;
+}
 
 function Router() {
   const { isCollapsed } = useSidebar();
+  const { isAuthenticated } = useAuth();
   
   return (
     <div className="min-h-screen flex bg-background">
-      <Sidebar />
+      {isAuthenticated && <Sidebar />}
       <main className={`flex-1 overflow-auto transition-all duration-300 ${
-        isCollapsed ? "ml-16" : "ml-64"
+        isAuthenticated ? (isCollapsed ? "ml-16" : "ml-64") : ""
       }`}>
         <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/sites" component={Sites} />
-          <Route path="/site-events" component={SiteEvents} />
-          <Route path="/site-database" component={SiteDatabase} />
-          <Route path="/backups" component={Backups} />
-          <Route path="/project-details" component={ProjectDetails} />
-          <Route path="/ipc-management" component={IPCDetails} />
-          <Route path="/sql-viewer" component={SqlViewerPage} />
-          <Route path="/instrumentation" component={InstrumentationPage} />
-          <Route path="/plc-calculations" component={PlcCalculationsPage} />
-          <Route path="/automation-wizard" component={AutomationWizardPage} />
-          <Route path="/reports" component={ReportsPage} />
-          <Route path="/user-management" component={UserManagement} />
+          <Route path="/login" component={Login} />
+          <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
+          <Route path="/sites" component={() => <ProtectedRoute component={Sites} />} />
+          <Route path="/site-events" component={() => <ProtectedRoute component={SiteEvents} />} />
+          <Route path="/site-database" component={() => <ProtectedRoute component={SiteDatabase} />} />
+          <Route path="/backups" component={() => <ProtectedRoute component={Backups} />} />
+          <Route path="/project-details" component={() => <ProtectedRoute component={ProjectDetails} />} />
+          <Route path="/ipc-management" component={() => <ProtectedRoute component={IPCDetails} />} />
+          <Route path="/sql-viewer" component={() => <ProtectedRoute component={SqlViewerPage} />} />
+          <Route path="/instrumentation" component={() => <ProtectedRoute component={InstrumentationPage} />} />
+          <Route path="/plc-calculations" component={() => <ProtectedRoute component={PlcCalculationsPage} />} />
+          <Route path="/automation-wizard" component={() => <ProtectedRoute component={AutomationWizardPage} />} />
+          <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} />} />
+          <Route path="/user-management" component={() => <ProtectedRoute component={UserManagement} />} />
           <Route component={NotFound} />
         </Switch>
       </main>
@@ -50,14 +75,22 @@ function Router() {
   );
 }
 
+function AppRoutes() {
+  return (
+    <SidebarProvider>
+      <Toaster />
+      <Router />
+    </SidebarProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SidebarProvider>
-          <Toaster />
-          <Router />
-        </SidebarProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

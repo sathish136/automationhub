@@ -22,8 +22,12 @@ import {
   AlertTriangle,
   BarChart3,
   Users,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -44,6 +48,7 @@ const navigation = [
 export default function Sidebar() {
   const [location] = useLocation();
   const { isCollapsed, toggleSidebar } = useSidebar();
+  const { user, logout } = useAuth();
 
   return (
     <aside className={cn(
@@ -113,21 +118,49 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {!isCollapsed && (
-        <div className="p-4 border-t border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium">A</span>
+      {/* User info and logout section */}
+      <div className="p-4 border-t border-gray-700">
+        {!isCollapsed ? (
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <User size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate" data-testid="user-name">
+                  {user?.fullName || user?.firstName || user?.email || 'User'}
+                </p>
+                <p className="text-xs text-gray-400 truncate">
+                  {user?.email}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-medium" data-testid="user-name">
-                Admin User
-              </p>
-              <p className="text-xs text-gray-400">Automation Engineer</p>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={logout}
+              className="w-full bg-red-600 hover:bg-red-700 border-red-600 text-white"
+              data-testid="logout-button"
+            >
+              <LogOut size={14} className="mr-2" />
+              Logout
+            </Button>
           </div>
-        </div>
-      )}
+        ) : (
+          <button
+            onClick={logout}
+            className="w-full p-2 hover:bg-gray-700 rounded-lg transition-colors group relative"
+            data-testid="logout-button-collapsed"
+            title="Logout"
+          >
+            <LogOut size={16} className="mx-auto text-red-400" />
+            {/* Tooltip for collapsed state */}
+            <div className="absolute left-full ml-3 px-3 py-2 bg-gray-800 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+              Logout
+            </div>
+          </button>
+        )}
+      </div>
     </aside>
   );
 }
