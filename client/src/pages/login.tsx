@@ -30,13 +30,15 @@ export default function Login() {
       });
     },
     onSuccess: (data) => {
+      const displayName = data.user.fullName || data.user.firstName || data.user.email;
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${data.user.name}!`,
+        description: `Welcome back, ${displayName}!`,
       });
       // Store auth token or user info if needed
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userRoles', JSON.stringify(data.roles));
       setLocation('/');
     },
     onError: (error: any) => {
@@ -126,7 +128,7 @@ export default function Login() {
             
             <div className="text-center mt-4">
               <p className="text-xs text-gray-600">
-                Demo credentials: admin@company.com / admin123
+                Contact your administrator for login credentials
               </p>
             </div>
           </form>

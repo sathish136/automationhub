@@ -300,6 +300,7 @@ export const plcTagHistoryRelations = relations(plcTagHistory, ({ one }) => ({
   }),
 }));
 
+
 // Projects table
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -421,6 +422,139 @@ export const beckhoffProducts = pgTable("beckhoff_products", {
   index("idx_beckhoff_products_subcategory").on(table.subcategory),
   index("idx_beckhoff_products_io_type").on(table.ioType),
 ]);
+
+// ================================
+// USER MANAGEMENT AND AUTHENTICATION
+// ================================
+
+// Users table for authentication and user management
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Authentication fields
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(), // bcrypt hashed
+  
+  // Profile information
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  fullName: varchar("full_name", { length: 255 }), // computed field
+  
+  // Account status
+  isActive: boolean("is_active").default(true),
+  isEmailVerified: boolean("is_email_verified").default(false),
+  lastLoginAt: timestamp("last_login_at"),
+  
+  // System tracking
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_users_email").on(table.email),
+  index("idx_users_active").on(table.isActive),
+]);
+
+// Roles table for role-based access control
+export const roles = pgTable("roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Role definition
+  name: varchar("name", { length: 50 }).notNull().unique(), // admin, engineer, operator, viewer
+  displayName: varchar("display_name", { length: 100 }).notNull(),
+  description: text("description"),
+  
+  // Role permissions and configuration
+  permissions: jsonb("permissions"), // JSON object with permission flags
+  isSystemRole: boolean("is_system_role").default(false), // true for built-in roles
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_roles_name").on(table.name),
+  index("idx_roles_active").on(table.isActive),
+]);
+
+// User roles junction table for many-to-many relationship
+export const userRoles = pgTable("user_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  roleId: varchar("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
+  
+  // Assignment tracking
+  assignedBy: varchar("assigned_by").references(() => users.id), // who assigned this role
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  
+  // Temporary role assignment (optional)
+  expiresAt: timestamp("expires_at"), // null for permanent assignment
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_user_roles_user").on(table.userId),
+  index("idx_user_roles_role").on(table.roleId),
+  // Unique constraint to prevent duplicate role assignments
+  index("idx_user_roles_unique").on(table.userId, table.roleId),
+]);
+
+// Session management table
+export const sessions = pgTable("sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Session data
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  userAgent: text("user_agent"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  
+  // Session status
+  isActive: boolean("is_active").default(true),
+  lastActivity: timestamp("last_activity").defaultNow(),
+  
+  // Session expiry
+  expiresAt: timestamp("expires_at").notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_sessions_token").on(table.token),
+  index("idx_sessions_user").on(table.userId),
+  index("idx_sessions_active").on(table.isActive),
+  index("idx_sessions_expires").on(table.expiresAt),
+]);
+
+// User management relations
+export const usersRelations = relations(users, ({ many }) => ({
+  userRoles: many(userRoles),
+  sessions: many(sessions),
+  assignedRoles: many(userRoles, { relationName: "assignedBy" }),
+}));
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  userRoles: many(userRoles),
+}));
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+  assignedByUser: one(users, {
+    fields: [userRoles.assignedBy],
+    references: [users.id],
+    relationName: "assignedBy",
+  }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
 
 // ================================
 // MULTI-VENDOR AUTOMATION SUPPORT
@@ -770,6 +904,40 @@ export const insertPlcTagHistorySchema = createInsertSchema(plcTagHistory).omit(
   timestamp: true,
 });
 
+// User management insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastLoginAt: true,
+}).extend({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required").optional(),
+  lastName: z.string().min(1, "Last name is required").optional(),
+});
+
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().min(1, "Role name is required"),
+  displayName: z.string().min(1, "Display name is required"),
+});
+
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
+  id: true,
+  createdAt: true,
+  assignedAt: true,
+});
+
+export const insertSessionSchema = createInsertSchema(sessions).omit({
+  id: true,
+  createdAt: true,
+  lastActivity: true,
+});
+
 // Types
 export type Site = typeof sites.$inferSelect;
 export type InsertSite = z.infer<typeof insertSiteSchema>;
@@ -791,6 +959,16 @@ export type PlcTag = typeof plcTags.$inferSelect;
 export type InsertPlcTag = z.infer<typeof insertPlcTagSchema>;
 export type PlcTagHistory = typeof plcTagHistory.$inferSelect;
 export type InsertPlcTagHistory = z.infer<typeof insertPlcTagHistorySchema>;
+
+// User management types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+export type Session = typeof sessions.$inferSelect;
+export type InsertSession = z.infer<typeof insertSessionSchema>;
 
 // Site Database Tags (Real-time ADS monitoring)
 export const siteDatabaseTags = pgTable("site_database_tags", {

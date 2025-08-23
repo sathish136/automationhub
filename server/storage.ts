@@ -25,6 +25,10 @@ import {
   automationPanels,
   communicationModules,
   automationDeviceTemplates,
+  users,
+  roles,
+  userRoles,
+  sessions,
   type Site,
   type InsertSite,
   type UptimeHistory,
@@ -77,6 +81,14 @@ import {
   type InsertCommunicationModule,
   type AutomationDeviceTemplate,
   type InsertAutomationDeviceTemplate,
+  type User,
+  type InsertUser,
+  type Role,
+  type InsertRole,
+  type UserRole,
+  type InsertUserRole,
+  type Session,
+  type InsertSession,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count, isNotNull } from "drizzle-orm";
@@ -248,6 +260,37 @@ export interface IStorage {
   createAutomationDeviceTemplate(template: InsertAutomationDeviceTemplate): Promise<AutomationDeviceTemplate>;
   updateAutomationDeviceTemplate(id: string, template: Partial<InsertAutomationDeviceTemplate>): Promise<AutomationDeviceTemplate | undefined>;
   deleteAutomationDeviceTemplate(id: string): Promise<boolean>;
+
+  // User Management
+  getAllUsers(): Promise<User[]>;
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
+  
+  // Role Management
+  getAllRoles(): Promise<Role[]>;
+  getRole(id: string): Promise<Role | undefined>;
+  getRoleByName(name: string): Promise<Role | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: string, role: Partial<InsertRole>): Promise<Role | undefined>;
+  deleteRole(id: string): Promise<boolean>;
+  
+  // User Role Management
+  getUserRoles(userId: string): Promise<UserRole[]>;
+  assignUserRole(userRole: InsertUserRole): Promise<UserRole>;
+  removeUserRole(userId: string, roleId: string): Promise<boolean>;
+  
+  // Session Management
+  createSession(session: InsertSession): Promise<Session>;
+  getSession(token: string): Promise<Session | undefined>;
+  updateSessionActivity(token: string): Promise<void>;
+  deleteSession(token: string): Promise<boolean>;
+  deleteUserSessions(userId: string): Promise<void>;
+  
+  // Authentication
+  validateUserCredentials(email: string, password: string): Promise<User | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1452,6 +1495,218 @@ export class DatabaseStorage implements IStorage {
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(automationDeviceTemplates.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // User Management Implementation
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.isActive, true))
+      .orderBy(users.createdAt);
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        ...user,
+        password: hashedPassword,
+        fullName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : null,
+      })
+      .returning();
+    return newUser;
+  }
+
+  async updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined> {
+    const updateData: any = { ...user, updatedAt: new Date() };
+    
+    // Hash password if it's being updated
+    if (user.password) {
+      updateData.password = await bcrypt.hash(user.password, 10);
+    }
+    
+    // Update full name if first or last name is being updated
+    if (user.firstName || user.lastName) {
+      const existingUser = await this.getUser(id);
+      if (existingUser) {
+        const firstName = user.firstName ?? existingUser.firstName;
+        const lastName = user.lastName ?? existingUser.lastName;
+        updateData.fullName = firstName && lastName ? `${firstName} ${lastName}` : null;
+      }
+    }
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db
+      .update(users)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(users.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Role Management Implementation
+  async getAllRoles(): Promise<Role[]> {
+    return await db
+      .select()
+      .from(roles)
+      .where(eq(roles.isActive, true))
+      .orderBy(roles.name);
+  }
+
+  async getRole(id: string): Promise<Role | undefined> {
+    const [role] = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.id, id));
+    return role;
+  }
+
+  async getRoleByName(name: string): Promise<Role | undefined> {
+    const [role] = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.name, name));
+    return role;
+  }
+
+  async createRole(role: InsertRole): Promise<Role> {
+    const [newRole] = await db
+      .insert(roles)
+      .values(role)
+      .returning();
+    return newRole;
+  }
+
+  async updateRole(id: string, role: Partial<InsertRole>): Promise<Role | undefined> {
+    const [updatedRole] = await db
+      .update(roles)
+      .set({ ...role, updatedAt: new Date() })
+      .where(eq(roles.id, id))
+      .returning();
+    return updatedRole;
+  }
+
+  async deleteRole(id: string): Promise<boolean> {
+    const result = await db
+      .update(roles)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(roles.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // User Role Management Implementation
+  async getUserRoles(userId: string): Promise<UserRole[]> {
+    return await db
+      .select()
+      .from(userRoles)
+      .where(eq(userRoles.userId, userId))
+      .orderBy(userRoles.assignedAt);
+  }
+
+  async assignUserRole(userRole: InsertUserRole): Promise<UserRole> {
+    const [newUserRole] = await db
+      .insert(userRoles)
+      .values(userRole)
+      .returning();
+    return newUserRole;
+  }
+
+  async removeUserRole(userId: string, roleId: string): Promise<boolean> {
+    const result = await db
+      .delete(userRoles)
+      .where(and(
+        eq(userRoles.userId, userId),
+        eq(userRoles.roleId, roleId)
+      ));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Session Management Implementation
+  async createSession(session: InsertSession): Promise<Session> {
+    const [newSession] = await db
+      .insert(sessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async getSession(token: string): Promise<Session | undefined> {
+    const [session] = await db
+      .select()
+      .from(sessions)
+      .where(and(
+        eq(sessions.token, token),
+        eq(sessions.isActive, true),
+        gte(sessions.expiresAt, new Date())
+      ));
+    return session;
+  }
+
+  async updateSessionActivity(token: string): Promise<void> {
+    await db
+      .update(sessions)
+      .set({ lastActivity: new Date() })
+      .where(eq(sessions.token, token));
+  }
+
+  async deleteSession(token: string): Promise<boolean> {
+    const result = await db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.token, token));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async deleteUserSessions(userId: string): Promise<void> {
+    await db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.userId, userId));
+  }
+
+  // Authentication Implementation
+  async validateUserCredentials(email: string, password: string): Promise<User | null> {
+    const user = await this.getUserByEmail(email);
+    if (!user || !user.isActive) {
+      return null;
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return null;
+    }
+
+    // Update last login
+    await this.updateUser(user.id, { lastLoginAt: new Date() });
+    
+    return user;
   }
 }
 

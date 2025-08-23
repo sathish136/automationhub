@@ -21,6 +21,7 @@ import {
   FileText,
   AlertTriangle,
   BarChart3,
+  Users,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
 
@@ -37,6 +38,7 @@ const navigation = [
   { name: "PLC Calculations", href: "/plc-calculations", icon: Calculator },
   { name: "Automation Wizard", href: "/automation-wizard", icon: Zap },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "User Management", href: "/user-management", icon: Users },
 ];
 
 export default function Sidebar() {

@@ -27,8 +27,12 @@ import {
   insertBeckhoffProductSchema,
   insertAutomationPanelSchema,
   insertCommunicationModuleSchema,
-  insertAutomationDeviceTemplateSchema
+  insertAutomationDeviceTemplateSchema,
+  insertUserSchema,
+  insertRoleSchema,
+  insertUserRoleSchema
 } from "@shared/schema";
+import crypto from "crypto";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -38,9 +42,307 @@ const upload = multer({
   },
 });
 
+// Authentication middleware
+async function requireAuth(req: any, res: any, next: any) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: "Authorization token required" });
+    }
+
+    const token = authHeader.substring(7);
+    const session = await storage.getSession(token);
+    
+    if (!session) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    const user = await storage.getUser(session.userId);
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: "User not found or inactive" });
+    }
+
+    // Update session activity
+    await storage.updateSessionActivity(token);
+
+    // Attach user to request
+    req.user = user;
+    req.session = session;
+    next();
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(401).json({ message: "Authentication failed" });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Start ping monitoring service
   pingService.startMonitoring();
+
+  // Authentication endpoints
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const user = await storage.validateUserCredentials(email, password);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Create session token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await storage.createSession({
+        userId: user.id,
+        token,
+        userAgent: req.get('User-Agent') || 'Unknown',
+        ipAddress: req.ip || req.connection.remoteAddress || 'Unknown',
+        expiresAt,
+      });
+
+      // Get user roles
+      const userRoles = await storage.getUserRoles(user.id);
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.fullName,
+          isActive: user.isActive,
+          lastLoginAt: user.lastLoginAt,
+        },
+        token,
+        roles: userRoles,
+      });
+    } catch (error) {
+      console.error("Error during login:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(409).json({ message: "User with this email already exists" });
+      }
+
+      const user = await storage.createUser(userData);
+
+      // Assign default role (viewer) if available
+      const viewerRole = await storage.getRoleByName('viewer');
+      if (viewerRole) {
+        await storage.assignUserRole({
+          userId: user.id,
+          roleId: viewerRole.id,
+        });
+      }
+
+      res.status(201).json({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.fullName,
+          isActive: user.isActive,
+        },
+      });
+    } catch (error) {
+      console.error("Error during registration:", error);
+      res.status(400).json({ message: "Invalid user data" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: "No valid token provided" });
+      }
+
+      const token = authHeader.substring(7);
+      await storage.deleteSession(token);
+
+      res.json({ message: "Logged out successfully" });
+    } catch (error) {
+      console.error("Error during logout:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/auth/user", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: "No valid token provided" });
+      }
+
+      const token = authHeader.substring(7);
+      const session = await storage.getSession(token);
+      
+      if (!session) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
+      // Update session activity
+      await storage.updateSessionActivity(token);
+
+      const user = await storage.getUser(session.userId);
+      if (!user || !user.isActive) {
+        return res.status(401).json({ message: "User not found or inactive" });
+      }
+
+      const userRoles = await storage.getUserRoles(user.id);
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.fullName,
+          isActive: user.isActive,
+          lastLoginAt: user.lastLoginAt,
+        },
+        roles: userRoles,
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User management endpoints (protected)
+  app.get("/api/users", requireAuth, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remove passwords from response
+      const safeUsers = users.map(user => ({
+        ...user,
+        password: undefined,
+      }));
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/users", requireAuth, async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(409).json({ message: "User with this email already exists" });
+      }
+
+      const user = await storage.createUser(userData);
+      res.status(201).json({
+        ...user,
+        password: undefined,
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(400).json({ message: "Invalid user data" });
+    }
+  });
+
+  app.put("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      const userData = insertUserSchema.partial().parse(req.body);
+      const user = await storage.updateUser(req.params.id, userData);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({
+        ...user,
+        password: undefined,
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(400).json({ message: "Invalid user data" });
+    }
+  });
+
+  app.delete("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteUser(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Role management endpoints
+  app.get("/api/roles", async (req, res) => {
+    try {
+      const roles = await storage.getAllRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  app.post("/api/roles", requireAuth, async (req, res) => {
+    try {
+      const roleData = insertRoleSchema.parse(req.body);
+      const role = await storage.createRole(roleData);
+      res.status(201).json(role);
+    } catch (error) {
+      console.error("Error creating role:", error);
+      res.status(400).json({ message: "Invalid role data" });
+    }
+  });
+
+  // User role assignment endpoints
+  app.post("/api/users/:userId/roles", requireAuth, async (req, res) => {
+    try {
+      const { roleId } = req.body;
+      if (!roleId) {
+        return res.status(400).json({ message: "Role ID is required" });
+      }
+
+      const userRole = await storage.assignUserRole({
+        userId: req.params.userId,
+        roleId,
+      });
+      res.status(201).json(userRole);
+    } catch (error) {
+      console.error("Error assigning role:", error);
+      res.status(400).json({ message: "Failed to assign role" });
+    }
+  });
+
+  app.delete("/api/users/:userId/roles/:roleId", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.removeUserRole(req.params.userId, req.params.roleId);
+      if (!success) {
+        return res.status(404).json({ message: "User role assignment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing role:", error);
+      res.status(500).json({ message: "Failed to remove role" });
+    }
+  });
 
   // Dashboard metrics
   app.get("/api/dashboard/metrics", async (req, res) => {

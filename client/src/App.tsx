@@ -15,6 +15,7 @@ import InstrumentationPage from "@/pages/instrumentation";
 import PlcCalculationsPage from "@/pages/plc-calculations";
 import AutomationWizardPage from "@/pages/automation-wizard";
 import ReportsPage from "@/pages/reports";
+import UserManagement from "@/pages/user-management";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 import { SidebarProvider, useSidebar } from "@/contexts/sidebar-context";
@@ -41,6 +42,7 @@ function Router() {
           <Route path="/plc-calculations" component={PlcCalculationsPage} />
           <Route path="/automation-wizard" component={AutomationWizardPage} />
           <Route path="/reports" component={ReportsPage} />
+          <Route path="/user-management" component={UserManagement} />
           <Route component={NotFound} />
         </Switch>
       </main>
