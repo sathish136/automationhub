@@ -135,14 +135,13 @@ export default function UserManagement() {
       
       // Assign role if selected
       if (userData.roleId && userData.roleId !== '') {
-        const roleResponse = await fetch('/api/user-roles', {
+        const roleResponse = await fetch(`/api/users/${newUser.id}/roles`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: newUser.id,
             roleId: userData.roleId,
           }),
         });
@@ -298,13 +297,13 @@ export default function UserManagement() {
   const assignRoleMutation = useMutation({
     mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/user-roles', {
+      const response = await fetch(`/api/users/${userId}/roles`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId, roleId }),
+        body: JSON.stringify({ roleId }),
       });
       
       if (!response.ok) {
@@ -334,7 +333,7 @@ export default function UserManagement() {
   const removeRoleMutation = useMutation({
     mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/user-roles/${userId}/${roleId}`, {
+      const response = await fetch(`/api/users/${userId}/roles/${roleId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -346,7 +345,7 @@ export default function UserManagement() {
         throw new Error(error.message || 'Failed to remove role');
       }
       
-      return response.json();
+      return true;
     },
     onSuccess: () => {
       toast({
