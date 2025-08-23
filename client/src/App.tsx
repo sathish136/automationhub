@@ -13,6 +13,7 @@ import IPCDetails from "@/pages/ipc-details";
 import SqlViewerPage from "@/pages/sql-viewer";
 import InstrumentationPage from "@/pages/instrumentation";
 import PlcCalculationsPage from "@/pages/plc-calculations";
+import SiteCallsPage from "@/pages/site-calls";
 import AutomationWizardPage from "@/pages/automation-wizard";
 import ReportsPage from "@/pages/reports";
 import UserManagement from "@/pages/user-management";
@@ -65,6 +66,7 @@ function Router() {
           <Route path="/sql-viewer" component={() => <ProtectedRoute component={SqlViewerPage} />} />
           <Route path="/instrumentation" component={() => <ProtectedRoute component={InstrumentationPage} />} />
           <Route path="/plc-calculations" component={() => <ProtectedRoute component={PlcCalculationsPage} />} />
+          <Route path="/site-calls" component={() => <ProtectedRoute component={SiteCallsPage} />} />
           <Route path="/automation-wizard" component={() => <ProtectedRoute component={AutomationWizardPage} />} />
           <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} />} />
           <Route path="/user-management" component={() => <ProtectedRoute component={UserManagement} />} />

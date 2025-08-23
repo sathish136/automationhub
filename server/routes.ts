@@ -28,6 +28,7 @@ import {
   insertAutomationPanelSchema,
   insertCommunicationModuleSchema,
   insertAutomationDeviceTemplateSchema,
+  insertSiteCallSchema,
   insertUserSchema,
   insertRoleSchema,
   insertUserRoleSchema
@@ -2345,6 +2346,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating device template:", error);
       res.status(400).json({ message: "Invalid device template data" });
+    }
+  });
+
+  // ==========================================
+  // SITE CALLS MANAGEMENT ROUTES
+  // ==========================================
+
+  // Get all site calls with optional filtering
+  app.get("/api/site-calls", async (req, res) => {
+    try {
+      const { siteId, status, issueType, assignedEngineer } = req.query;
+      
+      if (siteId || status || issueType || assignedEngineer) {
+        const siteCalls = await storage.getSiteCalls({
+          siteId: siteId as string,
+          status: status as string,
+          issueType: issueType as string,
+          assignedEngineer: assignedEngineer as string,
+        });
+        res.json(siteCalls);
+      } else {
+        const siteCalls = await storage.getAllSiteCalls();
+        res.json(siteCalls);
+      }
+    } catch (error) {
+      console.error("Error fetching site calls:", error);
+      res.status(500).json({ message: "Failed to fetch site calls" });
+    }
+  });
+
+  // Get specific site call by ID
+  app.get("/api/site-calls/:id", async (req, res) => {
+    try {
+      const siteCall = await storage.getSiteCall(req.params.id);
+      if (!siteCall) {
+        return res.status(404).json({ message: "Site call not found" });
+      }
+      res.json(siteCall);
+    } catch (error) {
+      console.error("Error fetching site call:", error);
+      res.status(500).json({ message: "Failed to fetch site call" });
+    }
+  });
+
+  // Create new site call
+  app.post("/api/site-calls", async (req, res) => {
+    try {
+      const siteCallData = insertSiteCallSchema.parse(req.body);
+      const siteCall = await storage.createSiteCall(siteCallData);
+      res.status(201).json(siteCall);
+    } catch (error) {
+      console.error("Error creating site call:", error);
+      res.status(400).json({ message: "Invalid site call data" });
+    }
+  });
+
+  // Update site call
+  app.patch("/api/site-calls/:id", async (req, res) => {
+    try {
+      const updateData = req.body;
+      const siteCall = await storage.updateSiteCall(req.params.id, updateData);
+      if (!siteCall) {
+        return res.status(404).json({ message: "Site call not found" });
+      }
+      res.json(siteCall);
+    } catch (error) {
+      console.error("Error updating site call:", error);
+      res.status(400).json({ message: "Failed to update site call" });
+    }
+  });
+
+  // Delete site call
+  app.delete("/api/site-calls/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteSiteCall(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Site call not found" });
+      }
+      res.json({ message: "Site call deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting site call:", error);
+      res.status(500).json({ message: "Failed to delete site call" });
+    }
+  });
+
+  // Generate new call number
+  app.get("/api/site-calls/generate/call-number", async (req, res) => {
+    try {
+      const callNumber = await storage.generateCallNumber();
+      res.json({ callNumber });
+    } catch (error) {
+      console.error("Error generating call number:", error);
+      res.status(500).json({ message: "Failed to generate call number" });
+    }
+  });
+
+  // Update call status specifically
+  app.patch("/api/site-calls/:id/status", async (req, res) => {
+    try {
+      const { status, engineerRemarks } = req.body;
+      const updateData: any = { callStatus: status };
+      
+      // Update timestamps based on status
+      if (status === 'assigned') {
+        updateData.assignedAt = new Date();
+      } else if (status === 'in_progress') {
+        updateData.startedAt = new Date();
+      } else if (status === 'resolved') {
+        updateData.resolvedAt = new Date();
+      } else if (status === 'closed') {
+        updateData.closedAt = new Date();
+      }
+      
+      if (engineerRemarks) {
+        updateData.engineerRemarks = engineerRemarks;
+      }
+      
+      const siteCall = await storage.updateSiteCall(req.params.id, updateData);
+      if (!siteCall) {
+        return res.status(404).json({ message: "Site call not found" });
+      }
+      res.json(siteCall);
+    } catch (error) {
+      console.error("Error updating call status:", error);
+      res.status(400).json({ message: "Failed to update call status" });
+    }
+  });
+
+  // Assign engineer to call
+  app.patch("/api/site-calls/:id/assign", async (req, res) => {
+    try {
+      const { assignedEngineer } = req.body;
+      const siteCall = await storage.updateSiteCall(req.params.id, {
+        assignedEngineer,
+        assignedAt: new Date(),
+        callStatus: 'assigned',
+      });
+      if (!siteCall) {
+        return res.status(404).json({ message: "Site call not found" });
+      }
+      res.json(siteCall);
+    } catch (error) {
+      console.error("Error assigning engineer:", error);
+      res.status(400).json({ message: "Failed to assign engineer" });
     }
   });
 

@@ -25,6 +25,7 @@ import {
   automationPanels,
   communicationModules,
   automationDeviceTemplates,
+  siteCalls,
   users,
   roles,
   userRoles,
@@ -81,6 +82,8 @@ import {
   type InsertCommunicationModule,
   type AutomationDeviceTemplate,
   type InsertAutomationDeviceTemplate,
+  type SiteCall,
+  type InsertSiteCall,
   type User,
   type InsertUser,
   type Role,
@@ -287,6 +290,15 @@ export interface IStorage {
   getSession(token: string): Promise<Session | undefined>;
   updateSessionActivity(token: string): Promise<void>;
   deleteSession(token: string): Promise<boolean>;
+
+  // Site Calls Management
+  getAllSiteCalls(): Promise<SiteCall[]>;
+  getSiteCalls(filters: { siteId?: string; status?: string; issueType?: string; assignedEngineer?: string }): Promise<SiteCall[]>;
+  getSiteCall(id: string): Promise<SiteCall | undefined>;
+  createSiteCall(siteCall: InsertSiteCall): Promise<SiteCall>;
+  updateSiteCall(id: string, siteCall: Partial<InsertSiteCall>): Promise<SiteCall | undefined>;
+  deleteSiteCall(id: string): Promise<boolean>;
+  generateCallNumber(): Promise<string>;
   deleteUserSessions(userId: string): Promise<void>;
   
   // Authentication
@@ -1689,6 +1701,97 @@ export class DatabaseStorage implements IStorage {
       .update(sessions)
       .set({ isActive: false })
       .where(eq(sessions.userId, userId));
+  }
+
+  // Site Calls Management Implementation
+  async getAllSiteCalls(): Promise<SiteCall[]> {
+    return await db
+      .select()
+      .from(siteCalls)
+      .orderBy(desc(siteCalls.reportedAt));
+  }
+
+  async getSiteCalls(filters: { siteId?: string; status?: string; issueType?: string; assignedEngineer?: string }): Promise<SiteCall[]> {
+    const query = db
+      .select()
+      .from(siteCalls);
+
+    const conditions = [];
+    if (filters.siteId) {
+      conditions.push(eq(siteCalls.siteId, filters.siteId));
+    }
+    if (filters.status) {
+      conditions.push(eq(siteCalls.callStatus, filters.status));
+    }
+    if (filters.issueType) {
+      conditions.push(eq(siteCalls.issueType, filters.issueType));
+    }
+    if (filters.assignedEngineer) {
+      conditions.push(eq(siteCalls.assignedEngineer, filters.assignedEngineer));
+    }
+
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions)).orderBy(desc(siteCalls.reportedAt));
+    }
+
+    return await query.orderBy(desc(siteCalls.reportedAt));
+  }
+
+  async getSiteCall(id: string): Promise<SiteCall | undefined> {
+    const [siteCall] = await db
+      .select()
+      .from(siteCalls)
+      .where(eq(siteCalls.id, id));
+    return siteCall;
+  }
+
+  async createSiteCall(siteCall: InsertSiteCall): Promise<SiteCall> {
+    // Generate call number if not provided
+    const callNumber = siteCall.callNumber || await this.generateCallNumber();
+    
+    const [newSiteCall] = await db
+      .insert(siteCalls)
+      .values({
+        ...siteCall,
+        callNumber,
+      })
+      .returning();
+    return newSiteCall;
+  }
+
+  async updateSiteCall(id: string, siteCall: Partial<InsertSiteCall>): Promise<SiteCall | undefined> {
+    const [updated] = await db
+      .update(siteCalls)
+      .set({
+        ...siteCall,
+        updatedAt: new Date(),
+      })
+      .where(eq(siteCalls.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSiteCall(id: string): Promise<boolean> {
+    const result = await db
+      .delete(siteCalls)
+      .where(eq(siteCalls.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async generateCallNumber(): Promise<string> {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const prefix = `CALL-${year}${month}`;
+    
+    // Get the count of calls for this month
+    const [result] = await db
+      .select({ count: count() })
+      .from(siteCalls)
+      .where(sql`${siteCalls.callNumber} LIKE '${prefix}%'`);
+    
+    const nextNumber = (result?.count || 0) + 1;
+    return `${prefix}-${String(nextNumber).padStart(4, '0')}`;
   }
 
   // Authentication Implementation

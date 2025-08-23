@@ -1567,6 +1567,75 @@ export const beckhoffModuleCalculations = pgTable("beckhoff_module_calculations"
   index("idx_module_calc_approved").on(table.isApproved),
 ]);
 
+// Site Calls Management System
+export const siteCalls = pgTable("site_calls", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Call Information
+  callNumber: varchar("call_number", { length: 50 }).notNull().unique(),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  siteName: varchar("site_name", { length: 255 }).notNull(), // Stored for quick reference
+  
+  // Issue Details
+  issueType: varchar("issue_type", { length: 50 }).notNull(), // program, instrument, electrical, operational
+  issueCategory: varchar("issue_category", { length: 100 }), // More specific categorization
+  issuePriority: varchar("issue_priority", { length: 20 }).default("medium"), // low, medium, high, critical
+  issueTitle: varchar("issue_title", { length: 255 }).notNull(),
+  issueDescription: text("issue_description").notNull(),
+  
+  // People Involved
+  callerName: varchar("caller_name", { length: 255 }).notNull(),
+  callerContact: varchar("caller_contact", { length: 100 }),
+  callerDepartment: varchar("caller_department", { length: 100 }),
+  assignedEngineer: varchar("assigned_engineer", { length: 255 }),
+  attendingEngineers: jsonb("attending_engineers"), // Array of engineer details
+  
+  // Status and Progress
+  callStatus: varchar("call_status", { length: 50 }).default("open"), // open, assigned, in_progress, resolved, closed
+  complaintStatus: varchar("complaint_status", { length: 50 }).default("pending"), // pending, acknowledged, investigating, resolved
+  resolutionStatus: varchar("resolution_status", { length: 50 }), // temporary_fix, permanent_fix, replaced, etc.
+  
+  // Timeline
+  reportedAt: timestamp("reported_at").defaultNow(),
+  assignedAt: timestamp("assigned_at"),
+  startedAt: timestamp("started_at"),
+  resolvedAt: timestamp("resolved_at"),
+  closedAt: timestamp("closed_at"),
+  targetResolutionTime: timestamp("target_resolution_time"),
+  
+  // Engineering Response
+  engineerRemarks: text("engineer_remarks"),
+  rootCauseAnalysis: text("root_cause_analysis"),
+  actionsTaken: text("actions_taken"),
+  preventiveMeasures: text("preventive_measures"),
+  partsUsed: jsonb("parts_used"), // List of parts/components used
+  
+  // Documentation and Links
+  reportLinks: jsonb("report_links"), // Array of report URLs/paths
+  attachments: jsonb("attachments"), // File paths/URLs for photos, docs
+  relatedCalls: jsonb("related_calls"), // Related call IDs
+  
+  // Cost and Effort
+  estimatedHours: decimal("estimated_hours", { precision: 6, scale: 2 }),
+  actualHours: decimal("actual_hours", { precision: 6, scale: 2 }),
+  costEstimate: decimal("cost_estimate", { precision: 10, scale: 2 }),
+  actualCost: decimal("actual_cost", { precision: 10, scale: 2 }),
+  
+  // System Fields
+  createdBy: varchar("created_by", { length: 255 }),
+  lastUpdatedBy: varchar("last_updated_by", { length: 255 }),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_site_calls_site").on(table.siteId),
+  index("idx_site_calls_status").on(table.callStatus),
+  index("idx_site_calls_priority").on(table.issuePriority),
+  index("idx_site_calls_type").on(table.issueType),
+  index("idx_site_calls_engineer").on(table.assignedEngineer),
+  index("idx_site_calls_reported").on(table.reportedAt),
+]);
+
 // Insert schemas for new tables
 export const insertPanelConfigurationSchema = createInsertSchema(panelConfigurations).omit({
   id: true,
@@ -1604,3 +1673,13 @@ export type InsertPanelInstrument = z.infer<typeof insertPanelInstrumentSchema>;
 
 export type BeckhoffModuleCalculation = typeof beckhoffModuleCalculations.$inferSelect;
 export type InsertBeckhoffModuleCalculation = z.infer<typeof insertBeckhoffModuleCalculationSchema>;
+
+// Site Calls Management
+export const insertSiteCallSchema = createInsertSchema(siteCalls).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type SiteCall = typeof siteCalls.$inferSelect;
+export type InsertSiteCall = z.infer<typeof insertSiteCallSchema>;

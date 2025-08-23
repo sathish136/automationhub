@@ -24,6 +24,7 @@ import {
   Users,
   LogOut,
   User,
+  Phone,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -40,6 +41,7 @@ const navigation = [
   { name: "IPC Management", href: "/ipc-management", icon: Monitor },
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
   { name: "PLC Calculations", href: "/plc-calculations", icon: Calculator },
+  { name: "Site Calls", href: "/site-calls", icon: Phone },
   { name: "Automation Wizard", href: "/automation-wizard", icon: Zap },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "User Management", href: "/user-management", icon: Users },
