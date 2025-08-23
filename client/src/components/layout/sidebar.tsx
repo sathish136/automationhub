@@ -122,27 +122,29 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-700">
         {!isCollapsed ? (
           <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <User size={16} />
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <User size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate" data-testid="user-name">
+                    {user?.fullName || user?.firstName || user?.email || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate" data-testid="user-name">
-                  {user?.fullName || user?.firstName || user?.email || 'User'}
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  {user?.email}
-                </p>
-              </div>
+              <button
+                onClick={logout}
+                className="w-6 h-6 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center"
+                data-testid="logout-button"
+                title="Logout"
+              >
+                <LogOut size={10} className="text-white" />
+              </button>
             </div>
-            <button
-              onClick={logout}
-              className="w-6 h-6 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center ml-auto"
-              data-testid="logout-button"
-              title="Logout"
-            >
-              <LogOut size={10} className="text-white" />
-            </button>
           </div>
         ) : (
           <button
