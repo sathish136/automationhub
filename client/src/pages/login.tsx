@@ -24,10 +24,8 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
-      return await apiRequest('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      const response = await apiRequest('/api/auth/login', 'POST', data);
+      return await response.json();
     },
     onSuccess: (data) => {
       const displayName = data.user.fullName || data.user.firstName || data.user.email;
@@ -42,9 +40,18 @@ export default function Login() {
       setLocation('/');
     },
     onError: (error: any) => {
+      console.error("Login error:", error);
+      let errorMessage = "Invalid credentials. Please try again.";
+      
+      // Parse error message from API response
+      if (error.message) {
+        // Remove status code prefix if present (e.g., "401: Invalid email or password")
+        errorMessage = error.message.replace(/^\d+:\s*/, '');
+      }
+      
       toast({
         title: "Login Failed",
-        description: error.message || "Invalid credentials. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -52,7 +59,9 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
+    
+    // Validation
+    if (!formData.email.trim() || !formData.password.trim()) {
       toast({
         title: "Validation Error",
         description: "Please fill in all fields.",
@@ -60,7 +69,25 @@ export default function Login() {
       });
       return;
     }
-    loginMutation.mutate(formData);
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Trim whitespace from email
+    const loginData = {
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password
+    };
+    
+    loginMutation.mutate(loginData);
   };
 
   const handleChange = (field: keyof LoginData) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +152,14 @@ export default function Login() {
             >
               {loginMutation.isPending ? "Signing in..." : "Sign In"}
             </Button>
+            
+            {loginMutation.error && (
+              <div className="text-center mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">
+                  Having trouble logging in? Check your credentials or contact your administrator.
+                </p>
+              </div>
+            )}
             
             <div className="text-center mt-4">
               <p className="text-xs text-gray-600">

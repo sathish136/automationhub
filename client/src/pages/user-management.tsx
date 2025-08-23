@@ -99,9 +99,16 @@ export default function UserManagement() {
       setFormData({ email: '', password: '', firstName: '', lastName: '' });
     },
     onError: (error: any) => {
+      console.error("Create user error:", error);
+      let errorMessage = "Failed to create user. Please try again.";
+      
+      if (error.message) {
+        errorMessage = error.message.replace(/^\d+:\s*/, '');
+      }
+      
       toast({
         title: "Error Creating User",
-        description: error.message || "Failed to create user.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -133,9 +140,16 @@ export default function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
     },
     onError: (error: any) => {
+      console.error("Delete user error:", error);
+      let errorMessage = "Failed to delete user. Please try again.";
+      
+      if (error.message) {
+        errorMessage = error.message.replace(/^\d+:\s*/, '');
+      }
+      
       toast({
         title: "Error Deleting User",
-        description: error.message || "Failed to delete user.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -143,7 +157,9 @@ export default function UserManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
+    
+    // Validation
+    if (!formData.email.trim() || !formData.password.trim()) {
       toast({
         title: "Validation Error",
         description: "Email and password are required.",
@@ -151,7 +167,37 @@ export default function UserManagement() {
       });
       return;
     }
-    createUserMutation.mutate(formData);
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Password validation
+    if (formData.password.length < 6) {
+      toast({
+        title: "Validation Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Clean up data
+    const userData = {
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+      firstName: formData.firstName?.trim() || undefined,
+      lastName: formData.lastName?.trim() || undefined,
+    };
+    
+    createUserMutation.mutate(userData);
   };
 
   const handleChange = (field: keyof UserFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
