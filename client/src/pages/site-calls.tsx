@@ -231,10 +231,10 @@ export default function SiteCallsPage() {
               <Phone className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 Site Calls
               </h1>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Track service calls
               </p>
             </div>
