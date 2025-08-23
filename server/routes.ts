@@ -1946,7 +1946,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         {
           vendorId: vendorMap.get("BECKHOFF"),
-          productCode: "EL1008",
+          partNumber: "EL1008",
+          productName: "EL1008",
           productDisplayName: "8-Channel Digital Input 24V",
           productDescription: "Reliable 8-channel digital input terminal for 24V DC signals with LED status indicators",
           category: "digital_io",
@@ -1960,13 +1961,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             inputFilter: "3.0 ms",
             connection: "Push-in terminals"
           },
-          unitPrice: 45.00,
+          unitPrice: "45.00",
           currency: "USD",
           isRecommended: true
         },
         {
           vendorId: vendorMap.get("BECKHOFF"),
-          productCode: "EL2008", 
+          partNumber: "EL2008",
+          productName: "EL2008",
           productDisplayName: "8-Channel Digital Output 24V",
           productDescription: "High-performance 8-channel digital output terminal for switching 24V DC loads up to 0.5A per channel",
           category: "digital_io",
@@ -1980,14 +1982,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             shortCircuitProtection: true,
             connection: "Push-in terminals"
           },
-          unitPrice: 55.00,
+          unitPrice: "55.00",
           currency: "USD",
           isRecommended: true
         },
         // Siemens Products
         {
           vendorId: vendorMap.get("SIEMENS"),
-          productCode: "6ES7516-3AN02-0AB0",
+          partNumber: "6ES7516-3AN02-0AB0",
+          productName: "6ES7516-3AN02-0AB0",
           productDisplayName: "SIMATIC S7-1500 CPU 1516-3 PN/DP",
           productDescription: "High-performance CPU with integrated PROFINET interface for demanding automation tasks",
           category: "controller",
@@ -2001,14 +2004,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             interfaces: ["PROFINET", "PROFIBUS DP"],
             execution: "High-speed processing"
           },
-          unitPrice: 1850.00,
+          unitPrice: "1850.00",
           currency: "USD",
           isRecommended: true,
           isFeatured: true
         },
         {
           vendorId: vendorMap.get("SIEMENS"),
-          productCode: "6ES7134-6HD00-0BA1",
+          partNumber: "6ES7134-6HD00-0BA1",
+          productName: "6ES7134-6HD00-0BA1",
           productDisplayName: "ET 200SP 8DI x 24V DC Standard",
           productDescription: "Compact 8-channel digital input module for 24V DC sensors with high channel density",
           category: "digital_io",
@@ -2022,14 +2026,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             inputDelay: "3.2 ms",
             connection: "Push-in terminals"
           },
-          unitPrice: 85.00,
+          unitPrice: "85.00",
           currency: "USD",
           isRecommended: true
         },
         // Rockwell Products
         {
           vendorId: vendorMap.get("ROCKWELL"),
-          productCode: "1756-L85E",
+          partNumber: "1756-L85E",
+          productName: "1756-L85E",
           productDisplayName: "ControlLogix 5580 Controller",
           productDescription: "High-performance controller with integrated Ethernet/IP for large-scale automation systems",
           category: "controller",
@@ -2042,14 +2047,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             interfaces: ["Dual Ethernet/IP"],
             scanTime: "Sub-millisecond"
           },
-          unitPrice: 4200.00,
+          unitPrice: "4200.00",
           currency: "USD",
           isRecommended: true,
           isFeatured: true
         },
         {
           vendorId: vendorMap.get("ROCKWELL"),
-          productCode: "1734-IB8",
+          partNumber: "1734-IB8",
+          productName: "1734-IB8",
           productDisplayName: "POINT I/O 8-Point DC Input",
           productDescription: "Flexible 8-point 24V DC input module with removable terminal blocks",
           category: "digital_io", 
@@ -2063,14 +2069,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             inputFilter: "Programmable",
             connection: "Removable terminal blocks"
           },
-          unitPrice: 125.00,
+          unitPrice: "125.00",
           currency: "USD",
           isRecommended: true
         },
         // Schneider Electric Products  
         {
           vendorId: vendorMap.get("SCHNEIDER"),
-          productCode: "BMXP582040",
+          partNumber: "BMXP582040",
+          productName: "BMXP582040",
           productDisplayName: "Modicon M580 CPU",
           productDescription: "High-end CPU with dual Ethernet ports for critical process applications",
           category: "controller",
@@ -2083,7 +2090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             interfaces: ["Dual Ethernet", "Modbus TCP"],
             safety: "SIL 3 certified"
           },
-          unitPrice: 2800.00,
+          unitPrice: "2800.00",
           currency: "USD",
           isRecommended: true
         }
