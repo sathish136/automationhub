@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pingService } from "./services/pingService";
@@ -164,6 +165,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Invalid user data" });
     }
   });
+
+  // Photo upload endpoint
+  app.post("/api/upload/photo", requireAuth, upload.single('photo'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No photo file provided" });
+      }
+
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'photos');
+      try {
+        await fs.access(uploadsDir);
+      } catch {
+        await fs.mkdir(uploadsDir, { recursive: true });
+      }
+
+      // Generate unique filename
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `${crypto.randomBytes(16).toString('hex')}${fileExtension}`;
+      const filePath = path.join(uploadsDir, fileName);
+
+      // Move file to photos directory
+      await fs.rename(req.file.path, filePath);
+
+      // Return the URL for accessing the photo
+      const photoUrl = `/uploads/photos/${fileName}`;
+      
+      res.json({
+        success: true,
+        url: photoUrl,
+        filename: fileName
+      });
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      res.status(500).json({ message: "Failed to upload photo" });
+    }
+  });
+
+  // Serve uploaded photos
+  app.use('/uploads/photos', express.static(path.join(process.cwd(), 'uploads/photos')));
 
   app.post("/api/auth/logout", async (req, res) => {
     try {

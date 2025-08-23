@@ -49,6 +49,7 @@ interface UserFormData {
   firstName?: string;
   lastName?: string;
   photoUrl?: string;
+  photoFile?: File;
   roleId?: string;
 }
 
@@ -119,14 +120,39 @@ export default function UserManagement() {
     mutationFn: async (userData: UserFormData) => {
       const token = localStorage.getItem('authToken');
       
-      // Create user first
+      let photoUrl = userData.photoUrl;
+      
+      // Upload photo first if file is provided
+      if (userData.photoFile) {
+        const formData = new FormData();
+        formData.append('photo', userData.photoFile);
+        
+        const uploadResponse = await fetch('/api/upload/photo', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+        
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json();
+          photoUrl = uploadResult.url;
+        }
+      }
+      
+      // Create user with photo URL
       const userResponse = await fetch('/api/users', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          ...userData,
+          photoUrl,
+          photoFile: undefined, // Remove file from JSON
+        }),
       });
       
       if (!userResponse.ok) {
@@ -380,13 +406,39 @@ export default function UserManagement() {
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<UserFormData> }) => {
       const token = localStorage.getItem('authToken');
+      
+      let photoUrl = userData.photoUrl;
+      
+      // Upload photo first if file is provided
+      if (userData.photoFile) {
+        const formData = new FormData();
+        formData.append('photo', userData.photoFile);
+        
+        const uploadResponse = await fetch('/api/upload/photo', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+        
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json();
+          photoUrl = uploadResult.url;
+        }
+      }
+      
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          ...userData,
+          photoUrl,
+          photoFile: undefined, // Remove file from JSON
+        }),
       });
       
       if (!response.ok) {
@@ -486,14 +538,24 @@ export default function UserManagement() {
               </div>
               
               <div>
-                <Label htmlFor="photoUrl">Profile Photo URL</Label>
+                <Label htmlFor="photoFile">Profile Photo</Label>
                 <Input
-                  id="photoUrl"
-                  value={formData.photoUrl}
-                  onChange={handleChange('photoUrl')}
-                  placeholder="https://example.com/photo.jpg"
+                  id="photoFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData(prev => ({ ...prev, photoFile: file }));
+                    }
+                  }}
                   data-testid="input-user-photo"
                 />
+                {formData.photoFile && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selected: {formData.photoFile.name}
+                  </p>
+                )}
               </div>
               
               <div>
@@ -793,13 +855,33 @@ export default function UserManagement() {
               </div>
               
               <div>
-                <Label htmlFor="edit-photoUrl">Profile Photo URL</Label>
+                <Label htmlFor="edit-photoFile">Profile Photo</Label>
                 <Input
-                  id="edit-photoUrl"
-                  value={editFormData.photoUrl || ''}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, photoUrl: e.target.value }))}
-                  placeholder="https://example.com/photo.jpg"
+                  id="edit-photoFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setEditFormData(prev => ({ ...prev, photoFile: file }));
+                    }
+                  }}
                 />
+                {editFormData.photoFile && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selected: {editFormData.photoFile.name}
+                  </p>
+                )}
+                {selectedUser?.photoUrl && !editFormData.photoFile && (
+                  <div className="mt-2">
+                    <img 
+                      src={selectedUser.photoUrl} 
+                      alt="Current photo"
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Current photo</p>
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-end space-x-2">
