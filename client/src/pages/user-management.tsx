@@ -63,6 +63,8 @@ export default function UserManagement() {
   });
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showRoleManager, setShowRoleManager] = useState(false);
+  const [showEditUser, setShowEditUser] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<UserFormData>>({});
 
   // Fetch users with auth token and their roles
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -282,6 +284,16 @@ export default function UserManagement() {
     setShowRoleManager(true);
   };
 
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setEditFormData({
+      email: user.email,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+    });
+    setShowEditUser(true);
+  };
+
   // Role assignment mutation
   const assignRoleMutation = useMutation({
     mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
@@ -352,15 +364,53 @@ export default function UserManagement() {
     },
   });
 
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<UserFormData> }) => {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update user');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User Updated",
+        description: "User has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setShowEditUser(false);
+      setEditFormData({});
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Updating User",
+        description: error.message || "Failed to update user.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
             <Users className="text-primary" />
             User Management
           </h1>
-          <p className="text-gray-600 mt-1">Manage system users and their access</p>
+          <p className="text-sm text-gray-600 mt-1">Manage system users and their access</p>
         </div>
         
         <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
@@ -463,7 +513,7 @@ export default function UserManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>System Users</CardTitle>
+          <CardTitle className="text-lg">Users</CardTitle>
         </CardHeader>
         <CardContent>
           {usersLoading ? (
@@ -489,41 +539,42 @@ export default function UserManagement() {
                       )}
                     </div>
                     <div>
-                      <div className="font-medium" data-testid={`text-user-name-${user.id}`}>
+                      <div className="text-sm font-medium" data-testid={`text-user-name-${user.id}`}>
                         {user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
                       </div>
-                      <div className="text-sm text-gray-600" data-testid={`text-user-email-${user.id}`}>
+                      <div className="text-xs text-gray-600" data-testid={`text-user-email-${user.id}`}>
                         {user.email}
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={user.isActive ? "default" : "secondary"}>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs px-1 py-0">
                           {user.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        <span className="text-xs text-gray-500">
-                          Created: {new Date(user.createdAt).toLocaleDateString()}
-                        </span>
+                        {user.roles && user.roles.length > 0 && user.roles.map((role) => (
+                          <Badge key={role.id} variant="outline" className="text-xs px-1 py-0">
+                            {role.displayName}
+                          </Badge>
+                        ))}
                       </div>
-                      {user.roles && user.roles.length > 0 && (
-                        <div className="flex items-center gap-1 mt-2">
-                          <span className="text-xs text-gray-500">Roles:</span>
-                          {user.roles.map((role) => (
-                            <Badge key={role.id} variant="outline" className="text-xs">
-                              {role.displayName}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditUser(user)}
+                      className="text-xs px-2 py-1"
+                      data-testid={`button-edit-user-${user.id}`}
+                    >
+                      Edit
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleManageRoles(user)}
+                      className="text-xs px-2 py-1"
                       data-testid={`button-manage-roles-${user.id}`}
                     >
-                      <Users className="w-4 h-4 mr-1" />
                       Roles
                     </Button>
                     <Button
@@ -531,9 +582,10 @@ export default function UserManagement() {
                       size="sm"
                       onClick={() => handleDeleteUser(user.id, user.fullName || user.email)}
                       disabled={deleteUserMutation.isPending}
+                      className="text-xs px-2 py-1 text-red-600 hover:text-red-700"
                       data-testid={`button-delete-user-${user.id}`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      Delete
                     </Button>
                   </div>
                 </div>
@@ -543,32 +595,6 @@ export default function UserManagement() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>System Roles</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {roles.map((role) => (
-              <div
-                key={role.id}
-                className="p-4 border rounded-lg"
-                data-testid={`role-card-${role.id}`}
-              >
-                <div className="font-medium" data-testid={`text-role-name-${role.id}`}>
-                  {role.displayName}
-                </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  {role.description || `${role.name} role`}
-                </div>
-                <Badge variant="outline" className="mt-2">
-                  {role.name}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Role Management Dialog */}
       <Dialog open={showRoleManager} onOpenChange={setShowRoleManager}>
@@ -640,6 +666,74 @@ export default function UserManagement() {
                 </Button>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={showEditUser} onOpenChange={setShowEditUser}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (selectedUser) {
+                updateUserMutation.mutate({
+                  userId: selectedUser.id,
+                  userData: editFormData
+                });
+              }
+            }} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-email">Email Address</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editFormData.email || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="user@company.com"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-firstName">First Name</Label>
+                <Input
+                  id="edit-firstName"
+                  value={editFormData.firstName || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                  placeholder="John"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-lastName">Last Name</Label>
+                <Input
+                  id="edit-lastName"
+                  value={editFormData.lastName || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                  placeholder="Doe"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowEditUser(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateUserMutation.isPending}
+                >
+                  {updateUserMutation.isPending ? "Updating..." : "Update User"}
+                </Button>
+              </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>
