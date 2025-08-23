@@ -517,14 +517,14 @@ export default function SiteCallsPage() {
             <div>
               <Label htmlFor="site-filter">Site</Label>
               <Select 
-                value={filters.siteId} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, siteId: value }))}
+                value={filters.siteId || 'all'} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, siteId: value === 'all' ? '' : value }))}
               >
                 <SelectTrigger data-testid="filter-site">
                   <SelectValue placeholder="All sites" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sites</SelectItem>
+                  <SelectItem value="all">All Sites</SelectItem>
                   {sites.map((site) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.name}
@@ -536,14 +536,14 @@ export default function SiteCallsPage() {
             <div>
               <Label htmlFor="status-filter">Status</Label>
               <Select 
-                value={filters.status} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                value={filters.status || 'all'} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}
               >
                 <SelectTrigger data-testid="filter-status">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   {Object.entries(statusConfig).map(([key, config]) => (
                     <SelectItem key={key} value={key}>
                       {config.label}
@@ -555,14 +555,14 @@ export default function SiteCallsPage() {
             <div>
               <Label htmlFor="type-filter">Issue Type</Label>
               <Select 
-                value={filters.issueType} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, issueType: value }))}
+                value={filters.issueType || 'all'} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, issueType: value === 'all' ? '' : value }))}
               >
                 <SelectTrigger data-testid="filter-issue-type">
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   {Object.entries(issueTypeConfig).map(([key, config]) => (
                     <SelectItem key={key} value={key}>
                       {config.label}
