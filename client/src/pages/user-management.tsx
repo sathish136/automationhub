@@ -515,7 +515,7 @@ export default function UserManagement() {
         <CardHeader>
           <CardTitle className="text-lg">Users</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {usersLoading ? (
             <div className="text-center py-8">Loading users...</div>
           ) : users.length === 0 ? (
@@ -523,73 +523,112 @@ export default function UserManagement() {
               No users found. Create your first user to get started.
             </div>
           ) : (
-            <div className="space-y-4">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                  data-testid={`user-card-${user.id}`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-gray-100 rounded-full">
-                      {user.isActive ? (
-                        <UserCheck className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <UserX className="w-5 h-5 text-red-600" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium" data-testid={`text-user-name-${user.id}`}>
-                        {user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
-                      </div>
-                      <div className="text-xs text-gray-600" data-testid={`text-user-email-${user.id}`}>
-                        {user.email}
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs px-1 py-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2 text-xs font-medium text-gray-500">User</th>
+                    <th className="text-left p-2 text-xs font-medium text-gray-500">Status</th>
+                    <th className="text-left p-2 text-xs font-medium text-gray-500">Roles</th>
+                    <th className="text-left p-2 text-xs font-medium text-gray-500">Quick Assign</th>
+                    <th className="text-right p-2 text-xs font-medium text-gray-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id} className="border-b hover:bg-gray-50" data-testid={`user-row-${user.id}`}>
+                      <td className="p-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                            {user.isActive ? (
+                              <UserCheck className="w-3 h-3 text-green-600" />
+                            ) : (
+                              <UserX className="w-3 h-3 text-red-600" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium" data-testid={`text-user-name-${user.id}`}>
+                              {user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
+                            </div>
+                            <div className="text-xs text-gray-500" data-testid={`text-user-email-${user.id}`}>
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <Badge variant={user.isActive ? "default" : "secondary"} className="text-xs">
                           {user.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        {user.roles && user.roles.length > 0 && user.roles.map((role) => (
-                          <Badge key={role.id} variant="outline" className="text-xs px-1 py-0">
-                            {role.displayName}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditUser(user)}
-                      className="text-xs px-2 py-1"
-                      data-testid={`button-edit-user-${user.id}`}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleManageRoles(user)}
-                      className="text-xs px-2 py-1"
-                      data-testid={`button-manage-roles-${user.id}`}
-                    >
-                      Roles
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id, user.fullName || user.email)}
-                      disabled={deleteUserMutation.isPending}
-                      className="text-xs px-2 py-1 text-red-600 hover:text-red-700"
-                      data-testid={`button-delete-user-${user.id}`}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles && user.roles.length > 0 ? user.roles.map((role) => (
+                            <Badge key={role.id} variant="outline" className="text-xs">
+                              {role.displayName}
+                            </Badge>
+                          )) : (
+                            <span className="text-xs text-gray-400">No roles</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <Select onValueChange={(roleId) => {
+                          if (roleId && roleId !== 'none') {
+                            assignRoleMutation.mutate({ userId: user.id, roleId });
+                          }
+                        }}>
+                          <SelectTrigger className="w-24 h-6 text-xs">
+                            <SelectValue placeholder="+" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Select Role</SelectItem>
+                            {roles
+                              .filter(role => !user.roles?.some(userRole => userRole.id === role.id))
+                              .map((role) => (
+                                <SelectItem key={role.id} value={role.id}>
+                                  {role.displayName}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-2 text-right">
+                        <div className="flex items-center justify-end space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditUser(user)}
+                            className="h-6 px-2 text-xs"
+                            data-testid={`button-edit-user-${user.id}`}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleManageRoles(user)}
+                            className="h-6 px-2 text-xs"
+                            data-testid={`button-manage-roles-${user.id}`}
+                          >
+                            Manage
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id, user.fullName || user.email)}
+                            disabled={deleteUserMutation.isPending}
+                            className="h-6 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                            data-testid={`button-delete-user-${user.id}`}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
@@ -634,26 +673,25 @@ export default function UserManagement() {
               </div>
               
               <div>
-                <h4 className="text-sm font-medium mb-2">Assign New Role</h4>
-                <div className="flex gap-2">
-                  <Select onValueChange={(roleId) => {
-                    if (roleId) {
-                      assignRoleMutation.mutate({ userId: selectedUser.id, roleId });
-                    }
-                  }}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select a role to assign" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles
-                        .filter(role => !selectedUser.roles?.some(userRole => userRole.id === role.id))
-                        .map((role) => (
-                          <SelectItem key={role.id} value={role.id}>
-                            {role.displayName}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                <h4 className="text-sm font-medium mb-2">Available Roles</h4>
+                <div className="grid grid-cols-1 gap-2">
+                  {roles
+                    .filter(role => !selectedUser.roles?.some(userRole => userRole.id === role.id))
+                    .map((role) => (
+                      <Button
+                        key={role.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => assignRoleMutation.mutate({ userId: selectedUser.id, roleId: role.id })}
+                        disabled={assignRoleMutation.isPending}
+                        className="justify-start text-xs"
+                      >
+                        + {role.displayName}
+                      </Button>
+                    ))}
+                  {roles.filter(role => !selectedUser.roles?.some(userRole => userRole.id === role.id)).length === 0 && (
+                    <p className="text-xs text-gray-500">All roles assigned</p>
+                  )}
                 </div>
               </div>
               

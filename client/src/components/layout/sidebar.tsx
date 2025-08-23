@@ -137,21 +137,21 @@ export default function Sidebar() {
             </div>
             <button
               onClick={logout}
-              className="w-full p-1 bg-red-600 hover:bg-red-700 rounded transition-colors flex items-center justify-center"
+              className="w-6 h-6 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center ml-auto"
               data-testid="logout-button"
               title="Logout"
             >
-              <LogOut size={12} className="text-white" />
+              <LogOut size={10} className="text-white" />
             </button>
           </div>
         ) : (
           <button
             onClick={logout}
-            className="w-full p-1 hover:bg-gray-700 rounded-lg transition-colors group relative"
+            className="w-8 h-8 hover:bg-gray-700 rounded transition-colors group relative mx-auto"
             data-testid="logout-button-collapsed"
             title="Logout"
           >
-            <LogOut size={14} className="mx-auto text-red-400" />
+            <LogOut size={12} className="mx-auto text-red-400" />
             {/* Tooltip for collapsed state */}
             <div className="absolute left-full ml-3 px-3 py-2 bg-gray-800 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
               Logout
