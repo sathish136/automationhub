@@ -48,12 +48,27 @@ const siteCallSchema = z.object({
   issuePriority: z.enum(["low", "medium", "high", "critical"]),
   issueTitle: z.string().min(1, "Issue title is required"),
   issueDescription: z.string().min(1, "Issue description is required"),
-  callerName: z.string().min(1, "Caller name is required"),
-  callerContact: z.string().optional(),
-  callerDepartment: z.string().optional(),
+  siteEngineer: z.string().min(1, "Site engineer is required"),
   assignedEngineer: z.string().optional(),
   targetResolutionTime: z.string().optional(),
 });
+
+// Engineer options
+const siteEngineers = [
+  "Mr.Vignesh",
+  "Mr.Hariharan", 
+  "Mr.Rajesh",
+  "Mr.Arjun",
+  "Mr.Sakthivel",
+  "Ms.Sopana"
+];
+
+const attendingEngineers = [
+  "Mr.Parthiban",
+  "Mr.Gokul",
+  "Mr.Raja", 
+  "Mr.Nishanth"
+];
 
 type SiteCallFormData = z.infer<typeof siteCallSchema>;
 
@@ -231,43 +246,43 @@ export default function SiteCallsPage() {
   };
 
   return (
-    <div className="space-y-4 p-1">
+    <div className="space-y-2 p-1">
       {/* Header */}
-      <div className="flex justify-between items-center bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 p-6 rounded-xl border shadow-lg backdrop-blur-sm">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold flex items-center gap-3 text-gray-900 dark:text-gray-100">
-            <div className="p-2 bg-blue-600 rounded-lg shadow-md">
-              <Phone className="h-5 w-5 text-white" />
+      <div className="flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-lg border shadow-sm">
+        <div>
+          <h1 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <div className="p-1.5 bg-blue-600 rounded-md">
+              <Phone className="h-4 w-4 text-white" />
             </div>
-            Site Calls Management
+            Site Calls
           </h1>
-          <p className="text-sm text-muted-foreground ml-12">
-            Track and manage service calls across all sites
+          <p className="text-xs text-muted-foreground ml-8">
+            Track service calls
           </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105" data-testid="button-create-call">
-              <Plus className="h-4 w-4" />
-              <span className="text-sm font-medium">New Site Call</span>
+            <Button className="flex items-center gap-1 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-xs" data-testid="button-create-call">
+              <Plus className="h-3 w-3" />
+              New Call
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-xl">
             <DialogHeader>
-              <DialogTitle>Create New Site Call</DialogTitle>
-              <DialogDescription>
-                Report a new issue that needs engineering attention
+              <DialogTitle className="text-lg">Create Site Call</DialogTitle>
+              <DialogDescription className="text-sm">
+                Report a new issue
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   <FormField
                     control={form.control}
                     name="siteId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Site</FormLabel>
+                        <FormLabel className="text-sm">Site</FormLabel>
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -279,7 +294,7 @@ export default function SiteCallsPage() {
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger data-testid="select-site">
+                            <SelectTrigger data-testid="select-site" className="h-8 text-sm">
                               <SelectValue placeholder="Select site" />
                             </SelectTrigger>
                           </FormControl>
@@ -300,10 +315,10 @@ export default function SiteCallsPage() {
                     name="issuePriority"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Priority</FormLabel>
+                        <FormLabel className="text-sm">Priority</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger data-testid="select-priority">
+                            <SelectTrigger data-testid="select-priority" className="h-8 text-sm">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
@@ -321,16 +336,16 @@ export default function SiteCallsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <FormField
                     control={form.control}
                     name="issueType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Issue Type</FormLabel>
+                        <FormLabel className="text-sm">Issue Type</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger data-testid="select-issue-type">
+                            <SelectTrigger data-testid="select-issue-type" className="h-8 text-sm">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
@@ -354,10 +369,10 @@ export default function SiteCallsPage() {
                     name="issueCategory"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Category (Optional)</FormLabel>
+                        <FormLabel className="text-sm">Category (Optional)</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger data-testid="select-category">
+                            <SelectTrigger data-testid="select-category" className="h-8 text-sm">
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                           </FormControl>
@@ -380,9 +395,9 @@ export default function SiteCallsPage() {
                   name="issueTitle"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Issue Title</FormLabel>
+                      <FormLabel className="text-sm">Issue Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="Brief description of the issue" {...field} data-testid="input-issue-title" />
+                        <Input placeholder="Brief description" {...field} data-testid="input-issue-title" className="h-8 text-sm" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -394,11 +409,11 @@ export default function SiteCallsPage() {
                   name="issueDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Detailed Description</FormLabel>
+                      <FormLabel className="text-sm">Description</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Provide detailed information about the issue, what happened, when it started, and any error messages..."
-                          className="min-h-[100px]"
+                          placeholder="Detailed issue description..."
+                          className="min-h-[60px] text-sm"
                           {...field} 
                           data-testid="textarea-issue-description"
                         />
@@ -408,58 +423,52 @@ export default function SiteCallsPage() {
                   )}
                 />
 
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="callerName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Caller Name</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="siteEngineer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Site Engineer</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <Input placeholder="Who is reporting" {...field} data-testid="input-caller-name" />
+                          <SelectTrigger data-testid="select-site-engineer" className="h-8 text-sm">
+                            <SelectValue placeholder="Select site engineer" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="callerContact"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Phone or email" {...field} data-testid="input-caller-contact" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="callerDepartment"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Department (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Which department" {...field} data-testid="input-caller-department" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                        <SelectContent>
+                          {siteEngineers.map((engineer) => (
+                            <SelectItem key={engineer} value={engineer}>
+                              {engineer}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <FormField
                     control={form.control}
                     name="assignedEngineer"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Assigned Engineer (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Engineer name" {...field} data-testid="input-assigned-engineer" />
-                        </FormControl>
+                        <FormLabel className="text-sm">Assigned Engineer (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-assigned-engineer" className="h-8 text-sm">
+                              <SelectValue placeholder="Select engineer" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {attendingEngineers.map((engineer) => (
+                              <SelectItem key={engineer} value={engineer}>
+                                {engineer}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -469,12 +478,13 @@ export default function SiteCallsPage() {
                     name="targetResolutionTime"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Target Resolution (Optional)</FormLabel>
+                        <FormLabel className="text-sm">Target Resolution (Optional)</FormLabel>
                         <FormControl>
                           <Input 
                             type="datetime-local" 
                             {...field} 
                             data-testid="input-target-resolution"
+                            className="h-8 text-sm"
                           />
                         </FormControl>
                         <FormMessage />
@@ -489,6 +499,7 @@ export default function SiteCallsPage() {
                     variant="outline" 
                     onClick={() => setIsCreateDialogOpen(false)}
                     data-testid="button-cancel"
+                    className="h-8 px-3 text-sm"
                   >
                     Cancel
                   </Button>
@@ -496,8 +507,9 @@ export default function SiteCallsPage() {
                     type="submit" 
                     disabled={createCallMutation.isPending}
                     data-testid="button-submit-call"
+                    className="h-8 px-3 text-sm"
                   >
-                    {createCallMutation.isPending ? "Creating..." : "Create Call"}
+                    {createCallMutation.isPending ? "Creating..." : "Create"}
                   </Button>
                 </div>
               </form>
@@ -507,28 +519,23 @@ export default function SiteCallsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="shadow-lg border-0 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gray-800 dark:text-gray-200">
-            <div className="p-1.5 bg-purple-100 dark:bg-purple-900/50 rounded-md">
-              <Filter className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-            </div>
-            Filters & Search
+      <Card className="border">
+        <CardHeader className="pb-2 pt-3">
+          <CardTitle className="text-xs font-medium flex items-center gap-1">
+            <Filter className="h-3 w-3" />
+            Filters
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-4 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="site-filter" className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                <Building className="h-3 w-3" />
-                Site
-              </Label>
+        <CardContent className="pt-0 pb-3">
+          <div className="grid grid-cols-4 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Site</Label>
               <Select 
                 value={filters.siteId || 'all'} 
                 onValueChange={(value) => setFilters(prev => ({ ...prev, siteId: value === 'all' ? '' : value }))}
               >
-                <SelectTrigger data-testid="filter-site" className="h-9 text-sm border-2 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-                  <SelectValue placeholder="All sites" />
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Sites</SelectItem>
@@ -540,17 +547,14 @@ export default function SiteCallsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status-filter" className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" />
-                Status
-              </Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Status</Label>
               <Select 
                 value={filters.status || 'all'} 
                 onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}
               >
-                <SelectTrigger data-testid="filter-status" className="h-9 text-sm border-2 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-                  <SelectValue placeholder="All statuses" />
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
@@ -562,17 +566,14 @@ export default function SiteCallsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="type-filter" className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                <Settings className="h-3 w-3" />
-                Issue Type
-              </Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Type</Label>
               <Select 
                 value={filters.issueType || 'all'} 
                 onValueChange={(value) => setFilters(prev => ({ ...prev, issueType: value === 'all' ? '' : value }))}
               >
-                <SelectTrigger data-testid="filter-issue-type" className="h-9 text-sm border-2 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-                  <SelectValue placeholder="All types" />
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
@@ -584,17 +585,14 @@ export default function SiteCallsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="engineer-filter" className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                <User className="h-3 w-3" />
-                Engineer
-              </Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Engineer</Label>
               <Input
-                placeholder="Engineer name..."
+                placeholder="Engineer..."
                 value={filters.assignedEngineer}
                 onChange={(e) => setFilters(prev => ({ ...prev, assignedEngineer: e.target.value }))}
                 data-testid="filter-engineer"
-                className="h-9 text-sm border-2 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
+                className="h-7 text-xs"
               />
             </div>
           </div>
@@ -602,33 +600,26 @@ export default function SiteCallsPage() {
       </Card>
 
       {/* Site Calls Table */}
-      <Card className="shadow-xl border-0 bg-white dark:bg-gray-900 overflow-hidden">
-        <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
-          <CardTitle className="text-lg font-bold flex items-center gap-3">
-            <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
-              <FileText className="h-4 w-4 text-green-600 dark:text-green-400" />
-            </div>
-            Active Site Calls 
-            <Badge variant="secondary" className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full">{siteCalls.length}</Badge>
+      <Card className="border">
+        <CardHeader className="pb-2 pt-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <FileText className="h-3 w-3" />
+            Site Calls ({siteCalls.length})
           </CardTitle>
-          <CardDescription className="text-sm ml-12">
-            Manage and track all site service calls
-          </CardDescription>
         </CardHeader>
         <CardContent className="pt-0 p-0">
-          <div className="overflow-hidden">
+          <div className="border rounded">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 border-b-2 border-slate-300 dark:border-slate-600">
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Call #</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Site</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Issue</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Type</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Priority</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Status</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Engineer</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Reported</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-800 dark:text-slate-200 py-3 px-4">Actions</TableHead>
+                <TableRow className="bg-gray-50 dark:bg-gray-800">
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Call #</TableHead>
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Site</TableHead>
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Issue</TableHead>
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Type</TableHead>
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Priority</TableHead>
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Status</TableHead>
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Engineer</TableHead>
+                  <TableHead className="text-xs font-medium py-1 px-2 h-8">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -639,77 +630,54 @@ export default function SiteCallsPage() {
                   const IconComponent = issueTypeInfo?.icon || AlertTriangle;
 
                   return (
-                    <TableRow key={call.id} data-testid={`row-call-${call.id}`} className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 transition-all duration-200 border-b border-slate-200 dark:border-slate-700">
-                      <TableCell className="font-mono text-xs py-3 px-4 font-bold text-blue-700 dark:text-blue-400">
-                        <div className="bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded-md inline-block">
-                          {call.callNumber}
+                    <TableRow key={call.id} data-testid={`row-call-${call.id}`} className="hover:bg-gray-50 dark:hover:bg-gray-800 h-10">
+                      <TableCell className="text-xs py-1 px-2 font-mono text-blue-600">
+                        {call.callNumber}
+                      </TableCell>
+                      <TableCell className="text-xs py-1 px-2">
+                        {call.siteName}
+                      </TableCell>
+                      <TableCell className="text-xs py-1 px-2 max-w-xs">
+                        <div className="truncate font-medium">{call.issueTitle}</div>
+                      </TableCell>
+                      <TableCell className="text-xs py-1 px-2">
+                        <div className="flex items-center gap-1">
+                          <IconComponent className="h-3 w-3" />
+                          <span>{issueTypeInfo?.label}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1 bg-gray-100 dark:bg-gray-800 rounded-md">
-                            <Building className="h-3 w-3 text-gray-600 dark:text-gray-400" />
-                          </div>
-                          <span className="text-xs font-semibold">{call.siteName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-xs py-3 px-4">
-                        <div className="space-y-1">
-                          <div className="truncate font-semibold text-xs text-gray-800 dark:text-gray-200">{call.issueTitle}</div>
-                          <div className="text-xs text-muted-foreground truncate bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
-                            {call.issueDescription}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-2 rounded-lg border">
-                          <IconComponent className="h-3 w-3 text-gray-600 dark:text-gray-400" />
-                          <span className="text-xs font-medium">{issueTypeInfo?.label}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <Badge variant="secondary" className={`${priorityInfo?.color} text-white text-xs px-3 py-1.5 rounded-full shadow-sm font-medium`}>
+                      <TableCell className="text-xs py-1 px-2">
+                        <Badge variant="secondary" className={`${priorityInfo?.color} text-white text-xs px-2 py-0.5`}>
                           {priorityInfo?.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <Badge variant="secondary" className={`${statusInfo?.color} text-white text-xs px-3 py-1.5 rounded-full shadow-sm font-medium`}>
+                      <TableCell className="text-xs py-1 px-2">
+                        <Badge variant="secondary" className={`${statusInfo?.color} text-white text-xs px-2 py-0.5`}>
                           {statusInfo?.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
-                          <User className="h-3 w-3 text-gray-600 dark:text-gray-400" />
-                          <span className="text-xs font-medium">{call.assignedEngineer || "Unassigned"}</span>
-                        </div>
+                      <TableCell className="text-xs py-1 px-2">
+                        {call.assignedEngineer || "Unassigned"}
                       </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="text-xs space-y-1">
-                          <div className="font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{formatDateTime(call.reportedAt)}</div>
-                          <div className="text-muted-foreground text-center">
-                            {getTimeSinceReported(call.reportedAt)}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="flex items-center gap-2">
+                      <TableCell className="text-xs py-1 px-2">
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-8 p-0 bg-gradient-to-r from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 border-green-300 shadow-sm hover:shadow-md transition-all duration-200"
+                            className="h-6 w-6 p-0"
                             onClick={() => {
                               setSelectedCall(call);
                               setIsViewDialogOpen(true);
                             }}
                             data-testid={`button-view-${call.id}`}
                           >
-                            <Eye className="h-3 w-3 text-green-700" />
+                            <Eye className="h-3 w-3" />
                           </Button>
                           <Select
                             value={call.callStatus}
                             onValueChange={(status) => handleStatusChange(call.id, status)}
                           >
-                            <SelectTrigger className="w-32 h-8 text-xs bg-white dark:bg-gray-800 border-2 shadow-sm hover:shadow-md transition-all duration-200">
+                            <SelectTrigger className="w-24 h-6 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -727,16 +695,8 @@ export default function SiteCallsPage() {
                 })}
                 {siteCalls.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12">
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full">
-                          <Phone className="h-8 w-8 text-gray-400" />
-                        </div>
-                        <div className="space-y-2 text-center">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">No site calls found</p>
-                          <p className="text-xs text-muted-foreground">Create your first site call to get started</p>
-                        </div>
-                      </div>
+                    <TableCell colSpan={8} className="text-center py-4 text-xs text-muted-foreground">
+                      No site calls found
                     </TableCell>
                   </TableRow>
                 )}
