@@ -277,6 +277,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      const userData = insertUserSchema.partial().parse(req.body);
+      const user = await storage.updateUser(req.params.id, userData);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({
+        ...user,
+        password: undefined,
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(400).json({ message: "Invalid user data" });
+    }
+  });
+
   app.delete("/api/users/:id", requireAuth, async (req, res) => {
     try {
       const success = await storage.deleteUser(req.params.id);
