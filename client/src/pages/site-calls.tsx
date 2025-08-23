@@ -28,8 +28,6 @@ import {
   FileText,
   CheckCircle,
   XCircle,
-  Search,
-  Filter,
   Calendar,
   MapPin,
   Zap,
@@ -119,12 +117,6 @@ export default function SiteCallsPage() {
   const [selectedCall, setSelectedCall] = useState<SiteCall | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    siteId: "",
-    status: "",
-    issueType: "",
-    assignedEngineer: ""
-  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -141,16 +133,9 @@ export default function SiteCallsPage() {
     queryKey: ["/api/sites"],
   });
 
-  // Fetch site calls with filters
+  // Fetch site calls
   const { data: siteCalls = [], isLoading: callsLoading, refetch } = useQuery<SiteCall[]>({
-    queryKey: ["/api/site-calls", filters],
-    queryFn: () => {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-      return apiRequest(`/api/site-calls?${params.toString()}`);
-    },
+    queryKey: ["/api/site-calls"],
   });
 
   // Generate call number
@@ -246,20 +231,24 @@ export default function SiteCallsPage() {
   };
 
   return (
-    <div className="space-y-2 p-1">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-lg border shadow-sm">
-        <div>
-          <h1 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-            <div className="p-1.5 bg-blue-600 rounded-md">
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-900 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-600 rounded-lg shadow-sm">
               <Phone className="h-4 w-4 text-white" />
             </div>
-            Site Calls
-          </h1>
-          <p className="text-xs text-muted-foreground ml-8">
-            Track service calls
-          </p>
-        </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Site Calls
+              </h1>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Track service calls
+              </p>
+            </div>
+          </div>
+          <div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-1 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-xs" data-testid="button-create-call">
@@ -516,88 +505,12 @@ export default function SiteCallsPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Filters */}
-      <Card className="border">
-        <CardHeader className="pb-2 pt-3">
-          <CardTitle className="text-xs font-medium flex items-center gap-1">
-            <Filter className="h-3 w-3" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 pb-3">
-          <div className="grid grid-cols-4 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium">Site</Label>
-              <Select 
-                value={filters.siteId || 'all'} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, siteId: value === 'all' ? '' : value }))}
-              >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sites</SelectItem>
-                  {sites.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium">Status</Label>
-              <Select 
-                value={filters.status || 'all'} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}
-              >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {Object.entries(statusConfig).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>
-                      {config.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium">Type</Label>
-              <Select 
-                value={filters.issueType || 'all'} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, issueType: value === 'all' ? '' : value }))}
-              >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {Object.entries(issueTypeConfig).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>
-                      {config.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium">Engineer</Label>
-              <Input
-                placeholder="Engineer..."
-                value={filters.assignedEngineer}
-                onChange={(e) => setFilters(prev => ({ ...prev, assignedEngineer: e.target.value }))}
-                data-testid="filter-engineer"
-                className="h-7 text-xs"
-              />
-            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      
+      <div className="p-4 space-y-4">
+
 
       {/* Site Calls Table */}
       <Card className="border">
