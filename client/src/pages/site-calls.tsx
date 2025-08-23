@@ -32,7 +32,6 @@ import {
   Filter,
   Calendar,
   MapPin,
-  Tool,
   Zap,
   Cpu,
   Settings
@@ -68,7 +67,7 @@ const issueTypeConfig = {
   },
   instrument: {
     label: "Instrument Issue", 
-    icon: Tool,
+    icon: Wrench,
     color: "bg-green-500",
     categories: ["Sensor Failure", "Calibration Error", "Communication Loss", "Reading Accuracy", "Physical Damage"]
   },
