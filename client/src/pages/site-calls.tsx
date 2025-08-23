@@ -32,7 +32,9 @@ import {
   MapPin,
   Zap,
   Cpu,
-  Settings
+  Settings,
+  Search,
+  Filter
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { SiteCall, InsertSiteCall, Site } from "@shared/schema";
@@ -117,6 +119,12 @@ export default function SiteCallsPage() {
   const [selectedCall, setSelectedCall] = useState<SiteCall | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [siteFilter, setSiteFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [engineerFilter, setEngineerFilter] = useState("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -220,6 +228,32 @@ export default function SiteCallsPage() {
       return `${minutes}m ago`;
     }
   };
+
+  // Filter site calls
+  const filteredSiteCalls = siteCalls.filter((call) => {
+    // Search filter
+    const matchesSearch = searchTerm === "" || 
+      call.callNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      call.siteName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      call.issueTitle?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Site filter
+    const matchesSite = siteFilter === "all" || call.siteId === siteFilter;
+    
+    // Type filter
+    const matchesType = typeFilter === "all" || call.issueType === typeFilter;
+    
+    // Priority filter
+    const matchesPriority = priorityFilter === "all" || call.issuePriority === priorityFilter;
+    
+    // Status filter
+    const matchesStatus = statusFilter === "all" || call.callStatus === statusFilter;
+    
+    // Engineer filter
+    const matchesEngineer = engineerFilter === "all" || call.assignedEngineer === engineerFilter;
+    
+    return matchesSearch && matchesSite && matchesType && matchesPriority && matchesStatus && matchesEngineer;
+  });
 
   return (
     <div className="space-y-3">
@@ -501,14 +535,117 @@ export default function SiteCallsPage() {
       </div>
       
       <div className="p-4 space-y-4">
+        {/* Filters */}
+        <Card className="border">
+          <CardContent className="p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+                <Input
+                  placeholder="Search calls, sites, or issues..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8 h-6 text-xs"
+                  data-testid="input-search-calls"
+                />
+              </div>
+              
+              <Select value={siteFilter} onValueChange={setSiteFilter}>
+                <SelectTrigger className="w-28 h-6 text-xs" data-testid="select-site-filter">
+                  <SelectValue placeholder="Site" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sites</SelectItem>
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-32 h-6 text-xs" data-testid="select-type-filter">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {Object.entries(issueTypeConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-28 h-6 text-xs" data-testid="select-priority-filter">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {Object.entries(priorityConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-28 h-6 text-xs" data-testid="select-status-filter">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {Object.entries(statusConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={engineerFilter} onValueChange={setEngineerFilter}>
+                <SelectTrigger className="w-32 h-6 text-xs" data-testid="select-engineer-filter">
+                  <SelectValue placeholder="Engineer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Engineers</SelectItem>
+                  {attendingEngineers.map((engineer) => (
+                    <SelectItem key={engineer} value={engineer}>
+                      {engineer}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setSiteFilter("all");
+                  setTypeFilter("all");
+                  setPriorityFilter("all");
+                  setStatusFilter("all");
+                  setEngineerFilter("all");
+                }}
+                className="h-6 px-2 text-xs"
+                data-testid="button-clear-filters"
+              >
+                Clear
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
       {/* Site Calls Table */}
       <Card className="border">
         <CardHeader className="pb-2 pt-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <FileText className="h-3 w-3" />
-            Site Calls ({siteCalls.length})
+            Site Calls ({filteredSiteCalls.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 p-0">
@@ -527,7 +664,7 @@ export default function SiteCallsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {siteCalls.map((call) => {
+                {filteredSiteCalls.map((call) => {
                   const issueTypeInfo = issueTypeConfig[call.issueType as keyof typeof issueTypeConfig];
                   const priorityInfo = priorityConfig[call.issuePriority as keyof typeof priorityConfig];
                   const statusInfo = statusConfig[call.callStatus as keyof typeof statusConfig];
@@ -597,6 +734,13 @@ export default function SiteCallsPage() {
                     </TableRow>
                   );
                 })}
+                {filteredSiteCalls.length === 0 && siteCalls.length > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-4 text-xs text-muted-foreground">
+                      No calls match your filters
+                    </TableCell>
+                  </TableRow>
+                )}
                 {siteCalls.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-4 text-xs text-muted-foreground">
