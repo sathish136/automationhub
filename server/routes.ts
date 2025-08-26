@@ -2724,11 +2724,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (fileType === 'application/pdf') {
         // For PDF files, we'll use text analysis with context about PDF structure
-        const pdfParse = require("pdf-parse");
+        const pdfParse = await import("pdf-parse");
         
         // Extract text content from PDF
         const pdfBuffer = await fs.readFile(filePath);
-        const pdfData = await pdfParse(pdfBuffer);
+        const pdfData = await pdfParse.default(pdfBuffer);
         const pdfText = pdfData.text;
         
         // Count pages for context
