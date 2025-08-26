@@ -2723,32 +2723,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function analyzeAutomationDocument(filePath: string, documentType: string, voltage?: string, fileType?: string) {
     try {
       if (fileType === 'application/pdf') {
-        // For PDF files, convert each page to images and analyze
-        const pdf2pic = require("pdf2pic");
+        // For PDF files, we'll use text analysis with context about PDF structure
         const pdfParse = require("pdf-parse");
         
-        // First extract text content for context
+        // Extract text content from PDF
         const pdfBuffer = await fs.readFile(filePath);
         const pdfData = await pdfParse(pdfBuffer);
         const pdfText = pdfData.text;
         
-        // Convert PDF pages to images
-        const convert = pdf2pic.fromPath(filePath, {
-          density: 300,
-          saveFilename: "page",
-          savePath: path.dirname(filePath),
-          format: "png",
-          width: 2000,
-          height: 2000
-        });
-        
-        const convertResult = await convert.bulk(-1, { responseType: "base64" });
-        const pageImages = convertResult.map((page: any, index: number) => ({
-          pageNumber: index + 1,
-          base64: page.base64
-        }));
+        // Count pages for context
+        const pageCount = pdfData.numpages;
 
-        const analysisPrompt = `Analyze this multi-page automation documentation and provide detailed technical analysis with specific page references. 
+        const analysisPrompt = `Analyze this multi-page automation documentation PDF and provide detailed technical analysis with specific page references based on the extracted text content.
 
 CRITICAL REQUIREMENTS:
 1. **Page-by-Page Analysis**: For EACH issue found, specify the exact page number in format "Page X"
@@ -2759,52 +2745,42 @@ CRITICAL REQUIREMENTS:
 
 Document Type: ${documentType}
 ${voltage ? `Voltage Level: ${voltage}` : ''}
-Total Pages: ${pageImages.length}
+Total Pages: ${pageCount}
 
-Document Text Content:
-${pdfText.substring(0, 3000)}...
+Complete Document Text Content:
+${pdfText}
 
-For each page analyzed, provide findings in this exact format:
+Based on this technical documentation, provide findings in this exact format for each page with issues:
 - Page X — Component/System Name (Equipment ID)
 - Issue: [Specific technical problem with ratings/values]  
 - Fix: [Detailed technical solution with specific values]
 
+Examples of the type of analysis needed:
+- Page 7 — Control Supply (TR1): Issue: TR1 = 5 kVA, 230 V secondary (~21–22 A) protected by F53 = 40 A‑2P → oversized for downstream and cable protection. Fix: Use ~25 A secondary protection (MCB or fuse) coordinated for inrush.
+- Page 12 — High Pressure Pump‑I (M3, 18.5 kW, VFD): Issue: Thermal overload Q2 = 13–18 A is far below motor FLA (~34–36 A). Fix: Fit OL in the ~32–40 A range (set to nameplate FLA).
+
 Please respond with a JSON object containing:
 {
   "analysisResult": "comprehensive page-by-page analysis with specific corrections",
-  "pageAnalysis": [{"pageNumber": 1, "findings": "detailed findings for this page", "issues": ["list of issues found"], "corrections": ["specific fixes needed"]}],
+  "pageAnalysis": [{"pageNumber": 1, "findings": "detailed findings for this page in the exact format specified", "issues": ["list of issues found"], "corrections": ["specific fixes needed"]}],
   "safetyIssues": [{"issue": "description", "severity": "low|medium|high|critical", "pageNumber": 1, "component": "specific equipment", "system": "electrical|automation|control"}],
   "corrections": [{"pageNumber": 1, "component": "equipment ID", "issue": "what's wrong", "correction": "specific fix with values", "priority": "low|medium|high", "category": "electrical|protection|motor|control"}],
   "complianceIssues": [{"standard": "NEC|IEC|ISA", "violation": "specific violation", "pageNumber": 1, "remedy": "how to fix", "component": "equipment affected"}],
   "recommendations": [{"pageNumber": 1, "component": "equipment", "recommendation": "improvement needed", "benefit": "why important", "system": "affected system"}],
   "riskLevel": "low|medium|high|critical",
   "analysisScore": 85,
-  "totalPages": ${pageImages.length}
+  "totalPages": ${pageCount}
 }`;
-
-        // Analyze all pages together for comprehensive understanding
-        const messages = [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: analysisPrompt,
-              },
-              ...pageImages.map(page => ({
-                type: "image_url",
-                image_url: {
-                  url: `data:image/png;base64,${page.base64}`,
-                },
-              }))
-            ],
-          },
-        ];
 
         // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
         const response = await openai.chat.completions.create({
           model: "gpt-5",
-          messages: messages,
+          messages: [
+            {
+              role: "user",
+              content: analysisPrompt,
+            },
+          ],
           response_format: { type: "json_object" },
           max_tokens: 4000,
         });
