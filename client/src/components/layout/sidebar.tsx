@@ -26,6 +26,7 @@ import {
   User,
   Phone,
   Wrench,
+  FileImage,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -43,6 +44,7 @@ const navigation = [
   { name: "Instrumentation", href: "/instrumentation", icon: Gauge },
   { name: "Site Calls", href: "/site-calls", icon: Phone },
   { name: "Automation Wizard", href: "/automation-wizard", icon: Zap },
+  { name: "Diagram Analysis", href: "/electrical-diagrams", icon: FileImage },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Maintenance", href: "/maintenance", icon: Wrench },
   { name: "User Management", href: "/user-management", icon: Users },
