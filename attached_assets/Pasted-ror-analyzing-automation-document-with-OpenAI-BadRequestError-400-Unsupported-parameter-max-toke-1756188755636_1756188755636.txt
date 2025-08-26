@@ -1,0 +1,54 @@
+ror analyzing automation document with OpenAI: BadRequestError: 400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/core/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/client.ts:453:28)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/client.ts:676:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async analyzeAutomationDocument (/home/runner/workspace/server/routes.ts:2784:26) {
+  status: 400,
+  headers: Headers {
+    date: 'Tue, 26 Aug 2025 06:12:22 GMT',
+    'content-type': 'application/json',
+    'content-length': '245',
+    connection: 'keep-alive',
+    'access-control-expose-headers': 'X-Request-ID',
+    'openai-organization': 'wtt-international-weyu3b',
+    'openai-processing-ms': '17',
+    'openai-project': 'proj_nYnlhQjjlImnYNqzpeO5MRJA',
+    'openai-version': '2020-10-01',
+    'x-envoy-upstream-service-time': '215',
+    'x-ratelimit-limit-requests': '500',
+    'x-ratelimit-limit-tokens': '30000',
+    'x-ratelimit-remaining-requests': '499',
+    'x-ratelimit-remaining-tokens': '29312',
+    'x-ratelimit-reset-requests': '120ms',
+    'x-ratelimit-reset-tokens': '1.376s',
+    'x-request-id': 'req_e28c85d051d441fcafc39c04b68ec426',
+    'cf-cache-status': 'DYNAMIC',
+    'set-cookie': '__cf_bm=dMS.vUy0Y1Rcd31PajN9CMdD_Bd6gY7ERHMNwYGVLxc-1756188742-1.0.1.1-DxwGIaKKRTzhxnbegw3We4IE2HujsOlRTyahqsuub9EbuaQeo7dGgqn434EU6VivheknL.X9eKfIwttPjtrUWUpupLR7ZGIWFkZPxRPs2H4; path=/; expires=Tue, 26-Aug-25 06:42:22 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=RZLE21jsZvgEgXbi_mJZVCcbCXI4YEgx7DFWjFb77Cg-1756188742101-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    server: 'cloudflare',
+    'cf-ray': '97512d512eda3ca6-BOM',
+    'alt-svc': 'h3=":443"; ma=86400'
+  },
+  requestID: 'req_e28c85d051d441fcafc39c04b68ec426',
+  error: {
+    message: "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+    type: 'invalid_request_error',
+    param: 'max_tokens',
+    code: 'unsupported_parameter'
+  },
+  code: 'unsupported_parameter',
+  param: 'max_tokens',
+  type: 'invalid_request_error'
+}
+Analysis failed: BadRequestError: 400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/core/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/client.ts:453:28)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/client.ts:676:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async analyzeAutomationDocument (/home/runner/workspace/server/routes.ts:2784:26) {
+  status: 400,
+  headers: Headers {
+    date: 'Tue, 26 Aug 2025 06:12:22 GMT',
+    'content-type': 'application/json',

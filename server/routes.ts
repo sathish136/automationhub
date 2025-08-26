@@ -2790,7 +2790,7 @@ Please respond with a JSON object containing:
             },
           ],
           response_format: { type: "json_object" },
-          max_tokens: 4000,
+          max_completion_tokens: 4000,
         });
 
         return JSON.parse(response.choices[0].message.content || '{}');
@@ -2839,7 +2839,7 @@ Please respond with a JSON object containing detailed technical analysis and spe
             },
           ],
           response_format: { type: "json_object" },
-          max_tokens: 3000,
+          max_completion_tokens: 3000,
         });
 
         return JSON.parse(response.choices[0].message.content || '{}');
