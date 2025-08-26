@@ -23,6 +23,9 @@ import {
   insertInstrumentationSchema,
   insertPlcIoCalculationSchema,
   insertAutomationProjectSchema,
+  insertEquipmentSchema,
+  insertMaintenanceScheduleSchema,
+  insertMaintenanceHistorySchema,
   insertAutomationVendorSchema,
   insertAutomationProductSchema,
   insertBeckhoffProductSchema,
@@ -2531,6 +2534,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error assigning engineer:", error);
       res.status(400).json({ message: "Failed to assign engineer" });
+    }
+  });
+
+  // ===============================
+  // MAINTENANCE MANAGEMENT ROUTES
+  // ===============================
+
+  // Get all equipment
+  app.get("/api/maintenance/equipment", async (req, res) => {
+    try {
+      const siteId = req.query.siteId as string;
+      const equipment = await storage.getAllEquipment(siteId);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
+  // Create new equipment
+  app.post("/api/maintenance/equipment", requireAuth, async (req, res) => {
+    try {
+      const equipmentData = insertEquipmentSchema.parse(req.body);
+      const equipment = await storage.createEquipment(equipmentData);
+      res.status(201).json(equipment);
+    } catch (error) {
+      console.error("Error creating equipment:", error);
+      res.status(400).json({ message: "Invalid equipment data" });
+    }
+  });
+
+  // Update equipment
+  app.put("/api/maintenance/equipment/:id", requireAuth, async (req, res) => {
+    try {
+      const equipmentData = insertEquipmentSchema.partial().parse(req.body);
+      const equipment = await storage.updateEquipment(req.params.id, equipmentData);
+      if (!equipment) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error updating equipment:", error);
+      res.status(400).json({ message: "Invalid equipment data" });
+    }
+  });
+
+  // Delete equipment
+  app.delete("/api/maintenance/equipment/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteEquipment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting equipment:", error);
+      res.status(500).json({ message: "Failed to delete equipment" });
+    }
+  });
+
+  // Get maintenance schedules for equipment
+  app.get("/api/maintenance/schedules", async (req, res) => {
+    try {
+      const equipmentId = req.query.equipmentId as string;
+      if (!equipmentId) {
+        return res.status(400).json({ message: "Equipment ID is required" });
+      }
+      const schedules = await storage.getMaintenanceSchedules(equipmentId);
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching schedules:", error);
+      res.status(500).json({ message: "Failed to fetch schedules" });
+    }
+  });
+
+  // Create maintenance schedule
+  app.post("/api/maintenance/schedules", requireAuth, async (req, res) => {
+    try {
+      const scheduleData = insertMaintenanceScheduleSchema.parse(req.body);
+      const schedule = await storage.createMaintenanceSchedule(scheduleData);
+      res.status(201).json(schedule);
+    } catch (error) {
+      console.error("Error creating schedule:", error);
+      res.status(400).json({ message: "Invalid schedule data" });
+    }
+  });
+
+  // Get equipment due for maintenance
+  app.get("/api/maintenance/due", async (req, res) => {
+    try {
+      const equipmentDue = await storage.getEquipmentDueForMaintenance();
+      res.json(equipmentDue);
+    } catch (error) {
+      console.error("Error fetching maintenance due:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance due" });
+    }
+  });
+
+  // Send manual maintenance email
+  app.post("/api/maintenance/send-email", requireAuth, async (req, res) => {
+    try {
+      const { equipmentId, scheduleId, emailType = "manual" } = req.body;
+      
+      if (!equipmentId) {
+        return res.status(400).json({ message: "Equipment ID is required" });
+      }
+
+      // Import maintenance service here to avoid circular imports
+      const { maintenanceService } = await import("./services/maintenanceService");
+      await maintenanceService.sendManualEmail(equipmentId, scheduleId);
+
+      res.json({ message: "Email sent successfully" });
+    } catch (error) {
+      console.error("Error sending maintenance email:", error);
+      res.status(500).json({ message: "Failed to send email" });
+    }
+  });
+
+  // Trigger manual maintenance check
+  app.post("/api/maintenance/check", requireAuth, async (req, res) => {
+    try {
+      // Import maintenance service here to avoid circular imports
+      const { maintenanceService } = await import("./services/maintenanceService");
+      await maintenanceService.triggerMaintenanceCheck();
+      
+      res.json({ message: "Maintenance check completed" });
+    } catch (error) {
+      console.error("Error running maintenance check:", error);
+      res.status(500).json({ message: "Failed to run maintenance check" });
+    }
+  });
+
+  // Get maintenance history for equipment
+  app.get("/api/maintenance/history", async (req, res) => {
+    try {
+      const equipmentId = req.query.equipmentId as string;
+      if (!equipmentId) {
+        return res.status(400).json({ message: "Equipment ID is required" });
+      }
+      const history = await storage.getMaintenanceHistory(equipmentId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching maintenance history:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance history" });
+    }
+  });
+
+  // Create maintenance record
+  app.post("/api/maintenance/history", requireAuth, async (req, res) => {
+    try {
+      const historyData = insertMaintenanceHistorySchema.parse(req.body);
+      const record = await storage.createMaintenanceRecord(historyData);
+      
+      // If this was a scheduled maintenance, update the schedule
+      if (historyData.scheduleId) {
+        const schedule = await storage.getMaintenanceSchedules(historyData.equipmentId);
+        const currentSchedule = schedule.find(s => s.id === historyData.scheduleId);
+        if (currentSchedule) {
+          const nextDueHours = historyData.equipmentHoursAtMaintenance + currentSchedule.maintenanceIntervalHours;
+          await storage.updateMaintenanceSchedule(historyData.scheduleId, {
+            lastMaintenanceHours: historyData.equipmentHoursAtMaintenance,
+            nextMaintenanceHours: nextDueHours,
+          });
+        }
+      }
+      
+      res.status(201).json(record);
+    } catch (error) {
+      console.error("Error creating maintenance record:", error);
+      res.status(400).json({ message: "Invalid maintenance record data" });
     }
   });
 

@@ -7,6 +7,7 @@ import { adsMonitoringService } from "./services/adsMonitoringService";
 import { storage } from "./storage";
 import { sqlViewerService } from "./services/sqlViewerService";
 import { pingService } from "./services/pingService";
+import "./services/maintenanceService"; // Start automated maintenance monitoring
 
 const app = express();
 app.use(express.json());
