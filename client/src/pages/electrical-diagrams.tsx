@@ -119,9 +119,11 @@ export default function ElectricalDiagrams() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/electrical-diagrams/${id}`, {
+      const response = await fetch(`/api/electrical-diagrams/${id}`, {
         method: "DELETE",
       });
+      if (!response.ok) throw new Error("Failed to delete");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/electrical-diagrams"] });
@@ -136,9 +138,11 @@ export default function ElectricalDiagrams() {
   // Re-analyze mutation
   const reanalyzeMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/electrical-diagrams/${id}/reanalyze`, {
+      const response = await fetch(`/api/electrical-diagrams/${id}/reanalyze`, {
         method: "POST",
       });
+      if (!response.ok) throw new Error("Failed to reanalyze");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/electrical-diagrams"] });

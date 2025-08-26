@@ -104,6 +104,9 @@ import {
   type InsertUserRole,
   type Session,
   type InsertSession,
+  electricalDiagrams,
+  type ElectricalDiagram,
+  type InsertElectricalDiagram,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count, isNotNull } from "drizzle-orm";
@@ -315,6 +318,13 @@ export interface IStorage {
   
   // Authentication
   validateUserCredentials(email: string, password: string): Promise<User | null>;
+
+  // Electrical Diagrams
+  getAllElectricalDiagrams(): Promise<ElectricalDiagram[]>;
+  getElectricalDiagram(id: string): Promise<ElectricalDiagram | undefined>;
+  createElectricalDiagram(diagram: InsertElectricalDiagram): Promise<ElectricalDiagram>;
+  updateElectricalDiagram(id: string, diagram: Partial<InsertElectricalDiagram>): Promise<ElectricalDiagram | undefined>;
+  deleteElectricalDiagram(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1960,6 +1970,46 @@ export class DatabaseStorage implements IStorage {
       .values(record)
       .returning();
     return newRecord;
+  }
+
+  // Electrical Diagrams
+  async getAllElectricalDiagrams(): Promise<ElectricalDiagram[]> {
+    return await db
+      .select()
+      .from(electricalDiagrams)
+      .orderBy(desc(electricalDiagrams.createdAt));
+  }
+
+  async getElectricalDiagram(id: string): Promise<ElectricalDiagram | undefined> {
+    const [diagram] = await db
+      .select()
+      .from(electricalDiagrams)
+      .where(eq(electricalDiagrams.id, id));
+    return diagram;
+  }
+
+  async createElectricalDiagram(diagram: InsertElectricalDiagram): Promise<ElectricalDiagram> {
+    const [newDiagram] = await db
+      .insert(electricalDiagrams)
+      .values(diagram)
+      .returning();
+    return newDiagram;
+  }
+
+  async updateElectricalDiagram(id: string, diagram: Partial<InsertElectricalDiagram>): Promise<ElectricalDiagram | undefined> {
+    const [updated] = await db
+      .update(electricalDiagrams)
+      .set({ ...diagram, updatedAt: new Date() })
+      .where(eq(electricalDiagrams.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteElectricalDiagram(id: string): Promise<boolean> {
+    const result = await db
+      .delete(electricalDiagrams)
+      .where(eq(electricalDiagrams.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 

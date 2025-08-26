@@ -1,5 +1,9 @@
 import type { Express } from "express";
 import express from "express";
+import fs from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
+import OpenAI from "openai";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pingService } from "./services/pingService";
@@ -35,9 +39,13 @@ import {
   insertSiteCallSchema,
   insertUserSchema,
   insertRoleSchema,
-  insertUserRoleSchema
+  insertUserRoleSchema,
+  insertElectricalDiagramSchema
 } from "@shared/schema";
 import crypto from "crypto";
+
+// Initialize OpenAI
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Configure multer for file uploads
 const upload = multer({
@@ -2704,6 +2712,302 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating maintenance record:", error);
       res.status(400).json({ message: "Invalid maintenance record data" });
+    }
+  });
+
+  // ==========================================
+  // ELECTRICAL DIAGRAMS ANALYSIS ROUTES
+  // ==========================================
+
+  // Electrical diagram analysis helper function
+  async function analyzeElectricalDiagram(imagePath: string, diagramType: string, voltage?: string) {
+    try {
+      const imageBuffer = await fs.readFile(imagePath);
+      const base64Image = imageBuffer.toString('base64');
+
+      const analysisPrompt = `Analyze this electrical diagram image and provide a comprehensive analysis. Focus on:
+
+1. **Safety Issues**: Identify potential safety hazards, code violations, and dangerous configurations
+2. **Corrections**: Suggest specific technical corrections and improvements
+3. **Compliance Issues**: Note any violations of electrical codes and standards
+4. **Recommendations**: Provide professional recommendations for best practices
+5. **Risk Assessment**: Evaluate overall risk level (low, medium, high, critical)
+6. **Overall Score**: Rate the diagram quality from 0-100
+
+Diagram Type: ${diagramType}
+${voltage ? `Voltage Level: ${voltage}` : ''}
+
+Please respond with a JSON object containing:
+{
+  "analysisResult": "detailed analysis text",
+  "safetyIssues": [{"issue": "description", "severity": "low|medium|high|critical", "location": "where found"}],
+  "corrections": [{"correction": "what to fix", "priority": "low|medium|high", "details": "how to fix"}],
+  "complianceIssues": [{"standard": "which code/standard", "violation": "what's wrong", "remedy": "how to fix"}],
+  "recommendations": [{"category": "improvement area", "recommendation": "what to do", "benefit": "why important"}],
+  "riskLevel": "low|medium|high|critical",
+  "analysisScore": 85
+}`;
+
+      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: analysisPrompt,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 2000,
+      });
+
+      return JSON.parse(response.choices[0].message.content || '{}');
+    } catch (error) {
+      console.error("Error analyzing diagram with OpenAI:", error);
+      throw error;
+    }
+  }
+
+  // Get all electrical diagrams
+  app.get("/api/electrical-diagrams", async (req, res) => {
+    try {
+      const diagrams = await storage.getAllElectricalDiagrams();
+      res.json(diagrams);
+    } catch (error) {
+      console.error("Error fetching electrical diagrams:", error);
+      res.status(500).json({ message: "Failed to fetch electrical diagrams" });
+    }
+  });
+
+  // Upload and analyze electrical diagram
+  app.post("/api/electrical-diagrams/upload", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file provided" });
+      }
+
+      // Validate file type
+      if (!req.file.mimetype.startsWith('image/')) {
+        await fs.unlink(req.file.path); // Clean up
+        return res.status(400).json({ message: "Please upload an image file" });
+      }
+
+      // Create diagrams upload directory
+      const diagramsDir = path.join(process.cwd(), 'uploads', 'electrical-diagrams');
+      try {
+        await fs.access(diagramsDir);
+      } catch {
+        await fs.mkdir(diagramsDir, { recursive: true });
+      }
+
+      // Generate unique filename
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `${crypto.randomBytes(16).toString('hex')}${fileExtension}`;
+      const finalPath = path.join(diagramsDir, fileName);
+
+      // Move file to diagrams directory
+      await fs.rename(req.file.path, finalPath);
+
+      // Create database record
+      const diagramData = {
+        fileName,
+        originalFileName: req.file.originalname,
+        filePath: finalPath,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        uploadedBy: 'system', // You can get this from req.user if auth is implemented
+        projectName: req.body.projectName || null,
+        diagramType: req.body.diagramType,
+        voltage: req.body.voltage || null,
+        description: req.body.description || null,
+        analysisStatus: 'analyzing' as const,
+      };
+
+      const diagram = await storage.createElectricalDiagram(diagramData);
+
+      // Start analysis in background
+      analyzeElectricalDiagram(finalPath, diagram.diagramType, diagram.voltage || undefined)
+        .then(async (analysisResult) => {
+          await storage.updateElectricalDiagram(diagram.id, {
+            analysisStatus: 'completed',
+            analysisResult: analysisResult.analysisResult,
+            safetyIssues: analysisResult.safetyIssues,
+            corrections: analysisResult.corrections,
+            complianceIssues: analysisResult.complianceIssues,
+            recommendations: analysisResult.recommendations,
+            riskLevel: analysisResult.riskLevel,
+            analysisScore: analysisResult.analysisScore,
+            processingTime: 0 // You could track actual processing time
+          });
+        })
+        .catch(async (error) => {
+          console.error("Analysis failed:", error);
+          await storage.updateElectricalDiagram(diagram.id, {
+            analysisStatus: 'failed'
+          });
+        });
+
+      res.status(201).json(diagram);
+    } catch (error) {
+      console.error("Error uploading electrical diagram:", error);
+      res.status(500).json({ message: "Failed to upload electrical diagram" });
+    }
+  });
+
+  // Get specific electrical diagram
+  app.get("/api/electrical-diagrams/:id", async (req, res) => {
+    try {
+      const diagram = await storage.getElectricalDiagram(req.params.id);
+      if (!diagram) {
+        return res.status(404).json({ message: "Electrical diagram not found" });
+      }
+      res.json(diagram);
+    } catch (error) {
+      console.error("Error fetching electrical diagram:", error);
+      res.status(500).json({ message: "Failed to fetch electrical diagram" });
+    }
+  });
+
+  // Re-analyze electrical diagram
+  app.post("/api/electrical-diagrams/:id/reanalyze", async (req, res) => {
+    try {
+      const diagram = await storage.getElectricalDiagram(req.params.id);
+      if (!diagram) {
+        return res.status(404).json({ message: "Electrical diagram not found" });
+      }
+
+      // Update status to analyzing
+      await storage.updateElectricalDiagram(diagram.id, {
+        analysisStatus: 'analyzing'
+      });
+
+      // Start analysis in background
+      analyzeElectricalDiagram(diagram.filePath, diagram.diagramType, diagram.voltage || undefined)
+        .then(async (analysisResult) => {
+          await storage.updateElectricalDiagram(diagram.id, {
+            analysisStatus: 'completed',
+            analysisResult: analysisResult.analysisResult,
+            safetyIssues: analysisResult.safetyIssues,
+            corrections: analysisResult.corrections,
+            complianceIssues: analysisResult.complianceIssues,
+            recommendations: analysisResult.recommendations,
+            riskLevel: analysisResult.riskLevel,
+            analysisScore: analysisResult.analysisScore,
+            processingTime: 0
+          });
+        })
+        .catch(async (error) => {
+          console.error("Re-analysis failed:", error);
+          await storage.updateElectricalDiagram(diagram.id, {
+            analysisStatus: 'failed'
+          });
+        });
+
+      res.json({ message: "Analysis started" });
+    } catch (error) {
+      console.error("Error reanalyzing electrical diagram:", error);
+      res.status(500).json({ message: "Failed to reanalyze electrical diagram" });
+    }
+  });
+
+  // Generate analysis report
+  app.get("/api/electrical-diagrams/:id/report", async (req, res) => {
+    try {
+      const diagram = await storage.getElectricalDiagram(req.params.id);
+      if (!diagram) {
+        return res.status(404).json({ message: "Electrical diagram not found" });
+      }
+
+      if (diagram.analysisStatus !== 'completed') {
+        return res.status(400).json({ message: "Analysis not completed yet" });
+      }
+
+      // Generate a simple text report (you could enhance this to generate PDF)
+      const report = `
+ELECTRICAL DIAGRAM ANALYSIS REPORT
+==================================
+
+Project: ${diagram.projectName || diagram.originalFileName}
+Diagram Type: ${diagram.diagramType}
+${diagram.voltage ? `Voltage: ${diagram.voltage}` : ''}
+Analysis Date: ${new Date(diagram.updatedAt).toLocaleDateString()}
+Overall Score: ${diagram.analysisScore}% 
+Risk Level: ${diagram.riskLevel?.toUpperCase() || 'N/A'}
+
+ANALYSIS SUMMARY
+================
+${diagram.analysisResult || 'No analysis result available'}
+
+SAFETY ISSUES
+=============
+${diagram.safetyIssues ? diagram.safetyIssues.map((issue: any, i: number) => 
+  `${i + 1}. ${issue.issue} (Severity: ${issue.severity})\n   Location: ${issue.location || 'Not specified'}`
+).join('\n') : 'No safety issues identified'}
+
+CORRECTIONS NEEDED
+==================
+${diagram.corrections ? diagram.corrections.map((correction: any, i: number) => 
+  `${i + 1}. ${correction.correction} (Priority: ${correction.priority})\n   Details: ${correction.details || 'No additional details'}`
+).join('\n') : 'No corrections needed'}
+
+COMPLIANCE ISSUES
+=================
+${diagram.complianceIssues ? diagram.complianceIssues.map((issue: any, i: number) => 
+  `${i + 1}. Standard: ${issue.standard}\n   Violation: ${issue.violation}\n   Remedy: ${issue.remedy}`
+).join('\n') : 'No compliance issues identified'}
+
+RECOMMENDATIONS
+===============
+${diagram.recommendations ? diagram.recommendations.map((rec: any, i: number) => 
+  `${i + 1}. ${rec.category}: ${rec.recommendation}\n   Benefit: ${rec.benefit || 'Not specified'}`
+).join('\n') : 'No recommendations available'}
+`;
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="${diagram.projectName || diagram.originalFileName}_analysis_report.txt"`);
+      res.send(report);
+    } catch (error) {
+      console.error("Error generating report:", error);
+      res.status(500).json({ message: "Failed to generate report" });
+    }
+  });
+
+  // Delete electrical diagram
+  app.delete("/api/electrical-diagrams/:id", async (req, res) => {
+    try {
+      const diagram = await storage.getElectricalDiagram(req.params.id);
+      if (!diagram) {
+        return res.status(404).json({ message: "Electrical diagram not found" });
+      }
+
+      // Delete file from filesystem
+      try {
+        await fs.unlink(diagram.filePath);
+      } catch (error) {
+        console.warn("Could not delete file:", diagram.filePath, error);
+      }
+
+      // Delete from database
+      const deleted = await storage.deleteElectricalDiagram(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Electrical diagram not found" });
+      }
+
+      res.json({ message: "Electrical diagram deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting electrical diagram:", error);
+      res.status(500).json({ message: "Failed to delete electrical diagram" });
     }
   });
 
