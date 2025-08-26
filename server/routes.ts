@@ -2722,82 +2722,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Automation documentation analysis helper function
   async function analyzeAutomationDocument(filePath: string, documentType: string, voltage?: string, fileType?: string) {
     try {
-      const fileBuffer = await fs.readFile(filePath);
-      const base64Content = fileBuffer.toString('base64');
+      if (fileType === 'application/pdf') {
+        // For PDF files, convert each page to images and analyze
+        const pdf2pic = require("pdf2pic");
+        const pdfParse = require("pdf-parse");
+        
+        // First extract text content for context
+        const pdfBuffer = await fs.readFile(filePath);
+        const pdfData = await pdfParse(pdfBuffer);
+        const pdfText = pdfData.text;
+        
+        // Convert PDF pages to images
+        const convert = pdf2pic.fromPath(filePath, {
+          density: 300,
+          saveFilename: "page",
+          savePath: path.dirname(filePath),
+          format: "png",
+          width: 2000,
+          height: 2000
+        });
+        
+        const convertResult = await convert.bulk(-1, { responseType: "base64" });
+        const pageImages = convertResult.map((page: any, index: number) => ({
+          pageNumber: index + 1,
+          base64: page.base64
+        }));
 
-      const analysisPrompt = `Analyze this automation documentation and provide a comprehensive technical analysis. This may include electrical diagrams, control systems, PLC configurations, automation workflows, and technical specifications across multiple pages.
+        const analysisPrompt = `Analyze this multi-page automation documentation and provide detailed technical analysis with specific page references. 
 
-Focus on:
-
-1. **Safety Issues**: Identify potential safety hazards, code violations, and dangerous configurations in electrical and automation systems
-2. **Technical Corrections**: Suggest specific improvements for electrical diagrams, PLC programming, control logic, and system configurations  
-3. **Compliance Issues**: Check against electrical codes (NEC, IEC), automation standards (ISA, NEMA), and industry best practices
-4. **System Integration**: Analyze how different automation components work together (PLCs, HMIs, drives, sensors, networks)
-5. **Performance Optimization**: Recommend improvements for system efficiency, reliability, and maintainability
-6. **Risk Assessment**: Evaluate overall risk level considering electrical safety, system reliability, and operational risks
-7. **Overall Score**: Rate the documentation and system design quality from 0-100
+CRITICAL REQUIREMENTS:
+1. **Page-by-Page Analysis**: For EACH issue found, specify the exact page number in format "Page X"
+2. **Detailed Technical Issues**: Identify specific wiring mistakes, protection oversizing, equipment misconfigurations
+3. **Component-Level Analysis**: Analyze specific components (transformers, MCBs, motors, VFDs, pumps, fans) with their ratings
+4. **Protection Coordination**: Check overcurrent protection sizing against downstream equipment
+5. **Electrical Safety**: Verify proper grounding, isolation, and safety systems
 
 Document Type: ${documentType}
 ${voltage ? `Voltage Level: ${voltage}` : ''}
-File Format: ${fileType === 'application/pdf' ? 'Multi-page PDF Document' : 'Image File'}
+Total Pages: ${pageImages.length}
+
+Document Text Content:
+${pdfText.substring(0, 3000)}...
+
+For each page analyzed, provide findings in this exact format:
+- Page X — Component/System Name (Equipment ID)
+- Issue: [Specific technical problem with ratings/values]  
+- Fix: [Detailed technical solution with specific values]
 
 Please respond with a JSON object containing:
 {
-  "analysisResult": "comprehensive analysis covering all aspects found in the documentation",
-  "safetyIssues": [{"issue": "description", "severity": "low|medium|high|critical", "location": "page/section where found", "system": "electrical|automation|control"}],
-  "corrections": [{"correction": "what to fix", "priority": "low|medium|high", "details": "how to fix", "category": "electrical|plc|hmi|network|safety"}],
-  "complianceIssues": [{"standard": "which code/standard", "violation": "what's wrong", "remedy": "how to fix", "section": "where found"}],
-  "recommendations": [{"category": "improvement area", "recommendation": "what to do", "benefit": "why important", "system": "which system affected"}],
+  "analysisResult": "comprehensive page-by-page analysis with specific corrections",
+  "pageAnalysis": [{"pageNumber": 1, "findings": "detailed findings for this page", "issues": ["list of issues found"], "corrections": ["specific fixes needed"]}],
+  "safetyIssues": [{"issue": "description", "severity": "low|medium|high|critical", "pageNumber": 1, "component": "specific equipment", "system": "electrical|automation|control"}],
+  "corrections": [{"pageNumber": 1, "component": "equipment ID", "issue": "what's wrong", "correction": "specific fix with values", "priority": "low|medium|high", "category": "electrical|protection|motor|control"}],
+  "complianceIssues": [{"standard": "NEC|IEC|ISA", "violation": "specific violation", "pageNumber": 1, "remedy": "how to fix", "component": "equipment affected"}],
+  "recommendations": [{"pageNumber": 1, "component": "equipment", "recommendation": "improvement needed", "benefit": "why important", "system": "affected system"}],
   "riskLevel": "low|medium|high|critical",
-  "analysisScore": 85
+  "analysisScore": 85,
+  "totalPages": ${pageImages.length}
 }`;
 
-      let contentArray: any[];
-
-      if (fileType === 'application/pdf') {
-        // For PDF documents, send as document
-        contentArray = [
-          {
-            type: "text",
-            text: analysisPrompt,
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:application/pdf;base64,${base64Content}`,
-            },
-          },
-        ];
-      } else {
-        // For images
-        contentArray = [
-          {
-            type: "text",
-            text: analysisPrompt,
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:image/jpeg;base64,${base64Content}`,
-            },
-          },
-        ];
-      }
-
-      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-      const response = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
+        // Analyze all pages together for comprehensive understanding
+        const messages = [
           {
             role: "user",
-            content: contentArray,
+            content: [
+              {
+                type: "text",
+                text: analysisPrompt,
+              },
+              ...pageImages.map(page => ({
+                type: "image_url",
+                image_url: {
+                  url: `data:image/png;base64,${page.base64}`,
+                },
+              }))
+            ],
           },
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 3000,
-      });
+        ];
 
-      return JSON.parse(response.choices[0].message.content || '{}');
+        // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        const response = await openai.chat.completions.create({
+          model: "gpt-5",
+          messages: messages,
+          response_format: { type: "json_object" },
+          max_tokens: 4000,
+        });
+
+        return JSON.parse(response.choices[0].message.content || '{}');
+        
+      } else {
+        // For single images
+        const imageBuffer = await fs.readFile(filePath);
+        const base64Image = imageBuffer.toString('base64');
+
+        const analysisPrompt = `Analyze this electrical/automation diagram and provide detailed technical analysis with specific corrections.
+
+CRITICAL REQUIREMENTS:
+1. **Component-Level Analysis**: Identify specific equipment with their ratings and IDs
+2. **Technical Issues**: Find wiring mistakes, protection oversizing, equipment misconfigurations
+3. **Detailed Corrections**: Provide specific technical solutions with exact values
+4. **Safety Analysis**: Check electrical safety, grounding, and protection systems
+
+Document Type: ${documentType}
+${voltage ? `Voltage Level: ${voltage}` : ''}
+
+Provide findings in this format:
+- Component/System Name (Equipment ID)
+- Issue: [Specific technical problem with ratings/values]
+- Fix: [Detailed technical solution with specific values]
+
+Please respond with a JSON object containing detailed technical analysis and specific corrections.`;
+
+        // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+        const response = await openai.chat.completions.create({
+          model: "gpt-5",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: analysisPrompt,
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:image/jpeg;base64,${base64Image}`,
+                  },
+                },
+              ],
+            },
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 3000,
+        });
+
+        return JSON.parse(response.choices[0].message.content || '{}');
+      }
     } catch (error) {
       console.error("Error analyzing automation document with OpenAI:", error);
       throw error;

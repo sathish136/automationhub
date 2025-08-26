@@ -556,8 +556,9 @@ export default function ElectricalDiagrams() {
             </DialogHeader>
 
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="pages">Page Analysis</TabsTrigger>
                 <TabsTrigger value="safety">Safety Issues</TabsTrigger>
                 <TabsTrigger value="compliance">Compliance</TabsTrigger>
                 <TabsTrigger value="corrections">Corrections</TabsTrigger>
@@ -630,6 +631,41 @@ export default function ElectricalDiagrams() {
                 )}
               </TabsContent>
 
+              <TabsContent value="pages" className="space-y-4">
+                <h4 className="font-medium">Page-by-Page Technical Analysis</h4>
+                {selectedDiagram.pageAnalysis && selectedDiagram.pageAnalysis.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedDiagram.pageAnalysis.map((page: any) => (
+                      <Card key={page.pageNumber} className="border-l-4 border-l-blue-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start">
+                            <FileImage className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
+                            <div className="flex-1">
+                              <h5 className="font-medium text-blue-700 mb-2">Page {page.pageNumber}</h5>
+                              <div className="text-sm text-gray-700 whitespace-pre-wrap mb-3">
+                                {page.findings}
+                              </div>
+                              {page.corrections && page.corrections.length > 0 && (
+                                <div className="bg-green-50 p-3 rounded border-l-4 border-l-green-500">
+                                  <h6 className="font-medium text-green-800 mb-2">Required Corrections:</h6>
+                                  <ul className="list-disc list-inside text-sm text-green-700 space-y-1">
+                                    {page.corrections.map((correction: string, index: number) => (
+                                      <li key={index}>{correction}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No page-by-page analysis available. This feature works with multi-page PDF documents.</p>
+                )}
+              </TabsContent>
+
               <TabsContent value="safety" className="space-y-4">
                 <h4 className="font-medium">Safety Issues</h4>
                 {selectedDiagram.safetyIssues && selectedDiagram.safetyIssues.length > 0 ? (
@@ -694,13 +730,31 @@ export default function ElectricalDiagrams() {
                           <div className="flex items-start">
                             <AlertCircle className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
                             <div className="flex-1">
-                              <h5 className="font-medium">{correction.title}</h5>
-                              <p className="text-sm text-gray-600 mt-1">{correction.description}</p>
-                              {correction.priority && (
-                                <Badge variant="outline" className="mt-2">
-                                  {correction.priority} Priority
-                                </Badge>
+                              <div className="flex justify-between items-start mb-2">
+                                <h5 className="font-medium">{correction.component || correction.title || 'Technical Correction'}</h5>
+                                {correction.pageNumber && (
+                                  <Badge variant="outline" className="text-xs">Page {correction.pageNumber}</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">{correction.issue || correction.description}</p>
+                              {correction.correction && (
+                                <div className="mt-2 p-2 bg-green-50 rounded border-l-2 border-green-300">
+                                  <p className="text-sm text-green-700 font-medium">Fix:</p>
+                                  <p className="text-sm text-green-700">{correction.correction}</p>
+                                </div>
                               )}
+                              <div className="flex gap-2 mt-2">
+                                {correction.priority && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {correction.priority} Priority
+                                  </Badge>
+                                )}
+                                {correction.category && (
+                                  <Badge variant="outline" className="text-xs bg-blue-50">
+                                    {correction.category}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </CardContent>

@@ -1,0 +1,95 @@
+Running scheduled ping checks...
+Error analyzing automation document with OpenAI: BadRequestError: 400 Invalid MIME type. Only image types are supported.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/core/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/client.ts:453:28)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/client.ts:676:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async analyzeAutomationDocument (/home/runner/workspace/server/routes.ts:2788:24) {
+  status: 400,
+  headers: Headers {
+    date: 'Tue, 26 Aug 2025 05:57:49 GMT',
+    'content-type': 'application/json',
+    'content-length': '180',
+    connection: 'keep-alive',
+    'access-control-expose-headers': 'X-Request-ID',
+    'openai-organization': 'wtt-international-weyu3b',
+    'openai-processing-ms': '33',
+    'openai-project': 'proj_nYnlhQjjlImnYNqzpeO5MRJA',
+    'openai-version': '2020-10-01',
+    'x-ratelimit-limit-input-images': '50000',
+    'x-ratelimit-limit-requests': '500',
+    'x-ratelimit-limit-tokens': '30000',
+    'x-ratelimit-remaining-input-images': '49999',
+    'x-ratelimit-remaining-requests': '499',
+    'x-ratelimit-remaining-tokens': '28734',
+    'x-ratelimit-reset-input-images': '1ms',
+    'x-ratelimit-reset-requests': '120ms',
+    'x-ratelimit-reset-tokens': '2.532s',
+    'x-request-id': 'req_71dbf11a2feb41ef89c0530ccdf5cbe8',
+    'x-envoy-upstream-service-time': '245',
+    'cf-cache-status': 'DYNAMIC',
+    'set-cookie': '__cf_bm=u_j0fKzidaot2QyDo.2qihbicpITaKxcztA4Zi99be8-1756187869-1.0.1.1-9OhglzKWbxtG23aCrS9oRZkFGPXH2dKOU.DtVLepcw5Vn1mcVEEDxRgoA4_05p2ayzxAHB2qqWOS8k8tIlGDWdGAvBegKiDw1J65dWRAVmE; path=/; expires=Tue, 26-Aug-25 06:27:49 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=kBhFM38Dy1fLQGgHGXmpNr2F7MgAs4gbCe88WPB9J4U-1756187869641-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    server: 'cloudflare',
+    'cf-ray': '975117a86adb443d-BOM',
+    'alt-svc': 'h3=":443"; ma=86400'
+  },
+  requestID: 'req_71dbf11a2feb41ef89c0530ccdf5cbe8',
+  error: {
+    message: 'Invalid MIME type. Only image types are supported.',
+    type: 'invalid_request_error',
+    param: null,
+    code: 'invalid_image_format'
+  },
+  code: 'invalid_image_format',
+  param: null,
+  type: 'invalid_request_error'
+}
+Analysis failed: BadRequestError: 400 Invalid MIME type. Only image types are supported.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/core/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/client.ts:453:28)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/client.ts:676:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async analyzeAutomationDocument (/home/runner/workspace/server/routes.ts:2788:24) {
+  status: 400,
+  headers: Headers {
+    date: 'Tue, 26 Aug 2025 05:57:49 GMT',
+    'content-type': 'application/json',
+    'content-length': '180',
+    connection: 'keep-alive',
+    'access-control-expose-headers': 'X-Request-ID',
+    'openai-organization': 'wtt-international-weyu3b',
+    'openai-processing-ms': '33',
+    'openai-project': 'proj_nYnlhQjjlImnYNqzpeO5MRJA',
+    'openai-version': '2020-10-01',
+    'x-ratelimit-limit-input-images': '50000',
+    'x-ratelimit-limit-requests': '500',
+    'x-ratelimit-limit-tokens': '30000',
+    'x-ratelimit-remaining-input-images': '49999',
+    'x-ratelimit-remaining-requests': '499',
+    'x-ratelimit-remaining-tokens': '28734',
+    'x-ratelimit-reset-input-images': '1ms',
+    'x-ratelimit-reset-requests': '120ms',
+    'x-ratelimit-reset-tokens': '2.532s',
+    'x-request-id': 'req_71dbf11a2feb41ef89c0530ccdf5cbe8',
+    'x-envoy-upstream-service-time': '245',
+    'cf-cache-status': 'DYNAMIC',
+    'set-cookie': '__cf_bm=u_j0fKzidaot2QyDo.2qihbicpITaKxcztA4Zi99be8-1756187869-1.0.1.1-9OhglzKWbxtG23aCrS9oRZkFGPXH2dKOU.DtVLepcw5Vn1mcVEEDxRgoA4_05p2ayzxAHB2qqWOS8k8tIlGDWdGAvBegKiDw1J65dWRAVmE; path=/; expires=Tue, 26-Aug-25 06:27:49 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=kBhFM38Dy1fLQGgHGXmpNr2F7MgAs4gbCe88WPB9J4U-1756187869641-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    server: 'cloudflare',
+    'cf-ray': '975117a86adb443d-BOM',
+    'alt-svc': 'h3=":443"; ma=86400'
+  },
+  requestID: 'req_71dbf11a2feb41ef89c0530ccdf5cbe8',
+  error: {
+    message: 'Invalid MIME type. Only image types are supported.',
+    type: 'invalid_request_error',
+    param: null,
+    code: 'invalid_image_format'
+  },
+  code: 'invalid_image_format',
+  param: null,
+  type: 'invalid_request_error'
+}
