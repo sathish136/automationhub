@@ -1685,3 +1685,242 @@ export const insertSiteCallSchema = createInsertSchema(siteCalls).omit({
 
 export type SiteCall = typeof siteCalls.$inferSelect;
 export type InsertSiteCall = z.infer<typeof insertSiteCallSchema>;
+
+// ================================
+// EQUIPMENT MAINTENANCE MANAGEMENT
+// ================================
+
+// Equipment table for water treatment equipment
+export const equipment = pgTable("equipment", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  
+  // Equipment Information
+  equipmentName: varchar("equipment_name", { length: 255 }).notNull(),
+  equipmentType: varchar("equipment_type", { length: 100 }).notNull(), // blower, pump, filter, clarifier, etc.
+  manufacturer: varchar("manufacturer", { length: 100 }),
+  model: varchar("model", { length: 100 }),
+  serialNumber: varchar("serial_number", { length: 100 }),
+  location: varchar("location", { length: 255 }),
+  description: text("description"),
+  
+  // Running Hours Tracking
+  currentRunningHours: decimal("current_running_hours", { precision: 10, scale: 2 }).default("0"),
+  lastHoursUpdate: timestamp("last_hours_update"),
+  hoursDataSource: varchar("hours_data_source", { length: 50 }).default("manual"), // manual, plc_tag, calculated
+  plcTagId: varchar("plc_tag_id").references(() => plcTags.id), // Link to PLC tag for auto tracking
+  
+  // Equipment Status
+  status: varchar("status", { length: 30 }).default("active"), // active, inactive, maintenance, repair
+  installationDate: timestamp("installation_date"),
+  commissioningDate: timestamp("commissioning_date"),
+  
+  // Email Configuration
+  maintenanceEmailEnabled: boolean("maintenance_email_enabled").default(true),
+  emailRecipients: jsonb("email_recipients").default(sql`'[]'::jsonb`), // Array of email addresses
+  
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_equipment_site").on(table.siteId),
+  index("idx_equipment_type").on(table.equipmentType),
+  index("idx_equipment_status").on(table.status),
+  index("idx_equipment_active").on(table.isActive),
+]);
+
+// Maintenance schedules for equipment
+export const maintenanceSchedules = pgTable("maintenance_schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  equipmentId: varchar("equipment_id").notNull().references(() => equipment.id, { onDelete: "cascade" }),
+  
+  // Schedule Information
+  maintenanceType: varchar("maintenance_type", { length: 100 }).notNull(), // oil_change, filter_replacement, cleaning, inspection
+  description: text("description"),
+  priority: varchar("priority", { length: 20 }).default("medium"), // low, medium, high, critical
+  
+  // Running Hours Configuration
+  maintenanceIntervalHours: decimal("maintenance_interval_hours", { precision: 10, scale: 2 }).notNull(), // e.g., 3000 hours
+  lastMaintenanceHours: decimal("last_maintenance_hours", { precision: 10, scale: 2 }).default("0"),
+  nextMaintenanceHours: decimal("next_maintenance_hours", { precision: 10, scale: 2 }).notNull(),
+  
+  // Alert Configuration
+  warningThresholdHours: decimal("warning_threshold_hours", { precision: 10, scale: 2 }).default("100"), // Hours before due
+  criticalThresholdHours: decimal("critical_threshold_hours", { precision: 10, scale: 2 }).default("50"), // Hours before critical
+  
+  // Email Settings
+  enableEmailAlerts: boolean("enable_email_alerts").default(true),
+  lastEmailSent: timestamp("last_email_sent"),
+  emailFrequency: varchar("email_frequency", { length: 20 }).default("daily"), // daily, weekly, once
+  
+  // Maintenance Details
+  estimatedDuration: integer("estimated_duration"), // in minutes
+  requiredParts: jsonb("required_parts").default(sql`'[]'::jsonb`), // Array of parts needed
+  instructions: text("instructions"),
+  
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_maintenance_schedules_equipment").on(table.equipmentId),
+  index("idx_maintenance_schedules_type").on(table.maintenanceType),
+  index("idx_maintenance_schedules_priority").on(table.priority),
+  index("idx_maintenance_schedules_active").on(table.isActive),
+]);
+
+// Maintenance history to track completed maintenance
+export const maintenanceHistory = pgTable("maintenance_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  equipmentId: varchar("equipment_id").notNull().references(() => equipment.id, { onDelete: "cascade" }),
+  scheduleId: varchar("schedule_id").references(() => maintenanceSchedules.id), // null for unscheduled maintenance
+  
+  // Maintenance Details
+  maintenanceType: varchar("maintenance_type", { length: 100 }).notNull(),
+  description: text("description"),
+  workDone: text("work_done"),
+  
+  // Timing and Hours
+  performedAt: timestamp("performed_at").notNull(),
+  equipmentHoursAtMaintenance: decimal("equipment_hours_at_maintenance", { precision: 10, scale: 2 }),
+  actualDuration: integer("actual_duration"), // in minutes
+  
+  // Personnel
+  performedBy: varchar("performed_by", { length: 255 }).notNull(),
+  supervisedBy: varchar("supervised_by", { length: 255 }),
+  
+  // Parts and Costs
+  partsUsed: jsonb("parts_used").default(sql`'[]'::jsonb`),
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }),
+  
+  // Status and Notes
+  maintenanceStatus: varchar("maintenance_status", { length: 30 }).default("completed"), // completed, partial, postponed
+  notes: text("notes"),
+  nextDueHours: decimal("next_due_hours", { precision: 10, scale: 2 }), // Updated next maintenance due
+  
+  // Documentation
+  attachments: jsonb("attachments").default(sql`'[]'::jsonb`), // Photos, reports, etc.
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_maintenance_history_equipment").on(table.equipmentId),
+  index("idx_maintenance_history_performed").on(table.performedAt),
+  index("idx_maintenance_history_status").on(table.maintenanceStatus),
+]);
+
+// Email notifications log
+export const maintenanceEmailLog = pgTable("maintenance_email_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  equipmentId: varchar("equipment_id").notNull().references(() => equipment.id, { onDelete: "cascade" }),
+  scheduleId: varchar("schedule_id").references(() => maintenanceSchedules.id),
+  
+  // Email Details
+  emailType: varchar("email_type", { length: 50 }).notNull(), // warning, critical, overdue, manual
+  recipients: jsonb("recipients").notNull(), // Array of email addresses
+  subject: varchar("subject", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  
+  // Trigger Information
+  equipmentHours: decimal("equipment_hours", { precision: 10, scale: 2 }),
+  maintenanceDueHours: decimal("maintenance_due_hours", { precision: 10, scale: 2 }),
+  hoursOverdue: decimal("hours_overdue", { precision: 10, scale: 2 }),
+  
+  // Email Status
+  emailStatus: varchar("email_status", { length: 30 }).default("sent"), // sent, failed, pending
+  sentAt: timestamp("sent_at").defaultNow(),
+  errorMessage: text("error_message"),
+  
+  // Tracking
+  triggeredBy: varchar("triggered_by", { length: 50 }).default("system"), // system, manual
+  triggeredByUser: varchar("triggered_by_user", { length: 255 }),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_maintenance_email_equipment").on(table.equipmentId),
+  index("idx_maintenance_email_type").on(table.emailType),
+  index("idx_maintenance_email_sent").on(table.sentAt),
+  index("idx_maintenance_email_status").on(table.emailStatus),
+]);
+
+// Relations for maintenance tables
+export const equipmentRelations = relations(equipment, ({ one, many }) => ({
+  site: one(sites, {
+    fields: [equipment.siteId],
+    references: [sites.id],
+  }),
+  plcTag: one(plcTags, {
+    fields: [equipment.plcTagId],
+    references: [plcTags.id],
+  }),
+  maintenanceSchedules: many(maintenanceSchedules),
+  maintenanceHistory: many(maintenanceHistory),
+  maintenanceEmailLog: many(maintenanceEmailLog),
+}));
+
+export const maintenanceSchedulesRelations = relations(maintenanceSchedules, ({ one, many }) => ({
+  equipment: one(equipment, {
+    fields: [maintenanceSchedules.equipmentId],
+    references: [equipment.id],
+  }),
+  maintenanceHistory: many(maintenanceHistory),
+  maintenanceEmailLog: many(maintenanceEmailLog),
+}));
+
+export const maintenanceHistoryRelations = relations(maintenanceHistory, ({ one }) => ({
+  equipment: one(equipment, {
+    fields: [maintenanceHistory.equipmentId],
+    references: [equipment.id],
+  }),
+  schedule: one(maintenanceSchedules, {
+    fields: [maintenanceHistory.scheduleId],
+    references: [maintenanceSchedules.id],
+  }),
+}));
+
+export const maintenanceEmailLogRelations = relations(maintenanceEmailLog, ({ one }) => ({
+  equipment: one(equipment, {
+    fields: [maintenanceEmailLog.equipmentId],
+    references: [equipment.id],
+  }),
+  schedule: one(maintenanceSchedules, {
+    fields: [maintenanceEmailLog.scheduleId],
+    references: [maintenanceSchedules.id],
+  }),
+}));
+
+// Insert schemas for maintenance tables
+export const insertEquipmentSchema = createInsertSchema(equipment).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSchedules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMaintenanceHistorySchema = createInsertSchema(maintenanceHistory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMaintenanceEmailLogSchema = createInsertSchema(maintenanceEmailLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Export types for maintenance tables
+export type Equipment = typeof equipment.$inferSelect;
+export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
+
+export type MaintenanceSchedule = typeof maintenanceSchedules.$inferSelect;
+export type InsertMaintenanceSchedule = z.infer<typeof insertMaintenanceScheduleSchema>;
+
+export type MaintenanceHistory = typeof maintenanceHistory.$inferSelect;
+export type InsertMaintenanceHistory = z.infer<typeof insertMaintenanceHistorySchema>;
+
+export type MaintenanceEmailLog = typeof maintenanceEmailLog.$inferSelect;
+export type InsertMaintenanceEmailLog = z.infer<typeof insertMaintenanceEmailLogSchema>;
