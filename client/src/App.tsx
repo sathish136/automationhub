@@ -16,6 +16,7 @@ import SiteCallsPage from "@/pages/site-calls";
 import AutomationWizardPage from "@/pages/automation-wizard";
 import ReportsPage from "@/pages/reports";
 import MaintenancePage from "@/pages/maintenance";
+import ElectricalDiagrams from "@/pages/electrical-diagrams";
 import UserManagement from "@/pages/user-management";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
@@ -69,6 +70,7 @@ function Router() {
           <Route path="/automation-wizard" component={() => <ProtectedRoute component={AutomationWizardPage} />} />
           <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} />} />
           <Route path="/maintenance" component={() => <ProtectedRoute component={MaintenancePage} />} />
+          <Route path="/electrical-diagrams" component={() => <ProtectedRoute component={ElectricalDiagrams} />} />
           <Route path="/user-management" component={() => <ProtectedRoute component={UserManagement} />} />
           <Route component={NotFound} />
         </Switch>

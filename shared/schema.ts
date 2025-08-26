@@ -1924,3 +1924,44 @@ export type InsertMaintenanceHistory = z.infer<typeof insertMaintenanceHistorySc
 
 export type MaintenanceEmailLog = typeof maintenanceEmailLog.$inferSelect;
 export type InsertMaintenanceEmailLog = z.infer<typeof insertMaintenanceEmailLogSchema>;
+
+// Electrical Diagram Analysis table
+export const electricalDiagrams = pgTable("electrical_diagrams", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  originalFileName: varchar("original_file_name", { length: 255 }).notNull(),
+  filePath: varchar("file_path", { length: 500 }).notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  uploadedBy: varchar("uploaded_by", { length: 255 }).notNull(),
+  projectName: varchar("project_name", { length: 255 }),
+  diagramType: varchar("diagram_type", { length: 100 }).notNull(), // 'electrical', 'control', 'power', 'lighting', 'plc'
+  voltage: varchar("voltage", { length: 50 }),
+  description: text("description"),
+  analysisStatus: varchar("analysis_status", { length: 20 }).notNull().default("pending"), // 'pending', 'analyzing', 'completed', 'failed'
+  analysisResult: jsonb("analysis_result"), // OpenAI analysis results
+  corrections: jsonb("corrections"), // Suggested corrections
+  safetyIssues: jsonb("safety_issues"), // Identified safety issues
+  complianceIssues: jsonb("compliance_issues"), // Code compliance issues
+  recommendations: jsonb("recommendations"), // General recommendations
+  riskLevel: varchar("risk_level", { length: 20 }).default("medium"), // 'low', 'medium', 'high', 'critical'
+  analysisScore: integer("analysis_score"), // Overall score 0-100
+  processingTime: integer("processing_time"), // Analysis time in seconds
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_diagrams_status").on(table.analysisStatus),
+  index("idx_diagrams_type").on(table.diagramType),
+  index("idx_diagrams_risk").on(table.riskLevel),
+  index("idx_diagrams_created").on(table.createdAt),
+]);
+
+// Export schemas for electrical diagram analysis
+export const insertElectricalDiagramSchema = createInsertSchema(electricalDiagrams).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type ElectricalDiagram = typeof electricalDiagrams.$inferSelect;
+export type InsertElectricalDiagram = z.infer<typeof insertElectricalDiagramSchema>;
