@@ -67,6 +67,8 @@ const diagramTypeOptions = [
   { value: "power", label: "Power Distribution", icon: TrendingUp },
   { value: "lighting", label: "Lighting", icon: Eye },
   { value: "plc", label: "PLC/Automation", icon: FileText },
+  { value: "combined", label: "Combined Documentation", icon: FileImage },
+  { value: "automation", label: "Automation Package", icon: Activity },
 ];
 
 const riskColors = {
@@ -176,10 +178,13 @@ export default function ElectricalDiagrams() {
 
   const handleFiles = (files: FileList) => {
     const file = files[0];
-    if (!file.type.startsWith('image/')) {
+    const allowedTypes = ['image/', 'application/pdf'];
+    const isValidFile = allowedTypes.some(type => file.type.startsWith(type));
+    
+    if (!isValidFile) {
       toast({
         title: "Error",
-        description: "Please select an image file",
+        description: "Please select an image file or PDF document",
         variant: "destructive",
       });
       return;
@@ -263,10 +268,10 @@ export default function ElectricalDiagrams() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Electrical Diagram Analysis
+            Automation Documentation Analysis
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">
-            AI-powered analysis of electrical diagrams with safety and compliance recommendations
+            AI-powered analysis of electrical diagrams, automation systems, and technical documentation with safety and compliance recommendations
           </p>
         </div>
         <Button onClick={() => setShowUploadDialog(true)} data-testid="button-upload-diagram">
@@ -437,12 +442,15 @@ export default function ElectricalDiagrams() {
             >
               <FileImage className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className="text-sm text-gray-600 mb-2">
-                Drag and drop your diagram here, or click to browse
+                Drag and drop your documentation here, or click to browse
+              </p>
+              <p className="text-xs text-gray-500">
+                Supports images (PNG, JPG) and PDF documents
               </p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf"
                 onChange={(e) => e.target.files && handleFiles(e.target.files)}
                 className="hidden"
               />
@@ -458,10 +466,10 @@ export default function ElectricalDiagrams() {
               </div>
 
               <div>
-                <Label htmlFor="diagramType">Diagram Type</Label>
+                <Label htmlFor="diagramType">Documentation Type</Label>
                 <Select name="diagramType" required>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select diagram type" />
+                    <SelectValue placeholder="Select documentation type" />
                   </SelectTrigger>
                   <SelectContent>
                     {diagramTypeOptions.map((option) => (

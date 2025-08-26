@@ -2719,34 +2719,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ELECTRICAL DIAGRAMS ANALYSIS ROUTES
   // ==========================================
 
-  // Electrical diagram analysis helper function
-  async function analyzeElectricalDiagram(imagePath: string, diagramType: string, voltage?: string) {
+  // Automation documentation analysis helper function
+  async function analyzeAutomationDocument(filePath: string, documentType: string, voltage?: string, fileType?: string) {
     try {
-      const imageBuffer = await fs.readFile(imagePath);
-      const base64Image = imageBuffer.toString('base64');
+      const fileBuffer = await fs.readFile(filePath);
+      const base64Content = fileBuffer.toString('base64');
 
-      const analysisPrompt = `Analyze this electrical diagram image and provide a comprehensive analysis. Focus on:
+      const analysisPrompt = `Analyze this automation documentation and provide a comprehensive technical analysis. This may include electrical diagrams, control systems, PLC configurations, automation workflows, and technical specifications across multiple pages.
 
-1. **Safety Issues**: Identify potential safety hazards, code violations, and dangerous configurations
-2. **Corrections**: Suggest specific technical corrections and improvements
-3. **Compliance Issues**: Note any violations of electrical codes and standards
-4. **Recommendations**: Provide professional recommendations for best practices
-5. **Risk Assessment**: Evaluate overall risk level (low, medium, high, critical)
-6. **Overall Score**: Rate the diagram quality from 0-100
+Focus on:
 
-Diagram Type: ${diagramType}
+1. **Safety Issues**: Identify potential safety hazards, code violations, and dangerous configurations in electrical and automation systems
+2. **Technical Corrections**: Suggest specific improvements for electrical diagrams, PLC programming, control logic, and system configurations  
+3. **Compliance Issues**: Check against electrical codes (NEC, IEC), automation standards (ISA, NEMA), and industry best practices
+4. **System Integration**: Analyze how different automation components work together (PLCs, HMIs, drives, sensors, networks)
+5. **Performance Optimization**: Recommend improvements for system efficiency, reliability, and maintainability
+6. **Risk Assessment**: Evaluate overall risk level considering electrical safety, system reliability, and operational risks
+7. **Overall Score**: Rate the documentation and system design quality from 0-100
+
+Document Type: ${documentType}
 ${voltage ? `Voltage Level: ${voltage}` : ''}
+File Format: ${fileType === 'application/pdf' ? 'Multi-page PDF Document' : 'Image File'}
 
 Please respond with a JSON object containing:
 {
-  "analysisResult": "detailed analysis text",
-  "safetyIssues": [{"issue": "description", "severity": "low|medium|high|critical", "location": "where found"}],
-  "corrections": [{"correction": "what to fix", "priority": "low|medium|high", "details": "how to fix"}],
-  "complianceIssues": [{"standard": "which code/standard", "violation": "what's wrong", "remedy": "how to fix"}],
-  "recommendations": [{"category": "improvement area", "recommendation": "what to do", "benefit": "why important"}],
+  "analysisResult": "comprehensive analysis covering all aspects found in the documentation",
+  "safetyIssues": [{"issue": "description", "severity": "low|medium|high|critical", "location": "page/section where found", "system": "electrical|automation|control"}],
+  "corrections": [{"correction": "what to fix", "priority": "low|medium|high", "details": "how to fix", "category": "electrical|plc|hmi|network|safety"}],
+  "complianceIssues": [{"standard": "which code/standard", "violation": "what's wrong", "remedy": "how to fix", "section": "where found"}],
+  "recommendations": [{"category": "improvement area", "recommendation": "what to do", "benefit": "why important", "system": "which system affected"}],
   "riskLevel": "low|medium|high|critical",
   "analysisScore": 85
 }`;
+
+      let contentArray: any[];
+
+      if (fileType === 'application/pdf') {
+        // For PDF documents, send as document
+        contentArray = [
+          {
+            type: "text",
+            text: analysisPrompt,
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:application/pdf;base64,${base64Content}`,
+            },
+          },
+        ];
+      } else {
+        // For images
+        contentArray = [
+          {
+            type: "text",
+            text: analysisPrompt,
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:image/jpeg;base64,${base64Content}`,
+            },
+          },
+        ];
+      }
 
       // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
       const response = await openai.chat.completions.create({
@@ -2754,27 +2790,16 @@ Please respond with a JSON object containing:
         messages: [
           {
             role: "user",
-            content: [
-              {
-                type: "text",
-                text: analysisPrompt,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                },
-              },
-            ],
+            content: contentArray,
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 2000,
+        max_tokens: 3000,
       });
 
       return JSON.parse(response.choices[0].message.content || '{}');
     } catch (error) {
-      console.error("Error analyzing diagram with OpenAI:", error);
+      console.error("Error analyzing automation document with OpenAI:", error);
       throw error;
     }
   }
@@ -2798,9 +2823,12 @@ Please respond with a JSON object containing:
       }
 
       // Validate file type
-      if (!req.file.mimetype.startsWith('image/')) {
+      const allowedTypes = ['image/', 'application/pdf'];
+      const isValidFile = allowedTypes.some(type => req.file.mimetype.startsWith(type));
+      
+      if (!isValidFile) {
         await fs.unlink(req.file.path); // Clean up
-        return res.status(400).json({ message: "Please upload an image file" });
+        return res.status(400).json({ message: "Please upload an image file or PDF document" });
       }
 
       // Create diagrams upload directory
@@ -2837,7 +2865,7 @@ Please respond with a JSON object containing:
       const diagram = await storage.createElectricalDiagram(diagramData);
 
       // Start analysis in background
-      analyzeElectricalDiagram(finalPath, diagram.diagramType, diagram.voltage || undefined)
+      analyzeAutomationDocument(finalPath, diagram.diagramType, diagram.voltage || undefined, req.file.mimetype)
         .then(async (analysisResult) => {
           await storage.updateElectricalDiagram(diagram.id, {
             analysisStatus: 'completed',
@@ -2893,7 +2921,7 @@ Please respond with a JSON object containing:
       });
 
       // Start analysis in background
-      analyzeElectricalDiagram(diagram.filePath, diagram.diagramType, diagram.voltage || undefined)
+      analyzeAutomationDocument(diagram.filePath, diagram.diagramType, diagram.voltage || undefined, diagram.mimeType)
         .then(async (analysisResult) => {
           await storage.updateElectricalDiagram(diagram.id, {
             analysisStatus: 'completed',
