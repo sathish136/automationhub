@@ -25,6 +25,7 @@ import {
   LogOut,
   User,
   Phone,
+  Wrench,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -43,6 +44,7 @@ const navigation = [
   { name: "Site Calls", href: "/site-calls", icon: Phone },
   { name: "Automation Wizard", href: "/automation-wizard", icon: Zap },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Maintenance", href: "/maintenance", icon: Wrench },
   { name: "User Management", href: "/user-management", icon: Users },
 ];
 

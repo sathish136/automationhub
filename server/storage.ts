@@ -1221,7 +1221,11 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      return await query.where(and(...conditions)).orderBy(beckhoffProducts.partNumber);
+      return await db
+        .select()
+        .from(beckhoffProducts)
+        .where(and(eq(beckhoffProducts.isActive, true), ...conditions))
+        .orderBy(beckhoffProducts.partNumber);
     }
 
     return await query.orderBy(beckhoffProducts.category, beckhoffProducts.partNumber);
@@ -1335,7 +1339,11 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      return await query.where(and(...conditions)).orderBy(automationProducts.productDisplayName);
+      return await db
+        .select()
+        .from(automationProducts)
+        .where(and(eq(automationProducts.isActive, true), ...conditions))
+        .orderBy(automationProducts.productDisplayName);
     }
 
     return await query.orderBy(automationProducts.category, automationProducts.productDisplayName);
@@ -1743,7 +1751,11 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      return await query.where(and(...conditions)).orderBy(desc(siteCalls.reportedAt));
+      return await db
+        .select()
+        .from(siteCalls)
+        .where(and(...conditions))
+        .orderBy(desc(siteCalls.reportedAt));
     }
 
     return await query.orderBy(desc(siteCalls.reportedAt));
@@ -1819,9 +1831,135 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Update last login
-    await this.updateUser(user.id, { lastLoginAt: new Date() });
+    await db
+      .update(users)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(users.id, user.id));
     
     return user;
+  }
+
+  // ============================
+  // MAINTENANCE MANAGEMENT METHODS
+  // ============================
+
+  // Equipment Management
+  async getAllEquipment(siteId?: string): Promise<Equipment[]> {
+    const query = db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.isActive, true));
+    
+    if (siteId) {
+      return await db
+        .select()
+        .from(equipment)
+        .where(and(eq(equipment.isActive, true), eq(equipment.siteId, siteId)))
+        .orderBy(equipment.equipmentName);
+    }
+    
+    return await query.orderBy(equipment.equipmentName);
+  }
+
+  async getEquipment(id: string): Promise<Equipment | undefined> {
+    const [equip] = await db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.id, id));
+    return equip;
+  }
+
+  async createEquipment(equip: InsertEquipment): Promise<Equipment> {
+    const [newEquipment] = await db
+      .insert(equipment)
+      .values(equip)
+      .returning();
+    return newEquipment;
+  }
+
+  async updateEquipment(id: string, equip: Partial<InsertEquipment>): Promise<Equipment | undefined> {
+    const [updated] = await db
+      .update(equipment)
+      .set({ ...equip, updatedAt: new Date() })
+      .where(eq(equipment.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEquipment(id: string): Promise<boolean> {
+    const result = await db
+      .update(equipment)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(equipment.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Maintenance Schedules
+  async getMaintenanceSchedules(equipmentId: string): Promise<MaintenanceSchedule[]> {
+    return await db
+      .select()
+      .from(maintenanceSchedules)
+      .where(and(eq(maintenanceSchedules.equipmentId, equipmentId), eq(maintenanceSchedules.isActive, true)))
+      .orderBy(maintenanceSchedules.nextMaintenanceHours);
+  }
+
+  async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule> {
+    const [newSchedule] = await db
+      .insert(maintenanceSchedules)
+      .values(schedule)
+      .returning();
+    return newSchedule;
+  }
+
+  async updateMaintenanceSchedule(id: string, schedule: Partial<InsertMaintenanceSchedule>): Promise<MaintenanceSchedule | undefined> {
+    const [updated] = await db
+      .update(maintenanceSchedules)
+      .set({ ...schedule, updatedAt: new Date() })
+      .where(eq(maintenanceSchedules.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Get equipment due for maintenance
+  async getEquipmentDueForMaintenance(): Promise<any[]> {
+    return await db
+      .select({
+        equipmentId: equipment.id,
+        equipmentName: equipment.equipmentName,
+        equipmentType: equipment.equipmentType,
+        currentHours: equipment.currentRunningHours,
+        maintenanceType: maintenanceSchedules.maintenanceType,
+        nextDueHours: maintenanceSchedules.nextMaintenanceHours,
+        hoursOverdue: sql<number>`CASE WHEN ${equipment.currentRunningHours} > ${maintenanceSchedules.nextMaintenanceHours} THEN ${equipment.currentRunningHours} - ${maintenanceSchedules.nextMaintenanceHours} ELSE 0 END`,
+        priority: maintenanceSchedules.priority,
+        warningThreshold: maintenanceSchedules.warningThresholdHours,
+        criticalThreshold: maintenanceSchedules.criticalThresholdHours,
+      })
+      .from(equipment)
+      .innerJoin(maintenanceSchedules, eq(equipment.id, maintenanceSchedules.equipmentId))
+      .where(and(
+        eq(equipment.isActive, true),
+        eq(maintenanceSchedules.isActive, true),
+        eq(maintenanceSchedules.enableEmailAlerts, true)
+      ))
+      .orderBy(desc(sql`${equipment.currentRunningHours} - ${maintenanceSchedules.nextMaintenanceHours}`));
+  }
+
+  // Maintenance History
+  async getMaintenanceHistory(equipmentId: string): Promise<MaintenanceHistory[]> {
+    return await db
+      .select()
+      .from(maintenanceHistory)
+      .where(eq(maintenanceHistory.equipmentId, equipmentId))
+      .orderBy(desc(maintenanceHistory.performedAt));
+  }
+
+  async createMaintenanceRecord(record: InsertMaintenanceHistory): Promise<MaintenanceHistory> {
+    const [newRecord] = await db
+      .insert(maintenanceHistory)
+      .values(record)
+      .returning();
+    return newRecord;
   }
 }
 
